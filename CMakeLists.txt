@@ -4,6 +4,10 @@ project(kernel_epita)
 include_directories(k/include)
 
 set(K_FILES
+        k/compiler.h
+        k/io.h
+        k/multiboot.h
+        k/elf.h
         k/serial.c
         k/gdt.c
         k/k.c

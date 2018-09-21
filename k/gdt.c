@@ -1,4 +1,5 @@
 #include "gdt.h"
+#include "compiler.h"
 
 /* struct gdt_entry gdt[] = {
         {0,      0, 0, 0,    0,    0},          // NULL entry
@@ -52,7 +53,7 @@ static void initGdt() {
     struct gdt_r {
         u16 limit;
         u32 base;
-    }__attribute__((packed));
+    }__packed;
 
     struct gdt_r gdtr;
 

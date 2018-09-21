@@ -3,6 +3,7 @@
 //
 
 #include "idt.h"
+#include "compiler.h"
 
 #define IDT_TYPE_INTERRUPT 0xE
 #define IDT_TYPE_TRAP 0xF
@@ -22,7 +23,7 @@ static void initIdt() {
     struct idt_r {
         u16 limit;
         u32 base;
-    }__attribute__((packed));
+    }__packed;
 
     struct idt_r idtr;
     idtr.base = (u32) idt;
