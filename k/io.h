@@ -3,21 +3,19 @@
 
 #include <k/types.h>
 
-static inline void outb(u16 port, u8 val)
-{
-	(void)port;
-	(void)val;
-
-	// FIXME
+static inline void outb(u16 port, u8 val) {
+  asm volatile("outb %0, %1\n\t"
+	       : /* No output */
+	       : "a" (val), "d" (port));
 }
 
-static inline u8 inb(u16 port)
-{
-	(void)port;
+static inline u8 inb(u16 port) {
 
-	// FIXME
-
-	return 0;
+  u8 res;
+  asm volatile("inb %1, %0\n\t"
+	       : "=&a" (res)
+	       : "d" (port));
+  return res;
 }
 
 #endif				/* !IO_H_ */
