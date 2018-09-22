@@ -34,6 +34,7 @@ OBJS	= \
 	  interrupt-entry.o \
 	  interrupt-handler.o \
 	  pic.o \
+	  getkey.o \
 
 
 DEPS = $(OBJS:.o=.d)

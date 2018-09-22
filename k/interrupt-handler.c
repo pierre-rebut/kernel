@@ -3,8 +3,8 @@
 //
 
 #include "pic.h"
-#include "io.h"
 #include "idt.h"
+#include "getkey.h"
 
 #include <stdio.h>
 
@@ -40,11 +40,13 @@ static void isr_exception_handler(struct idt_context *ctx) {
 }
 
 static void isq_normal_handler(struct idt_context *ctx) {
-    printf("Interrupt ISQ handle: %d\n", ctx->int_no);
 
-    if (ctx->int_no == 33) {
-        u8 tmp = inb(0x60);
-        printf("scancode: %d\n", tmp);
+    switch (ctx->int_no) {
+        case 33:
+            recvKey();
+            break;
+        default:
+            printf("Interrupt ISQ handle: %d\n", ctx->int_no);
     }
 
     if (ctx->int_no >= 40)

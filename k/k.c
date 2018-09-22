@@ -3,6 +3,7 @@
 #include "gdt.h"
 #include "idt.h"
 #include "pic.h"
+#include "getkey.h"
 
 #include <stdio.h>
 
@@ -32,7 +33,7 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
     TEST_INTERRUPT(16);
     TEST_INTERRUPT(6);
 
-    allowIrq(1);
+    allowIrq(ISQ_KEYBOARD_VALUE);
     // allowIrq(0);
 
     (void) magic;
@@ -41,9 +42,23 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
     char star[4] = "|/-\\";
     char *fb = (void *) 0xb8000;
 
-    for (unsigned i = 0;;) {
+    char running = 1;
+    int i = 0;
+
+    while (running) {
         *fb = star[i++ % 4];
+
+        int key = getkey();
+        if (key >= 0) {
+            int pressed = key >> 7;
+            key &= ~(1 << 7);
+            printf("Key %s: %d\n", pressed == 1 ? "release" : "pressed", key);
+            if (key == 1)
+                running = 0;
+        }
     }
+
+    printf("Stop running\n");
 
     for (;;)
             asm volatile ("hlt");

@@ -11,6 +11,6 @@ set(K_FILES
         k/serial.c
         k/gdt.c
         k/k.c
-        k/libvga.c k/idt.c k/idt.h k/pic.c k/pic.h k/interrupt-handler.c)
+        k/libvga.c k/idt.c k/idt.h k/pic.c k/pic.h k/interrupt-handler.c k/getkey.c k/getkey.h)
 
 add_executable(kernel_epita ${K_FILES})
