@@ -8,6 +8,11 @@
 
 #define PIC_MASK_ALL 0xFF
 
+#define PIC_MASTER_A 0x20
+#define PIC_SLAVE_A 0xA0
+#define PIC_MASTER_B 0x21
+#define PIC_SLAVE_B 0xA1
+
 void initPic() {
     outb(PIC_MASTER_A, 0x11);
     outb(PIC_SLAVE_A, 0x11);
@@ -29,17 +34,26 @@ void initPic() {
 }
 
 void allowIrq(int irq) {
-    u8 tmp = inb(PIC_MASTER_B);
-    tmp &= ~(1 << irq);
-    outb(PIC_MASTER_B, tmp);
+
+    if (irq < 8) {
+        u8 tmp = inb(PIC_MASTER_B);
+        tmp &= ~(1 << irq);
+        outb(PIC_MASTER_B, tmp);
+    } else {
+        u8 tmp = inb(PIC_SLAVE_B);
+        tmp &= ~(1 << (irq - 8));
+        outb(PIC_SLAVE_B, tmp);
+    }
 
     printf("Allow irq %d\n", irq);
 }
 
-void pic_eoi_master() {
+void pic_eoi_master(int irq) {
+    (void)irq;
     outb(PIC_MASTER_A, 0x20);
 }
 
-void pic_eoi_slave() {
+void pic_eoi_slave(int irq) {
+    (void)irq;
     outb(PIC_SLAVE_A, 0x20);
 }

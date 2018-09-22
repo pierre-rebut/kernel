@@ -36,6 +36,7 @@ OBJS	= \
 	  pic.o \
 	  getkey.o \
 	  pit.o \
+	  syscall.o \
 
 
 DEPS = $(OBJS:.o=.d)

@@ -10,6 +10,6 @@
 void initPit();
 
 unsigned long gettick();
-void recvPit();
+void pit_handler();
 
 #endif //KERNEL_EPITA_PIT_H

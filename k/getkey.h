@@ -8,6 +8,6 @@
 #define ISQ_KEYBOARD_VALUE 1
 
 int getkey();
-void recvKey();
+void keyboard_handler();
 
 #endif //KERNEL_EPITA_GETKEY_H

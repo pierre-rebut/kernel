@@ -20,7 +20,7 @@ int getkey() {
     return tmp;
 }
 
-void recvKey() {
+void keyboard_handler() {
     u8 recv = inb(KEYBOARD_REGISTER);
 
     // check readptr circular buffer

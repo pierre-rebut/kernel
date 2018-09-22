@@ -57,4 +57,7 @@ void libvga_switch_mode13h(void);
 
 void libvga_switch_mode3h(void);
 
+void initVga();
+void moveBlock();
+
 #endif				/* !LIBVGA_H */

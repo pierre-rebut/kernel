@@ -6,6 +6,7 @@
 #include "idt.h"
 #include "getkey.h"
 #include "pit.h"
+#include "syscall.h"
 
 #include <stdio.h>
 
@@ -44,22 +45,28 @@ static void isq_normal_handler(struct idt_context *ctx) {
 
     switch (ctx->int_no) {
         case 33:
-            recvKey();
+            keyboard_handler();
             break;
         case 32:
-            recvPit();
+            pit_handler();
             break;
         default:
             printf("Interrupt ISQ handle: %d\n", ctx->int_no);
     }
 
     if (ctx->int_no >= 40)
-        pic_eoi_slave();
-    pic_eoi_master();
+        pic_eoi_slave(ctx->int_no);
+    pic_eoi_master(ctx->int_no);
 }
 
 static void isr_normal_handler(struct idt_context *ctx) {
-    printf("Interrupt ISR handle: %d\n", ctx->int_no);
+    switch (ctx->int_no) {
+        case 80:
+            syscall_handler(ctx);
+            break;
+        default:
+            printf("Interrupt ISR handle: %d\n", ctx->int_no);
+    }
 }
 
 void interrupt_handler(struct idt_context *ctx) {

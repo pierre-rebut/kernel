@@ -5,6 +5,7 @@
 #include "pic.h"
 #include "getkey.h"
 #include "pit.h"
+#include "libvga.h"
 
 #include <stdio.h>
 
@@ -12,8 +13,7 @@
     printf("- Test interrupt: "#id"\n"); \
     asm volatile("int $"#id"\n")
 
-void k_main(unsigned long magic, multiboot_info_t *info) {
-
+void k_init() {
     initSerial(38400);
     printf("Serial init\n");
 
@@ -31,6 +31,11 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
 
     allowIrq(ISQ_KEYBOARD_VALUE);
     allowIrq(ISQ_PIT_VALUE);
+}
+
+void k_main(unsigned long magic, multiboot_info_t *info) {
+
+    k_init();
 
     TEST_INTERRUPT(0);
     TEST_INTERRUPT(3);
@@ -49,8 +54,12 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
     char running = 1;
     int i = 0;
 
+    unsigned long oldTick = 0;
+
+    initVga();
+
     while (running) {
-        *fb = star[i++ % 4];
+       // *fb = star[i++ % 4];
 
         int key = getkey();
         if (key >= 0) {
@@ -60,6 +69,15 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
             if (key == 1)
                 running = 0;
         }
+
+        unsigned long tick = gettick() / 1000;
+        if (tick > oldTick) {
+            printf("Tick %lu\n", tick);
+            oldTick = tick;
+        }
+
+        if ((gettick() / 10) % 4 == 0)
+            moveBlock();
     }
 
     printf("Stop running\n");
