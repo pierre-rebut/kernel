@@ -35,14 +35,15 @@ OBJS	= \
 	  interrupt-handler.o \
 	  pic.o \
 	  getkey.o \
+	  pit.o \
 
 
 DEPS = $(OBJS:.o=.d)
 
 all: $(TARGET)
 
-$(TARGET): CPPFLAGS += -MMD -Iinclude -I ../libs/libc/include/ -g
-$(TARGET): CFLAGS += $(K_EXTRA_CFLAGS) -g
+$(TARGET): CPPFLAGS += -MMD -Iinclude -I ../libs/libc/include/
+$(TARGET): CFLAGS += $(K_EXTRA_CFLAGS)
 $(TARGET): LDFLAGS += -Wl,-Tk.lds
 $(TARGET): LDLIBS = -L../libs/libc -lc
 $(TARGET): $(OBJS)

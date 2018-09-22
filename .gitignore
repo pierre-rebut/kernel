@@ -8,3 +8,4 @@ cmake-build-debug/
 *.rom
 iso/
 *.a
+k.iso

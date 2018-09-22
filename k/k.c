@@ -4,6 +4,7 @@
 #include "idt.h"
 #include "pic.h"
 #include "getkey.h"
+#include "pit.h"
 
 #include <stdio.h>
 
@@ -25,6 +26,12 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
     initPic();
     printf("Pic init\n");
 
+    initPit();
+    printf("Pit init\n");
+
+    allowIrq(ISQ_KEYBOARD_VALUE);
+    allowIrq(ISQ_PIT_VALUE);
+
     TEST_INTERRUPT(0);
     TEST_INTERRUPT(3);
     TEST_INTERRUPT(30);
@@ -32,9 +39,6 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
     TEST_INTERRUPT(20);
     TEST_INTERRUPT(16);
     TEST_INTERRUPT(6);
-
-    allowIrq(ISQ_KEYBOARD_VALUE);
-    // allowIrq(0);
 
     (void) magic;
     (void) info;

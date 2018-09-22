@@ -5,12 +5,11 @@
 #include "io.h"
 
 #define BUFFER_SIZE 20
+#define KEYBOARD_REGISTER 0x60
 
 static int keyBuffer[BUFFER_SIZE] = {0};
 static int read_ptr = 0;
 static int write_ptr = 0;
-
-#define KEYBOARD_REGISTER 0x60
 
 int getkey() {
     if (read_ptr == write_ptr)

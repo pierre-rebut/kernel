@@ -5,6 +5,7 @@
 #include "pic.h"
 #include "idt.h"
 #include "getkey.h"
+#include "pit.h"
 
 #include <stdio.h>
 
@@ -44,6 +45,9 @@ static void isq_normal_handler(struct idt_context *ctx) {
     switch (ctx->int_no) {
         case 33:
             recvKey();
+            break;
+        case 32:
+            recvPit();
             break;
         default:
             printf("Interrupt ISQ handle: %d\n", ctx->int_no);
