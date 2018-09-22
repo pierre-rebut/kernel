@@ -6,6 +6,7 @@
 #include "getkey.h"
 #include "pit.h"
 #include "libvga.h"
+#include "kfilesystem.h"
 
 #include <stdio.h>
 
@@ -35,7 +36,14 @@ void k_init() {
 
 void k_main(unsigned long magic, multiboot_info_t *info) {
 
+    if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
+        goto error;
+
     k_init();
+
+    if (info->mods_count > 0) {
+        initKFileSystem((module_t*)(info->mods_addr));
+    }
 
     TEST_INTERRUPT(0);
     TEST_INTERRUPT(3);
@@ -48,11 +56,16 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
     (void) magic;
     (void) info;
 
+    /*int i = 0;
     char star[4] = "|/-\\";
-    char *fb = (void *) 0xb8000;
+    char *fb = (void *) 0xb8000;*/
+
+    listFiles();
+    int fd = open("hunter", 0);
+    printf("Open file: %d\n", fd);
+    printf("Close file: %d\n", close(fd));
 
     char running = 1;
-    int i = 0;
 
     unsigned long oldTick = 0;
 
@@ -82,6 +95,7 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
 
     printf("Stop running\n");
 
+    error:
     for (;;)
             asm volatile ("hlt");
 }

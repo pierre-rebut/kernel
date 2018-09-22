@@ -37,6 +37,7 @@ OBJS	= \
 	  getkey.o \
 	  pit.o \
 	  syscall.o \
+	  kfilesystem.o \
 
 
 DEPS = $(OBJS:.o=.d)
