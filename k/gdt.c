@@ -74,10 +74,6 @@ static void initProtectedMode() {
 
 static void setDataSegment() {
 
-    // set cs
-    asm volatile("ljmp $0x08, $1f\n"
-            "1:");
-
     // set ds, fs, gs, ss
     asm volatile("movw %w0, %%ds\n"
             "movw %w0, %%es\n"
@@ -86,6 +82,10 @@ static void setDataSegment() {
             "movw %w0, %%ss\n"
     :
     : "a" (0x10));
+
+    // set cs
+    asm volatile("ljmp $0x08, $1f\n"
+            "1:");
 }
 
 static void initTaskSegment() {

@@ -8,6 +8,7 @@
 void initPic();
 void allowIrq(int irq);
 void pic_eoi_master();
+void pic_eoi_slave();
 
 #define PIC_MASTER_A 0x20
 #define PIC_SLAVE_A 0xA0

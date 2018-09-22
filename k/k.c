@@ -1,10 +1,14 @@
-#include <stdio.h>
-
 #include "multiboot.h"
 #include "serial.h"
 #include "gdt.h"
 #include "idt.h"
 #include "pic.h"
+
+#include <stdio.h>
+
+#define TEST_INTERRUPT(id) \
+    printf("- Test interrupt: "#id"\n"); \
+    asm volatile("int $"#id"\n")
 
 void k_main(unsigned long magic, multiboot_info_t *info) {
 
@@ -20,13 +24,16 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
     initPic();
     printf("Pic init\n");
 
-    asm volatile("int $0x0\n");
-
-    /*asm volatile("movl $0x0, %eax\n"
-            "div %ecx");*/
+    TEST_INTERRUPT(0);
+    TEST_INTERRUPT(3);
+    TEST_INTERRUPT(30);
+    TEST_INTERRUPT(15);
+    TEST_INTERRUPT(20);
+    TEST_INTERRUPT(16);
+    TEST_INTERRUPT(6);
 
     allowIrq(1);
-    printf("Allow irq 1\n");
+    // allowIrq(0);
 
     (void) magic;
     (void) info;
