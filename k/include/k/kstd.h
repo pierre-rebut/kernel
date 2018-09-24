@@ -127,7 +127,8 @@ enum e_mouse_codes {
 ** syscalls
 */
 
-#define SYSCALL_WRITE			1
+#define SYSCALL_WRITE			0
+#define SYSCALL_WRITESERIAL		1
 #define SYSCALL_SBRK			2
 #define SYSCALL_GETKEY			3
 #define SYSCALL_GETTICK			4

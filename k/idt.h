@@ -7,7 +7,7 @@
 
 #include <k/types.h>
 
-void initInterupt();
+void initInterrupt();
 
 struct idt_entry {
     u16 offset;

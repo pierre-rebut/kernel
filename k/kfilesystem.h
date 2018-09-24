@@ -2,8 +2,8 @@
 // Created by rebut_p on 23/09/18.
 //
 
-#ifndef KERNEL_EPITA_FILESYSTEM_H
-#define KERNEL_EPITA_FILESYSTEM_H
+#ifndef KERNEL_EPITA_KFILESYSTEM_H
+#define KERNEL_EPITA_KFILESYSTEM_H
 
 #include "multiboot.h"
 
@@ -26,4 +26,4 @@ struct file_entry {
     struct kfs_inode *node;
 };
 
-#endif //KERNEL_EPITA_FILESYSTEM_H
+#endif //KERNEL_EPITA_KFILESYSTEM_H

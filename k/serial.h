@@ -1,9 +1,9 @@
-#ifndef COMDRIVER_H_
-# define COMDRIVER_H_
+#ifndef KERNEL_EPITA_SERIAL_H
+# define KERNEL_EPITA_SERIAL_H
 
 #include <stddef.h>
 
 void initSerial(int);
-int write(const void *str, size_t length);
+int writeSerial(const void *str, size_t length);
 
-#endif
+#endif //KERNEL_EPITA_SERIAL_H

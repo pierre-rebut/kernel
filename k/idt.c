@@ -31,7 +31,7 @@ static void initIdt() {
     : "memory");
 }
 
-void initInterupt() {
+void initInterrupt() {
 
 #define ISR(id, type) \
     void isr_handle##id(); \

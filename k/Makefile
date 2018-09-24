@@ -38,6 +38,7 @@ OBJS	= \
 	  pit.o \
 	  syscall.o \
 	  kfilesystem.o \
+	  terminal.o \
 
 
 DEPS = $(OBJS:.o=.d)
