@@ -58,7 +58,7 @@ int open(const char *pathname, int flags) {
     if (kfs_checksum(node, sizeof(struct kfs_inode) - 4) != node->cksum)
         return -3;
 
-    for (int i = 0; i < 256; i++) {
+    for (i = 0; i < 256; i++) {
         if (fdTable[i].used == 0) {
             fdTable[i].used = 1;
             fdTable[i].flags = flags;

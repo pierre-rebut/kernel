@@ -53,9 +53,6 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
     TEST_INTERRUPT(16);
     TEST_INTERRUPT(6);
 
-    (void) magic;
-    (void) info;
-
     /*int i = 0;
     char star[4] = "|/-\\";
     char *fb = (void *) 0xb8000;*/
