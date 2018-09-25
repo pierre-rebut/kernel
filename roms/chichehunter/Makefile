@@ -36,5 +36,6 @@ ROM_FILES = \
 	    chiche_big.bmp \
 	    intro.csf \
 	    seine_w.bmp \
+	    test \
 
 include ../roms.mk

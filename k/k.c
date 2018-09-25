@@ -48,9 +48,22 @@ static void k_test() {
     TEST_INTERRUPT(6);
 
     listFiles();
-    int fd = open("hunter", 0);
+    int fd = open("test", O_RDONLY);
     printf("Open file: %d\n", fd);
-    printf("Close file: %d\n", close(fd));
+
+    char buf[100];
+
+    int i = 0;
+    while (i < 51) {
+
+        int tmp = read(fd, buf, 99);
+        buf[tmp] = 0;
+
+        i += tmp;
+
+        printf("%s", buf);
+    }
+    printf("\nClose file: %d\n", close(fd));
 }
 
 static char asciiTab[87][3] = {

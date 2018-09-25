@@ -39,8 +39,29 @@ static int strcmp(const char *a, const char *b) {
     return 0;
 }
 
+static char checkBlockChecksum(struct kfs_block *block) {
+    u32 cksum = block->cksum;
+    block->cksum = 0;
+    u32 tmp = kfs_checksum(block, sizeof(struct kfs_block));
+    block->cksum = cksum;
+
+    return tmp == cksum;
+}
+
+static char changeBlock(struct file_entry *file) {
+    file->block = ((void *) kfs) + (file->d_blks[file->blockIndex] * KFS_BLK_SZ);
+
+    if (checkBlockChecksum(file->block) == 0) {
+        printf("KFS read - Bad checksum\n");
+        return 0;
+    }
+
+    file->blockIndex++;
+    return 1;
+}
+
 int open(const char *pathname, int flags) {
-    if (kfs == NULL || pathname == NULL)
+    if (kfs == NULL || pathname == NULL || flags != O_RDONLY)
         return -1;
 
     struct kfs_inode *node = (struct kfs_inode *) ((void *) kfs + (kfs->inode_idx * KFS_BLK_SZ));
@@ -60,31 +81,95 @@ int open(const char *pathname, int flags) {
 
     for (i = 0; i < 256; i++) {
         if (fdTable[i].used == 0) {
+            fdTable[i].blockIndex = 0;
+            fdTable[i].d_blks = node->d_blks;
+            if (changeBlock(&fdTable[i]) == 0) {
+                return -4;
+            }
             fdTable[i].used = 1;
-            fdTable[i].flags = flags;
-            fdTable[i].offset = 0;
             fdTable[i].node = node;
+            fdTable[i].iblock = NULL;
+            fdTable[i].iblockIndex = 0;
+            fdTable[i].flags = flags;
+            fdTable[i].dataIndex = 0;
             return i;
         }
     }
-    return -4;
+    return -5;
+}
+
+static char changeIBlock(struct file_entry *file, struct kfs_inode *node) {
+    if (file->iblockIndex >= node->i_blk_cnt) {
+        printf("KFS end of file\n");
+        return 0;
+    }
+
+    file->iblock = ((void *) kfs) + (node->i_blks[file->iblockIndex] * KFS_BLK_SZ);
+    if (kfs_checksum(file->iblock, sizeof(struct kfs_iblock) - 4) != file->iblock->cksum) {
+        printf("KFS iblock - Bad checksum\n");
+        return 0;
+    }
+
+    file->d_blks = file->iblock->blks;
+    file->blockIndex = 0;
+    file->iblockIndex++;
+
+    return 1;
 }
 
 ssize_t read(int fd, void *buf, size_t size) {
     if (fd < 0 || fd > 255 || kfs == NULL)
         return 0;
 
-    if (fdTable[fd].used == 0)
+    struct file_entry *file = &(fdTable[fd]);
+    if (file->used == 0)
         return 0;
 
-    return 0;
+    struct kfs_inode *node = file->node;
+    u8 *buffer = (u8 *) buf;
+
+    for (size_t i = 0; i < size; i++) {
+        if (file->dataIndex >= file->block->usage) {
+            if ((file->iblock == NULL && file->blockIndex >= node->d_blk_cnt) ||
+                    (file->iblock != NULL && file->blockIndex >= file->iblock->blk_cnt)) {
+                char res = changeIBlock(file, node);
+                if (res == 0)
+                    return (ssize_t) i;
+            }
+            if (changeBlock(file) == 0)
+                return (ssize_t) i;
+            file->dataIndex = 0;
+        }
+
+        buffer[i] = file->block->data[file->dataIndex];
+        file->dataIndex++;
+    }
+
+    return (ssize_t) size;
 }
 
 off_t seek(int fd, off_t offset, int whence) {
     if (fd < 0 || fd > 255 || kfs == NULL)
-        return 0;
+        return -1;
 
-    return 0;
+    struct file_entry *file = &(fdTable[fd]);
+    if (file->used == 0)
+        return -1;
+
+    // todo
+
+    switch (whence) {
+        case SEEK_SET:
+            break;
+        case SEEK_CUR:
+            break;
+        case SEEK_END:
+            break;
+        default:
+            return -1;
+    }
+
+    return (offset > (off_t)file->node->file_sz ? (off_t)file->node->file_sz : offset);
 }
 
 int close(int fd) {
@@ -112,7 +197,8 @@ void listFiles() {
             return;
         }
 
-        printf("%d - file: %s, size: %d\n", node->inumber, node->filename, node->file_sz);
+        printf("%d - file: %s, size: %d (cnt: %d, db_cnt: %d, ib_cnt: %d)\n", node->inumber, node->filename,
+               node->file_sz, node->blk_cnt, node->d_blk_cnt, node->i_blk_cnt);
         node = (struct kfs_inode *) ((void *) kfs + (node->next_inode * KFS_BLK_SZ));
     }
 }
