@@ -1,6 +1,8 @@
 #include "gdt.h"
 #include "compiler.h"
 
+// todo remove
+
 /* struct gdt_entry gdt[] = {
         {0,      0, 0, 0,    0,    0},          // NULL entry
         {0xFFFF, 0, 0, 0x9A, 0xCF, 0},          // Kernel code entry

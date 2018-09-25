@@ -121,6 +121,7 @@ static char asciiTab[87][3] = {
 };
 
 static char running = 1;
+static char videoMode = VIDEO_TEXT;
 static int keyMode[3] = {0};
 
 static void keyHandler(int key) {
@@ -147,10 +148,23 @@ static void keyHandler(int key) {
         case KEY_F1:
             clearTerminal();
             break;
+        case KEY_F2:
+            if (videoMode == VIDEO_TEXT) {
+                videoMode = VIDEO_GRAPHIC;
+                libvga_switch_mode13h();
+            } else {
+                videoMode = VIDEO_TEXT;
+                libvga_switch_mode3h();
+                updateTerminalCursor();
+            }
+            break;
         case KEY_MAJLOCK:
             keyMode[2] = (keyMode[2] ? 0 : 1);
             break;
         default:
+            if (videoMode != VIDEO_TEXT)
+                return;
+
             if (key < 87) {
                 int mode = 0;
                 if (keyMode[0] == 1)
@@ -193,9 +207,6 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
     unsigned long oldTick = 0;
     writeTerminalAt('0', CONS_GREEN, 0, 24);
 
-    // initVga();
-    //libvga_switch_mode3h();
-
     writeStringTerminal("Init ok\n", 8);
 
     while (running) {
@@ -205,13 +216,13 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
         }
 
         unsigned long tick = gettick() / 1000;
-        if (tick > oldTick) {
+        if (videoMode == VIDEO_TEXT && tick > oldTick) {
             my_putnbr(tick, 0);
             oldTick = tick;
         }
 
-        /*if ((gettick() / 10) % 4 == 0)
-            moveBlock();*/
+        if (videoMode == VIDEO_GRAPHIC && (gettick() / 10) % 4 == 0)
+            moveBlock();
     }
 
     printf("Stop running\n");

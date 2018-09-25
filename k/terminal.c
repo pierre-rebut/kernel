@@ -5,8 +5,8 @@
 #define VGA_HEIGHT 24
 #define VGA_MEMORY 0xB8000
 
-static size_t terminalRow;
-static size_t terminalColumn;
+static u16 terminalRow;
+static u16 terminalColumn;
 
 static u8 terminalColor;
 static u16 *terminalBuffer;
@@ -35,8 +35,8 @@ static void newline() {
         terminalRow++;
 }
 
-static void updateCursor(){
-    u16 offset = (terminalRow* VGA_WIDTH) + terminalColumn;
+void updateTerminalCursor(){
+    u16 offset = (terminalRow * (u16)VGA_WIDTH) + terminalColumn;
     outb(0x3D4, 14);
     outb(0x3D5, (u8)(offset >> 8));
     outb(0x3D4, 15);
@@ -72,8 +72,6 @@ static void putchar(char c) {
 }
 
 void initTerminal() {
-    terminalRow = 0;
-    terminalColumn = 0;
     terminalBuffer = (u16 *) VGA_MEMORY;
 
     setTerminalColor(CONS_WHITE, CONS_BLACK);
@@ -86,29 +84,29 @@ void clearTerminal() {
 
     terminalColumn = 0;
     terminalRow = 0;
-    updateCursor();
+    updateTerminalCursor();
 }
 
 void setTerminalColor(enum e_cons_codes fg, enum e_cons_codes bg) {
     terminalColor = fg | bg << 4;
 }
 
-void setTerminalX(size_t x) {
+void setTerminalX(u16 x) {
     terminalColumn = x;
 }
 
-void setTerminalY(size_t y) {
+void setTerminalY(u16 y) {
     terminalRow = y;
 }
 
 void writeTerminal(char c) {
     putchar(c);
-    updateCursor();
+    updateTerminalCursor();
 
 }
 
-void writeTerminalAt(char c, u8 color, size_t x, size_t y) {
-    const size_t index = y * VGA_WIDTH + x;
+void writeTerminalAt(char c, u8 color, u16 x, u16 y) {
+    const u16 index = y * (u16)VGA_WIDTH + x;
     terminalBuffer[index] = vgaEntry(c, color);
 }
 
@@ -116,6 +114,6 @@ int writeStringTerminal(const char *data, size_t size) {
     size_t i;
     for (i = 0; i < size; i++)
         putchar(data[i]);
-    updateCursor();
+    updateTerminalCursor();
     return (int)i;
 }

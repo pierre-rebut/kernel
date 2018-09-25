@@ -30,6 +30,7 @@
 ** when we switch into graphic mode.
 */
 static unsigned char libvga_txt_mode_font[320 * 200];
+static unsigned char libvga_video_mode_font[320 * 200] = {0};
 
 /*
 ** Registers value for graphic mode.
@@ -231,8 +232,10 @@ void libvga_switch_mode13h(void) {
 
     // plane 2 is now map in the memory, save it
     char *vram = libvga_get_framebuffer();
-    for (size_t i = 0; i < array_size(libvga_txt_mode_font); i++)
+    for (size_t i = 0; i < array_size(libvga_txt_mode_font); i++) {
         libvga_txt_mode_font[i] = vram[i];
+        vram[i] = libvga_video_mode_font[i];
+    }
 }
 
 void libvga_switch_mode3h(void) {
@@ -252,7 +255,7 @@ static void setColor(size_t x, size_t y, unsigned char c) {
 
 static void clearBuffer() {
     for (size_t i = 0; i < array_size(libvga_txt_mode_font); i++)
-        libvga_txt_mode_font[i] = 0;
+        libvga_video_mode_font[i] = 0;
 }
 
 static size_t posX = 0;
@@ -266,12 +269,8 @@ void moveBlock() {
     }
 
     char *vram = libvga_get_framebuffer();
-    for (size_t i = 0; i < array_size(libvga_txt_mode_font); i++)
-        vram[i] = libvga_txt_mode_font[i];
+    for (size_t i = 0; i < array_size(libvga_video_mode_font); i++)
+        vram[i] = libvga_video_mode_font[i];
 
     posX ++;
-}
-
-void initVga() {
-    libvga_write_regs(libvga_regs_320x200x256);
 }
