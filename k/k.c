@@ -9,6 +9,7 @@
 #include "kfilesystem.h"
 #include "terminal.h"
 #include "binary.h"
+#include "userland.h"
 
 #include <stdio.h>
 
@@ -174,6 +175,9 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
     k_test();
     printf("\n### Kernel test ok ###\n### Trying init binary [%s] ###\n\n", (char*)info->cmdline);
     loadBinary((module_t *) info->mods_addr, info->cmdline);
+
+    printf("### Trying executing binary ###\n");
+    enterUserland();
 
 
     while (running) {

@@ -15,3 +15,7 @@ void addUserlandEntry(u32 id, u32 base, u32 limit) {
     userLand[id].base = base;
     userLand[id].limit = limit;
 }
+
+void enterUserland() {
+
+}

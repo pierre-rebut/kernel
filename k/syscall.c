@@ -46,8 +46,10 @@ void syscall_handler(struct idt_context *ctx) {
         return;
 
     syscall_t fct = syscall[ctx->eax];
-    if (fct == NULL)
+    if (fct == NULL) {
+        ctx->eax = 0;
         return;
+    }
 
     fct(ctx);
 }
@@ -67,6 +69,7 @@ static void sys_writeSerial(struct idt_context *ctx) {
 static void sys_sbrk(struct idt_context *ctx) {
     (void) ctx;
     // todo
+    ctx->eax = 0;
 }
 
 static void sys_getkey(struct idt_context *ctx) {

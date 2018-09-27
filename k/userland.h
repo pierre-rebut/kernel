@@ -15,5 +15,6 @@
 #include <k/types.h>
 
 void addUserlandEntry(u32 id, u32 base, u32 limit);
+void enterUserland();
 
 #endif //KERNEL_EPITA_USERLAND_H

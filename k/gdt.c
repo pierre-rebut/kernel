@@ -12,6 +12,17 @@
         {0x68,   0, 0, 0xE9, 0,    0}           // Task state segment entry
 };*/
 
+struct tss_entry tss = {
+        .ss0 = 0x10 /* Kernel Data Segment */,
+        .esp0 = 0,
+        .es = 0x10 /* Kernel Data Segment */,
+        .cs = 0x08 /* Kernel Code Segment */,
+        .ds = 0x13 /* Kernel Data Segment */,
+        .fs = 0x13 /* Kernel Data Segment */,
+        .gs = 0x13 /* Kernel Data Segment */,
+
+};
+
 struct gdt_entry gdt[] = {
         // Null Entry
         {0},
@@ -49,7 +60,7 @@ struct gdt_entry gdt[] = {
         },
         // TSS entry
         {
-                .limit_low = 0x68,
+                .limit_low = sizeof(tss) - 1,
                 .access = (3 << 5) | (0 << 4) | 0x9,
                 .present = 1,
         }
@@ -95,8 +106,12 @@ static void setDataSegment() {
 }
 
 static void initTaskSegment() {
-    asm volatile("movw $0x28, %ax\n"
-            "ltr %ax\n");
+    /*asm volatile("movw $0x28, %ax\n"
+            "ltr %ax\n");*/
+    asm volatile("ltr %0\n"
+    : /* no output */
+    : "m" (tss)
+    : "memory");
 }
 
 void initMemory() {
