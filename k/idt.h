@@ -30,6 +30,11 @@ struct idt_context {
     u32 eax;
     u32 int_no;
     u32 err_code;
+    u32 eip;
+    u32 cs;
+    u32 eflags;
+    u32 useresp;
+    u32 ss;
 };
 
 #endif //KERNEL_EPITA_INTERRUPT_H

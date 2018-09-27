@@ -51,7 +51,7 @@ static void k_test() {
 
     u32 res;
     char *str = "Syscall write ok\n";
-    asm volatile ("int $80" : "=a"(res) : "a"(0), "b"((u32)str), "c"(17));
+    asm volatile ("int $0x80" : "=a"(res) : "a"(0), "b"((u32)str), "c"(17));
 
     printf("Write syscall result: %d\n", res);
 

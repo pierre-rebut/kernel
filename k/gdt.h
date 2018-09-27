@@ -8,6 +8,7 @@
 #include <k/types.h>
 
 void initMemory();
+void switchTSS(u32 esp0, u32 esp, u32 ss);
 
 struct gdt_entry {
     u16 limit_low;
@@ -15,11 +16,8 @@ struct gdt_entry {
     u8 base_mid;
     u8 access : 7;
     u8 present : 1;
-    u8 limit_mid : 4;
-    u8 avl : 1;
-    u8 l : 1;
-    u8 granularity : 2;
-    u8 base_hight;
+    u8 granularity;
+    u8 base_high;
 } __attribute__((packed));
 
 struct tss_entry {
