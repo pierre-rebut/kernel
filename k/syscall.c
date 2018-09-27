@@ -13,6 +13,7 @@
 
 static void sys_write(struct idt_context *ctx);
 static void sys_writeSerial(struct idt_context *ctx);
+static void sys_sbrk(struct idt_context *ctx);
 static void sys_getkey(struct idt_context *ctx);
 static void sys_gettick(struct idt_context *ctx);
 static void sys_open(struct idt_context *ctx);
@@ -26,7 +27,7 @@ typedef void (*syscall_t)(struct idt_context *);
 static syscall_t syscall[] = {
         sys_write, // SYSCALL_WRITE
         sys_writeSerial, // SYSCALL_WRITESERIAL
-        NULL, // SYSCALL_SBR
+        sys_sbrk, // SYSCALL_SBR
         sys_getkey, // SYSCALL_GETKEY
         sys_gettick, // SYSCALL_GETTICK
         sys_open, // SYSCALL_OPEN
@@ -55,34 +56,45 @@ void syscall_handler(struct idt_context *ctx) {
 
 static void sys_write(struct idt_context *ctx) {
     writeStringTerminal((const char *)ctx->ebx, ctx->ecx);
+    ctx->eax = ctx->ecx;
 }
 
 static void sys_writeSerial(struct idt_context *ctx) {
     writeSerial((const void *)ctx->ebx, ctx->ecx);
+    ctx->eax = ctx->ecx;
+}
+
+static void sys_sbrk(struct idt_context *ctx) {
+    (void) ctx;
+    // todo
 }
 
 static void sys_getkey(struct idt_context *ctx) {
-    (void)ctx;
-    getkey();
+    int tmp = getkey();
+    ctx->eax = (u32) tmp;
 }
 
 static void sys_gettick(struct idt_context *ctx) {
-    (void)ctx;
-    gettick();
+    unsigned long tmp = gettick();
+    ctx->eax = (u32) tmp;
 }
 
 static void sys_open(struct idt_context *ctx) {
-    open((const char *)ctx->ebx, ctx->ecx);
+    int tmp = open((const char *)ctx->ebx, ctx->ecx);
+    ctx->eax = (u32)tmp;
 }
 
 static void sys_read(struct idt_context *ctx) {
-    read(ctx->ebx, (void *)ctx->ecx, ctx->edx);
+    ssize_t tmp = read(ctx->ebx, (void *)ctx->ecx, ctx->edx);
+    ctx->eax = (u32) tmp;
 }
 
 static void sys_seek(struct idt_context *ctx) {
-    seek(ctx->ebx, (off_t)ctx->ecx, ctx->edx);
+    off_t tmp = seek(ctx->ebx, (off_t)ctx->ecx, ctx->edx);
+    ctx->eax = (u32) tmp;
 }
 
 static void sys_close(struct idt_context *ctx) {
-    close(ctx->ebx);
+    int tmp = close(ctx->ebx);
+    ctx->eax = (u32) tmp;
 }

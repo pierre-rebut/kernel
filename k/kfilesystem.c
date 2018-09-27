@@ -60,10 +60,7 @@ static char changeBlock(struct file_entry *file) {
     return 1;
 }
 
-int open(const char *pathname, int flags) {
-    if (kfs == NULL || pathname == NULL || flags != O_RDONLY)
-        return -1;
-
+static struct kfs_inode *getFileINode(const char *pathname) {
     struct kfs_inode *node = (struct kfs_inode *) ((void *) kfs + (kfs->inode_idx * KFS_BLK_SZ));
 
     u32 i;
@@ -74,12 +71,23 @@ int open(const char *pathname, int flags) {
     }
 
     if (i == kfs->inode_cnt)
-        return -2;
+        return NULL;
 
     if (kfs_checksum(node, sizeof(struct kfs_inode) - 4) != node->cksum)
-        return -3;
+        return NULL;
 
-    for (i = 0; i < 256; i++) {
+    return node;
+}
+
+int open(const char *pathname, int flags) {
+    if (kfs == NULL || pathname == NULL || flags != O_RDONLY)
+        return -1;
+
+    struct kfs_inode *node = getFileINode(pathname);
+    if (node == NULL)
+        return -2;
+
+    for (int i = 0; i < 256; i++) {
         if (fdTable[i].used == 0) {
             fdTable[i].blockIndex = 0;
             fdTable[i].d_blks = node->d_blks;
@@ -119,11 +127,11 @@ static char changeIBlock(struct file_entry *file, struct kfs_inode *node) {
 
 ssize_t read(int fd, void *buf, size_t size) {
     if (fd < 0 || fd > 255 || kfs == NULL)
-        return 0;
+        return -1;
 
     struct file_entry *file = &(fdTable[fd]);
     if (file->used == 0)
-        return 0;
+        return -1;
 
     struct kfs_inode *node = file->node;
     u8 *buffer = (u8 *) buf;
@@ -134,10 +142,10 @@ ssize_t read(int fd, void *buf, size_t size) {
                     (file->iblock != NULL && file->blockIndex >= file->iblock->blk_cnt)) {
                 char res = changeIBlock(file, node);
                 if (res == 0)
-                    return (ssize_t) i;
+                    return i > 0 ? (ssize_t) i : -1;
             }
             if (changeBlock(file) == 0)
-                return (ssize_t) i;
+                return i > 0 ? (ssize_t) i : -1;
             file->dataIndex = 0;
         }
 
@@ -201,4 +209,15 @@ void listFiles() {
                node->file_sz, node->blk_cnt, node->d_blk_cnt, node->i_blk_cnt);
         node = (struct kfs_inode *) ((void *) kfs + (node->next_inode * KFS_BLK_SZ));
     }
+}
+
+u32 length(const char *pathname) {
+    if (kfs == NULL || pathname == NULL)
+        return 0;
+
+    struct kfs_inode *node = getFileINode(pathname);
+    if (node == NULL)
+        return 0;
+
+    return node->file_sz;
 }

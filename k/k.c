@@ -8,6 +8,7 @@
 #include "libvga.h"
 #include "kfilesystem.h"
 #include "terminal.h"
+#include "binary.h"
 
 #include <stdio.h>
 
@@ -47,6 +48,12 @@ static void k_test() {
     TEST_INTERRUPT(16);
     TEST_INTERRUPT(6);
 
+    u32 res;
+    char *str = "Syscall write ok\n";
+    asm volatile ("int $80" : "=a"(res) : "a"(0), "b"((u32)str), "c"(17));
+
+    printf("Write syscall result: %d\n", res);
+
     listFiles();
     int fd = open("test", O_RDONLY);
     printf("Open file: %d\n", fd);
@@ -54,7 +61,8 @@ static void k_test() {
     char buf[100];
 
     int i = 0;
-    while (i < 51) {
+    u32 fileLength = length("test");
+    while (i < fileLength) {
 
         int tmp = read(fd, buf, 99);
         buf[tmp] = 0;
@@ -63,62 +71,12 @@ static void k_test() {
 
         printf("%s", buf);
     }
-    printf("\nClose file: %d\n", close(fd));
+    printf("\nClosing file: %d\n", close(fd));
 }
 
-static char asciiTab[87][3] = {
-        [2] = {'&', '1'},
-        [3] = {'\0', '2', '~'},
-        [4] = {'"', '3', '#'},
-        [5] = {'\'', '4', '{'},
-        [6] = {'(', '5', '['},
-        [7] = {'-', '6', '|'},
-        [8] = {'\0', '7', '`'},
-        [9] = {'_', '8', '\\'},
-        [10] = {'\0', '9', '^'},
-        [11] = {'\0', '0', '@'},
-        [12] = {')', '\0', ']'},
-        [13] = {'=', '+', '}'},
-        [14] = {'\r'},
-        [15] = {'\t'},
-        [16] = {'a', 'A'},
-        [17] = {'z', 'Z'},
-        [18] = {'e', 'E'},
-        [19] = {'r', 'R'},
-        [20] = {'t', 'T'},
-        [21] = {'y', 'Y'},
-        [22] = {'u', 'U'},
-        [23] = {'i', 'I'},
-        [24] = {'o', 'O'},
-        [25] = {'p', 'P'},
-        [26] = {'^'},
-        [27] = {'$'},
-        [28] = {'\n'},
-        [30] = {'q', 'Q'},
-        [31] = {'s', 'S'},
-        [32] = {'d', 'D'},
-        [33] = {'f', 'F'},
-        [34] = {'g', 'G'},
-        [35] = {'h', 'H'},
-        [36] = {'j', 'J'},
-        [37] = {'k', 'K'},
-        [38] = {'l', 'L'},
-        [39] = {'m', 'M'},
-        [40] = {'\0', '%'},
-        [43] = {'*'},
-        [86] = {'<', '>'},
-        [44] = {'w', 'W'},
-        [45] = {'x', 'X'},
-        [46] = {'c', 'C'},
-        [47] = {'v', 'V'},
-        [48] = {'b', 'B'},
-        [49] = {'n', 'N'},
-        [50] = {',', '?'},
-        [51] = {';', '.'},
-        [52] = {':', '/'},
-        [53] = {'!'},
-        [57] = {' '}
-};
+static char keyMap[] = "&\0\"'(-\0_\0\0)=\r\tazertyuiop^$\n\0qsdfghjklm\0*<wxcvbn,;:!";
+static char keyMapShift[] = "1234567890°+\r\tAZERTYUIOP\0\0\n\0QSDFGHJKLM%\0>WXCVBN?./\0";
+static char keyMapCtrl[] = "\0~#{[|`\\^@]}\r\t";
 
 static char running = 1;
 static char videoMode = VIDEO_TEXT;
@@ -165,20 +123,29 @@ static void keyHandler(int key) {
             if (videoMode != VIDEO_TEXT)
                 return;
 
-            if (key < 87) {
-                int mode = 0;
-                if (keyMode[0] == 1)
-                    mode = 1;
-                else if (keyMode[1] == 1)
-                    mode = 2;
-                else if (keyMode[2] == 1)
-                    mode = 1;
+            if (key < 87 && key >= 2) {
+                if (key == 57) {
+                    writeTerminal(' ');
+                } else {
+                    char c;
 
-                char c = asciiTab[key][mode];
-                if (c != '\0')
-                    writeTerminal(c);
-                else
-                    writeStringTerminal("^@", 2);
+                    if (keyMode[0] == 1)
+                        c = keyMapShift[key - 2];
+                    else if (keyMode[1] == 1) {
+                        if (key > 16)
+                            c = '\0';
+                        else
+                            c = keyMapCtrl[key];
+                    } else if (keyMode[2] == 1)
+                        c = keyMapShift[key - 2];
+                    else
+                        c = keyMap[key - 2];
+
+                    if (c == '\0')
+                        writeStringTerminal("^@", 2);
+                    else
+                        writeTerminal(c);
+                }
             }
     }
 }
@@ -193,21 +160,21 @@ void my_putnbr(unsigned long n, size_t pos) {
 
 void k_main(unsigned long magic, multiboot_info_t *info) {
 
-    if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
+    if (magic != MULTIBOOT_BOOTLOADER_MAGIC || info->mods_count != 1)
         goto error;
 
     k_init();
-
-    if (info->mods_count > 0) {
-        initKFileSystem((module_t *) (info->mods_addr));
-    }
-
-    k_test();
-
     unsigned long oldTick = 0;
     writeTerminalAt('0', CONS_GREEN, 0, 24);
-
     writeStringTerminal("Init ok\n", 8);
+
+    initKFileSystem((module_t *) info->mods_addr);
+
+    printf("\n### Starting kernel test ###\n\n");
+    k_test();
+    printf("\n### Kernel test ok ###\n### Trying init binary [%s] ###\n\n", (char*)info->cmdline);
+    loadBinary((module_t *) info->mods_addr, info->cmdline);
+
 
     while (running) {
         int key = getkey();

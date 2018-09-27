@@ -17,6 +17,8 @@ ssize_t read(int fd, void *buf, size_t size);
 off_t seek(int fd, off_t offset, int whence);
 int close(int fd);
 
+u32 length(const char *pathname);
+
 void listFiles();
 
 struct file_entry {

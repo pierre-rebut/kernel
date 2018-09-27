@@ -45,7 +45,7 @@ void allowIrq(int irq) {
         outb(PIC_SLAVE_B, tmp);
     }
 
-    printf("Allow irq %d\n", irq);
+    printf("PIC - Allow irq %d\n", irq);
 }
 
 void pic_eoi_master(int irq) {

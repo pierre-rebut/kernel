@@ -21,7 +21,7 @@ struct gdt_entry gdt[] = {
                 .access = (0 << 5) | (1 << 4) | 0xA,
                 .present = 1,
                 .limit_mid = 0xF,
-                .granularity = 3,
+                .granularity = 3
         },
         // Kernel data entry
         {
@@ -29,19 +29,23 @@ struct gdt_entry gdt[] = {
                 .access = (0 << 5) | (1 << 4) | 0x3,
                 .present = 1,
                 .limit_mid = 0xF,
-                .granularity = 3,
+                .granularity = 3
         },
         // User code entry
         {
                 .limit_low = 0xFFFF,
                 .access = (3 << 5) | (1 << 4) | 0xA,
-                .present = 1
+                .present = 1,
+                .limit_mid = 0xF,
+                .granularity = 3
         },
         // User data entry
         {
                 .limit_low = 0xFFFF,
                 .access = (3 << 5) | (1 << 4) | 0x3,
-                .present = 1
+                .present = 1,
+                .limit_mid = 0xF,
+                .granularity = 3
         },
         // TSS entry
         {

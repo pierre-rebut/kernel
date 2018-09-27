@@ -61,6 +61,7 @@ static void isq_normal_handler(struct idt_context *ctx) {
 
 static void isr_normal_handler(struct idt_context *ctx) {
     switch (ctx->int_no) {
+        // todo check if syscall has to be equal to 80 or 0x80 (=128)
         case 80:
             syscall_handler(ctx);
             break;

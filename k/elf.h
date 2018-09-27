@@ -46,6 +46,8 @@
  *	http://www.sco.com/developer/gabi/latest/ch4.eheader.html
  */
 
+#include <k/types.h>
+
 #define ELF32_MACHDEP_ENDIANNESS ELFDATA2LSB
 #define ELF32_MACHDEP_ID_CASES \
 case EM_386: \
