@@ -25,6 +25,7 @@ static void sys_close(struct esp_context *ctx);
 static void sys_setvideo(struct esp_context *ctx);
 static void sys_setVgaFrameBuffer(struct esp_context *ctx);
 static void sys_getMouse(struct esp_context *ctx);
+static void sys_getkeymode(struct esp_context *ctx);
 
 typedef void (*syscall_t)(struct esp_context *);
 
@@ -42,7 +43,7 @@ static syscall_t syscall[] = {
         sys_setVgaFrameBuffer, // SYSCALL_SWAP_FRONTBUFFER
         NULL, // SYSCALL_PLAYSOUND
         sys_getMouse, // SYSCALL_GETMOUSE
-        NULL, // SYSCALL_GETKEYMODE
+        sys_getkeymode, // SYSCALL_GETKEYMODE
 };
 
 void syscall_handler(struct esp_context *ctx) {
@@ -98,7 +99,6 @@ static void sys_read(struct esp_context *ctx) {
 }
 
 static void sys_seek(struct esp_context *ctx) {
-    printf("seek\n");
     off_t tmp = seek(ctx->ebx, (off_t)ctx->ecx, ctx->edx);
     ctx->eax = (u32) tmp;
 }
@@ -120,4 +120,9 @@ static void sys_setVgaFrameBuffer(struct esp_context *ctx) {
 
 static void sys_getMouse(struct esp_context *ctx) {
     ctx->eax = 0;
+}
+
+static void sys_getkeymode(struct esp_context *ctx) {
+    breakpointhere:
+        return;
 }

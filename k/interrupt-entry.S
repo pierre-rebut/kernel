@@ -35,8 +35,6 @@ isr_handle:
     popl %ecx
     popl %eax
 
-breakpointhere:
-
     add $8, %esp
     iret
 

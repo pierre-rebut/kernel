@@ -44,38 +44,34 @@ int loadBinary(const module_t *module, u32 cmdline) {
 
     printf("elf: %d - %d - %d\n", binHeader.e_ehsize, binHeader.e_phentsize, binHeader.e_entry);
 
-    Elf32_Phdr prgHeader1;
-    size = read(fd, &prgHeader1, binHeader.e_phentsize);
-    if (size != binHeader.e_phentsize)
-        return -1;
+    u32 pos;
 
-    printf("prgHeader1: %d - %d - %d - %d\n", prgHeader1.p_type, prgHeader1.p_filesz, prgHeader1.p_offset,
-           prgHeader1.p_flags);
-    printf("prgHeader1: %d - %d - %d - %d\n", prgHeader1.p_memsz, prgHeader1.p_vaddr, prgHeader1.p_paddr,
-           prgHeader1.p_align);
+    for (u32 i = 0; i < binHeader.e_phnum; i++) {
+        seek(fd, binHeader.e_phoff + (i * binHeader.e_phentsize), SEEK_SET);
 
-    Elf32_Phdr prgHeader2;
-    size = read(fd, &prgHeader2, binHeader.e_phentsize);
-    if (size != binHeader.e_phentsize)
-        return -1;
+        Elf32_Phdr prgHeader;
+        size = read(fd, &prgHeader, binHeader.e_phentsize);
+        if (size != binHeader.e_phentsize)
+            return -1;
 
-    printf("prgHeader2: %d - %d - %d - %d\n", prgHeader2.p_type, prgHeader2.p_filesz, prgHeader2.p_offset,
-           prgHeader2.p_flags);
-    printf("prgHeader2: %d - %d - %d - %d\n", prgHeader2.p_memsz, prgHeader2.p_vaddr, prgHeader2.p_paddr,
-           prgHeader2.p_align);
+        printf("prgHeader %d: %d - %d - %d - %d\n", i, prgHeader.p_type, prgHeader.p_filesz, prgHeader.p_offset,
+               prgHeader.p_flags);
+        printf("prgHeader %d: %d - %d - %d - %d\n", i, prgHeader.p_memsz, prgHeader.p_vaddr, prgHeader.p_paddr,
+               prgHeader.p_align);
+
+        if (prgHeader.p_type != PT_LOAD)
+            continue;
+
+        seek(fd, prgHeader.p_offset, SEEK_SET);
+
+        pos = module->mod_end + prgHeader.p_vaddr;
+        loadPrg(&prgHeader, fd, pos);
+        memset((void *) (pos + prgHeader.p_filesz), 0, prgHeader.p_memsz - prgHeader.p_filesz);
+
+        pos += prgHeader.p_memsz;
+    }
 
 
-    u32 pos = module->mod_end + prgHeader1.p_vaddr;
-    loadPrg(&prgHeader1, fd, pos);
-    memset((void *) (pos + prgHeader1.p_filesz), 0, prgHeader1.p_memsz - prgHeader1.p_filesz);
-
-    char data[10];
-    read(fd, data, 10);
-
-    pos = module->mod_end + prgHeader2.p_vaddr + 22;
-    loadPrg(&prgHeader2, fd, pos);
-    memset((void *) (pos + prgHeader2.p_filesz), 0, prgHeader2.p_memsz - prgHeader2.p_filesz);
-
-    createTask(module->mod_end + binHeader.e_entry, pos + prgHeader2.p_memsz);
+    createTask(module->mod_end + binHeader.e_entry, pos);
     return 0;
 }

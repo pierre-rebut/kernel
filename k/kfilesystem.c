@@ -53,11 +53,11 @@ static char changeBlock(struct file_entry *file) {
 
     if (checkBlockChecksum(file->block) == 0) {
         printf("KFS read - Bad checksum\n");
-        return 0;
+        return -1;
     }
 
     file->blockIndex++;
-    return 1;
+    return 0;
 }
 
 static struct kfs_inode *getFileINode(const char *pathname) {
@@ -94,7 +94,7 @@ int open(const char *pathname, int flags) {
         if (fdTable[i].used == 0) {
             fdTable[i].blockIndex = 0;
             fdTable[i].d_blks = node->d_blks;
-            if (changeBlock(&fdTable[i]) == 0) {
+            if (changeBlock(&fdTable[i]) == -1) {
                 return -4;
             }
             fdTable[i].used = 1;
@@ -112,20 +112,20 @@ int open(const char *pathname, int flags) {
 static char changeIBlock(struct file_entry *file, struct kfs_inode *node) {
     if (file->iblockIndex >= node->i_blk_cnt) {
         printf("KFS end of file\n");
-        return 0;
+        return -1;
     }
 
     file->iblock = ((void *) kfs) + (node->i_blks[file->iblockIndex] * KFS_BLK_SZ);
     if (kfs_checksum(file->iblock, sizeof(struct kfs_iblock) - 4) != file->iblock->cksum) {
         printf("KFS iblock - Bad checksum\n");
-        return 0;
+        return -1;
     }
 
     file->d_blks = file->iblock->blks;
     file->blockIndex = 0;
     file->iblockIndex++;
 
-    return 1;
+    return 0;
 }
 
 ssize_t read(int fd, void *buf, size_t size) {
@@ -142,12 +142,12 @@ ssize_t read(int fd, void *buf, size_t size) {
     for (size_t i = 0; i < size; i++) {
         if (file->dataIndex >= file->block->usage) {
             if ((file->iblock == NULL && file->blockIndex >= node->d_blk_cnt) ||
-                    (file->iblock != NULL && file->blockIndex >= file->iblock->blk_cnt)) {
+                (file->iblock != NULL && file->blockIndex >= file->iblock->blk_cnt)) {
                 char res = changeIBlock(file, node);
-                if (res == 0)
+                if (res == -1)
                     return i > 0 ? (ssize_t) i : -1;
             }
-            if (changeBlock(file) == 0)
+            if (changeBlock(file) == -1)
                 return i > 0 ? (ssize_t) i : -1;
             file->dataIndex = 0;
         }
@@ -159,42 +159,74 @@ ssize_t read(int fd, void *buf, size_t size) {
     return (ssize_t) size;
 }
 
-static off_t seekSet(struct file_entry *file, off_t offset) {
-    off_t blockId = offset / KFS_BLK_DATA_SZ;
+static char seekSet(struct file_entry *file, off_t offset) {
+    u32 blockId = (u32) offset / KFS_BLK_DATA_SZ;
     if (blockId < KFS_DIRECT_BLK) {
         file->iblock = NULL;
         file->iblockIndex = 0;
-        file->blockIndex = (u32)blockId;
+        file->blockIndex = (u32) blockId;
         file->d_blks = file->node->d_blks;
-        file->block = (struct kfs_block*)file->d_blks[blockId];
-        file->dataIndex = (u32)(offset % KFS_BLK_DATA_SZ);
+        if (changeBlock(file) == -1)
+            return -1;
     } else {
         blockId -= KFS_DIRECT_BLK;
-        off_t iblockId = blockId % KFS_INDIRECT_BLK;
-    }
-}
+        file->iblockIndex = blockId / KFS_INDIRECT_BLK_CNT;
 
-off_t seek(int fd, off_t offset, int whence) {
-    if (fd < 0 || fd > 255 || kfs == NULL || offset < 0)
-        return -1;
+        if (changeIBlock(file, file->node) == -1)
+            return -1;
 
-    struct file_entry *file = &(fdTable[fd]);
-    if (file->used == 0 || offset >= file->node->file_sz)
-        return -1;
-
-    switch (whence) {
-        case SEEK_END:
-            return seek(fd, file->node->file_sz - offset, SEEK_SET);
-        case SEEK_SET:
-            seekSet(file, offset);
-            return offset;
-        case SEEK_CUR:
-            break;
-        default:
+        file->blockIndex = blockId % KFS_INDIRECT_BLK_CNT;
+        if (changeBlock(file) == -1)
             return -1;
     }
 
-    return offset;
+    file->dataIndex = (u32) (offset % KFS_BLK_DATA_SZ);
+    return 0;
+}
+
+off_t getOffset(struct file_entry *file) {
+    off_t res = 0;
+
+    if (file->iblock != NULL) {
+        res += KFS_BLK_DATA_SZ * KFS_DIRECT_BLK;
+        res += (file->iblockIndex - 1) * KFS_INDIRECT_BLK_CNT * KFS_BLK_DATA_SZ;
+    }
+
+    res += (file->blockIndex - 1) * KFS_BLK_DATA_SZ;
+    res += file->dataIndex;
+
+    return res;
+}
+
+off_t seek(int fd, off_t offset, int whence) {
+    if (fd < 0 || fd > 255 || kfs == NULL)
+        return -1;
+
+    struct file_entry *file = &(fdTable[fd]);
+    if (file->used == 0 || offset >= (off_t) file->node->file_sz)
+        return -1;
+
+    if (whence != SEEK_CUR) {
+        if (offset < 0) {
+            offset = -offset;
+            whence = whence == SEEK_SET ? SEEK_END : SEEK_SET;
+        }
+
+        if (whence == SEEK_END)
+            offset = (off_t) file->node->file_sz - offset;
+
+        char res = seekSet(file, offset);
+        if (res == -1)
+            return -1;
+        return offset;
+    }
+
+    off_t currentOffset = getOffset(file);
+    if (currentOffset == -1)
+        return -1;
+
+    offset = (currentOffset + offset) % file->node->file_sz;
+    return seek(fd, offset, offset < 0 ? SEEK_END : SEEK_SET);
 }
 
 int close(int fd) {

@@ -153,7 +153,9 @@ static void game_loop(struct image * img)
 	for (i = 0; i < NB_MONSTERS; i++)
 		hit[i] = 0;
 
-	while (k != KEY_ENTER) {
+    getkeymode(0);
+
+	while (1) {
 		t = gettick();
 
 		choot = 0;
