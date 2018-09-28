@@ -28,7 +28,7 @@ static u32 loadPrg(const Elf32_Phdr *prgHeader, int fd, u32 pos) {
 }
 
 int loadBinary(const module_t *module, u32 cmdline) {
-    int fd = open((const char *) (cmdline + 1), O_RDONLY);
+    int fd = open((const char *) (cmdline), O_RDONLY);
     if (fd < 0)
         return -1;
 
@@ -72,12 +72,10 @@ int loadBinary(const module_t *module, u32 cmdline) {
     char data[10];
     read(fd, data, 10);
 
-    pos = module->mod_end + prgHeader2.p_vaddr;
+    pos = module->mod_end + prgHeader2.p_vaddr + 22;
     loadPrg(&prgHeader2, fd, pos);
     memset((void *) (pos + prgHeader2.p_filesz), 0, prgHeader2.p_memsz - prgHeader2.p_filesz);
 
-    pos += prgHeader2.p_memsz;
-
-    createTask(module->mod_end + binHeader.e_entry, pos);
+    createTask(module->mod_end + binHeader.e_entry, pos + prgHeader2.p_memsz);
     return 0;
 }

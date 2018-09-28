@@ -9,6 +9,7 @@
 #include "kfilesystem.h"
 #include "syscall.h"
 #include "libvga.h"
+#include "task.h"
 
 #include <k/kstd.h>
 
@@ -23,7 +24,7 @@ static void sys_seek(struct esp_context *ctx);
 static void sys_close(struct esp_context *ctx);
 static void sys_setvideo(struct esp_context *ctx);
 static void sys_setVgaFrameBuffer(struct esp_context *ctx);
-
+static void sys_getMouse(struct esp_context *ctx);
 
 typedef void (*syscall_t)(struct esp_context *);
 
@@ -40,17 +41,17 @@ static syscall_t syscall[] = {
         sys_setvideo, // SYSCALL_SETVIDEO
         sys_setVgaFrameBuffer, // SYSCALL_SWAP_FRONTBUFFER
         NULL, // SYSCALL_PLAYSOUND
-        NULL, // SYSCALL_GETMOUSE
+        sys_getMouse, // SYSCALL_GETMOUSE
         NULL, // SYSCALL_GETKEYMODE
 };
 
 void syscall_handler(struct esp_context *ctx) {
-    printf("syscall %d\n", ctx->eax);
     if (ctx->eax >= NR_SYSCALL)
         return;
 
     syscall_t fct = syscall[ctx->eax];
     if (fct == NULL) {
+        printf("unhandled syscall %d\n", ctx->eax);
         ctx->eax = 0;
         return;
     }
@@ -71,9 +72,8 @@ static void sys_writeSerial(struct esp_context *ctx) {
 }
 
 static void sys_sbrk(struct esp_context *ctx) {
-    (void) ctx;
-    // todo
-    ctx->eax = 0;
+    u32 tmp = sbrk((ssize_t)ctx->ebx);
+    ctx->eax = tmp;
 }
 
 static void sys_getkey(struct esp_context *ctx) {
@@ -87,8 +87,8 @@ static void sys_gettick(struct esp_context *ctx) {
 }
 
 static void sys_open(struct esp_context *ctx) {
-    printf("open: %s\n", (char*)ctx->ebx);
     int tmp = open((const char *)ctx->ebx, ctx->ecx);
+    printf("open: %s %d\n", (char*)ctx->ebx, tmp);
     ctx->eax = (u32)tmp;
 }
 
@@ -98,6 +98,7 @@ static void sys_read(struct esp_context *ctx) {
 }
 
 static void sys_seek(struct esp_context *ctx) {
+    printf("seek\n");
     off_t tmp = seek(ctx->ebx, (off_t)ctx->ecx, ctx->edx);
     ctx->eax = (u32) tmp;
 }
@@ -114,5 +115,9 @@ static void sys_setvideo(struct esp_context *ctx) {
 
 static void sys_setVgaFrameBuffer(struct esp_context *ctx) {
     setVgaFrameBuffer((const void*)ctx->ebx);
+    ctx->eax = 0;
+}
+
+static void sys_getMouse(struct esp_context *ctx) {
     ctx->eax = 0;
 }

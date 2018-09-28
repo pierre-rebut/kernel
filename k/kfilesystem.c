@@ -83,6 +83,9 @@ int open(const char *pathname, int flags) {
     if (kfs == NULL || pathname == NULL || flags != O_RDONLY)
         return -1;
 
+    if (pathname[0] == '/')
+        pathname++;
+
     struct kfs_inode *node = getFileINode(pathname);
     if (node == NULL)
         return -2;
@@ -156,28 +159,42 @@ ssize_t read(int fd, void *buf, size_t size) {
     return (ssize_t) size;
 }
 
+static off_t seekSet(struct file_entry *file, off_t offset) {
+    off_t blockId = offset / KFS_BLK_DATA_SZ;
+    if (blockId < KFS_DIRECT_BLK) {
+        file->iblock = NULL;
+        file->iblockIndex = 0;
+        file->blockIndex = (u32)blockId;
+        file->d_blks = file->node->d_blks;
+        file->block = (struct kfs_block*)file->d_blks[blockId];
+        file->dataIndex = (u32)(offset % KFS_BLK_DATA_SZ);
+    } else {
+        blockId -= KFS_DIRECT_BLK;
+        off_t iblockId = blockId % KFS_INDIRECT_BLK;
+    }
+}
+
 off_t seek(int fd, off_t offset, int whence) {
-    if (fd < 0 || fd > 255 || kfs == NULL)
+    if (fd < 0 || fd > 255 || kfs == NULL || offset < 0)
         return -1;
 
     struct file_entry *file = &(fdTable[fd]);
-    if (file->used == 0)
+    if (file->used == 0 || offset >= file->node->file_sz)
         return -1;
 
-    // todo
-
     switch (whence) {
-        case SEEK_SET:
-            break;
-        case SEEK_CUR:
-            break;
         case SEEK_END:
+            return seek(fd, file->node->file_sz - offset, SEEK_SET);
+        case SEEK_SET:
+            seekSet(file, offset);
+            return offset;
+        case SEEK_CUR:
             break;
         default:
             return -1;
     }
 
-    return (offset > (off_t)file->node->file_sz ? (off_t)file->node->file_sz : offset);
+    return offset;
 }
 
 int close(int fd) {

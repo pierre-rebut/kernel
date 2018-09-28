@@ -39,7 +39,7 @@ static void isr_exception_handler(struct esp_context *ctx) {
     if (ctx->int_no > 20)
         printf("Interrupt: %s\n", exceptionList[15]);
     else
-        printf("Interrupt: %s (%d)\n", exceptionList[ctx->int_no], ctx->err_code);
+        printf("Interrupt: %s (%d)\n", exceptionList[ctx->int_no], ctx->eip);
 }
 
 static void isq_normal_handler(struct esp_context *ctx) {
