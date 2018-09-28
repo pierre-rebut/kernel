@@ -26,6 +26,16 @@
 
 #include <stddef.h>
 
+int switchVgaMode(int mode);
+int getVideoMode();
+void setVgaFrameBuffer(const void *buffer);
+
+void moveBlock();
+
+
+#define VGA_HEIGHT 200
+#define VGA_WIDTH 320
+
 #define VGA_AC_INDEX		0x3C0
 #define VGA_AC_WRITE		0x3C0
 #define VGA_AC_READ		0x3C1
@@ -48,16 +58,5 @@
 #define VGA_NUM_CRTC_REGS	25
 #define VGA_NUM_GC_REGS	9
 #define VGA_NUM_AC_REGS	21
-
-void libvga_set_palette(unsigned int *new_palette, size_t size);
-
-char *libvga_get_framebuffer(void);
-
-void libvga_switch_mode13h(void);
-
-void libvga_switch_mode3h(void);
-
-void initVga();
-void moveBlock();
 
 #endif				/* !LIBVGA_H */

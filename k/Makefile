@@ -39,7 +39,7 @@ OBJS	= \
 	  syscall.o \
 	  kfilesystem.o \
 	  terminal.o \
-	  userland.o \
+	  task.o \
 	  binary.o \
 
 
@@ -47,8 +47,8 @@ DEPS = $(OBJS:.o=.d)
 
 all: $(TARGET)
 
-$(TARGET): CPPFLAGS += -MMD -Iinclude -I ../libs/libc/include/
-$(TARGET): CFLAGS += $(K_EXTRA_CFLAGS)
+$(TARGET): CPPFLAGS += -MMD -Iinclude -I ../libs/libc/include/ -g
+$(TARGET): CFLAGS += $(K_EXTRA_CFLAGS) -g
 $(TARGET): LDFLAGS += -Wl,-Tk.lds
 $(TARGET): LDLIBS = -L../libs/libc -lc
 $(TARGET): $(OBJS)

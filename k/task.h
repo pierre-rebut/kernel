@@ -7,14 +7,9 @@
 #ifndef KERNEL_EPITA_USERLAND_H
 #define KERNEL_EPITA_USERLAND_H
 
-#define USERCODE 0
-#define USERDATA 1
-#define USERSTACK 2
-#define USERHEAP 3
-
 #include <k/types.h>
 
-void addUserlandEntry(u32 id, u32 base, u32 limit);
-void enterUserland();
+void createTask(u32 entry, u32 esp);
+u32 task_switch(u32 previousEsp);
 
 #endif //KERNEL_EPITA_USERLAND_H

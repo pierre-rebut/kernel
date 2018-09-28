@@ -21,6 +21,7 @@
 * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+#include <k/kstd.h>
 #include "compiler.h"
 #include "libvga.h"
 #include "io.h"
@@ -30,7 +31,6 @@
 ** when we switch into graphic mode.
 */
 static unsigned char libvga_txt_mode_font[320 * 200];
-static unsigned char libvga_video_mode_font[320 * 200] = {0};
 
 /*
 ** Registers value for graphic mode.
@@ -147,6 +147,15 @@ static unsigned int libvga_default_palette[256] = {
         0xff, 0xff00ff, 0xffff, 0xffffff
 };
 
+static void libvga_set_palette(unsigned int *new_palette, size_t size) {
+    outb(VGA_DAC_WRITE_INDEX, 0);
+    for (size_t i = 0; i < size; i++) {
+        outb(VGA_DAC_DATA, ((new_palette[i] >> 16) >> 2) & 0xFF);
+        outb(VGA_DAC_DATA, ((new_palette[i] >> 8) >> 2) & 0xFF);
+        outb(VGA_DAC_DATA, ((new_palette[i]) >> 2) & 0xFF);
+    }
+}
+
 static void libvga_write_regs(unsigned char *regs) {
     unsigned int i;
     unsigned int a;
@@ -199,16 +208,7 @@ static void libvga_write_regs(unsigned char *regs) {
     libvga_set_palette(libvga_default_palette, array_size(libvga_default_palette));
 }
 
-void libvga_set_palette(unsigned int *new_palette, size_t size) {
-    outb(VGA_DAC_WRITE_INDEX, 0);
-    for (size_t i = 0; i < size; i++) {
-        outb(VGA_DAC_DATA, ((new_palette[i] >> 16) >> 2) & 0xFF);
-        outb(VGA_DAC_DATA, ((new_palette[i] >> 8) >> 2) & 0xFF);
-        outb(VGA_DAC_DATA, ((new_palette[i]) >> 2) & 0xFF);
-    }
-}
-
-char *libvga_get_framebuffer(void) {
+static char *libvga_get_framebuffer(void) {
     unsigned int mmap_select;
 
     outb(VGA_GC_INDEX, 6);
@@ -227,18 +227,18 @@ char *libvga_get_framebuffer(void) {
     return (char *) 0;
 }
 
-void libvga_switch_mode13h(void) {
+static void libvga_switch_mode13h(void) {
     libvga_write_regs(libvga_regs_320x200x256);
 
     // plane 2 is now map in the memory, save it
     char *vram = libvga_get_framebuffer();
     for (size_t i = 0; i < array_size(libvga_txt_mode_font); i++) {
         libvga_txt_mode_font[i] = vram[i];
-        vram[i] = libvga_video_mode_font[i];
+        vram[i] = 0;
     }
 }
 
-void libvga_switch_mode3h(void) {
+static void libvga_switch_mode3h(void) {
     // restore the VGA plane 2 to the text font
     char *vram = libvga_get_framebuffer();
     for (size_t i = 0; i < array_size(libvga_txt_mode_font); i++)
@@ -247,30 +247,52 @@ void libvga_switch_mode3h(void) {
     libvga_write_regs(libvga_regs_80x25xtext);
 }
 
-// My poop
+static int currentMode = VIDEO_TEXT;
 
-static void setColor(size_t x, size_t y, unsigned char c) {
-    libvga_regs_320x200x256[y * 320 + x] = c;
+int switchVgaMode(int mode) {
+    if (mode == currentMode)
+        return 0;
+
+    switch (mode) {
+        case VIDEO_TEXT:
+            libvga_switch_mode3h();
+            break;
+        case VIDEO_GRAPHIC:
+            libvga_switch_mode13h();
+            break;
+        default:
+            return -1;
+    }
+
+    currentMode = mode;
+    return 0;
 }
 
-static void clearBuffer() {
-    for (size_t i = 0; i < array_size(libvga_txt_mode_font); i++)
-        libvga_video_mode_font[i] = 0;
+int getVideoMode() {
+    return currentMode;
+}
+
+void setVgaFrameBuffer(const void *buffer) {
+    char *vram = libvga_get_framebuffer();
+    for (size_t i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++)
+        vram[i] = ((char*)buffer)[i];
 }
 
 static size_t posX = 0;
 
 void moveBlock() {
-    clearBuffer();
-    for (size_t y = 150; y < 160; y++) {
-        for (size_t x = posX; x < posX + 10; x++) {
-            setColor(x % 320, y, 0x8);
-        }
-    }
+    if (currentMode != VIDEO_GRAPHIC)
+        return;
 
     char *vram = libvga_get_framebuffer();
-    for (size_t i = 0; i < array_size(libvga_video_mode_font); i++)
-        vram[i] = libvga_video_mode_font[i];
+    for (size_t i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++)
+        vram[i] = 0;
+
+    for (size_t y = 150; y < 160; y++) {
+        for (size_t x = posX; x < posX + 10; x++) {
+            vram[y * VGA_WIDTH + x] = 0x8;
+        }
+    }
 
     posX ++;
 }

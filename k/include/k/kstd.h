@@ -71,7 +71,7 @@ enum e_kbd_codes {
 	KEY_F6 = 64,
 	KEY_F7 = 65,
 	KEY_F8 = 66,
-	KEY_f9 = 67,
+	KEY_F9 = 67,
 	KEY_F10 = 68,
 	KEY_F11 = 87,
 	KEY_F12 = 88,

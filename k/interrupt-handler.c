@@ -7,7 +7,7 @@
 #include "getkey.h"
 #include "pit.h"
 #include "syscall.h"
-#include "binary.h"
+#include "task.h"
 
 #include <stdio.h>
 
@@ -35,14 +35,14 @@ static char *exceptionList[] = {
         "Virtualization Exception"
 };
 
-static void isr_exception_handler(struct idt_context *ctx) {
+static void isr_exception_handler(struct esp_context *ctx) {
     if (ctx->int_no > 20)
         printf("Interrupt: %s\n", exceptionList[15]);
     else
         printf("Interrupt: %s (%d)\n", exceptionList[ctx->int_no], ctx->err_code);
 }
 
-static void isq_normal_handler(struct idt_context *ctx) {
+static void isq_normal_handler(struct esp_context *ctx) {
 
     switch (ctx->int_no) {
         case 33:
@@ -60,8 +60,8 @@ static void isq_normal_handler(struct idt_context *ctx) {
     pic_eoi_master(ctx->int_no);
 }
 
-void interrupt_handler(u32 esp) {
-    struct idt_context *ctx = (struct idt_context *) esp;
+u32 interrupt_handler(u32 esp) {
+    struct esp_context *ctx = (struct esp_context *) esp;
 
     if (ctx->int_no < 32)
         isr_exception_handler(ctx);
@@ -72,14 +72,12 @@ void interrupt_handler(u32 esp) {
             case 0x80:
                 syscall_handler(ctx);
                 break;
-            case 50: {
-                u32 esp2 = task_switch();
-                printf("task: %d - %d\n", esp, esp2);
-                asm volatile("mov %0, %%esp\n": : "a"(esp2 - 4));
+            case 50:
+                esp = task_switch(esp);
                 break;
-            }
             default:
                 printf("Interrupt ISR handle: %d\n", ctx->int_no);
         }
     }
+    return esp;
 }

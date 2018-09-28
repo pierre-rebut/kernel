@@ -7,13 +7,14 @@
 
 struct idt_entry idt[256] = {0};
 
-static void addEntry(struct idt_entry *entry, void (*handle)(), u8 interruptType) {
+static void addEntry(struct idt_entry *entry, void (*handle)(), u8 interruptType, u8 dpl) {
     entry->offset = (u16) (((u32) handle >> 0) & 0xFFFF);
     entry->offset2 = (u16) (((u32) handle >> 16) & 0xFFFF);
     entry->segmentSelector = 0x08;
     entry->reserved = 0;
     entry->present = 1;
     entry->d = interruptType;
+    entry->dpl = dpl;
 }
 
 static void initIdt() {
@@ -33,13 +34,13 @@ static void initIdt() {
 
 void initInterrupt() {
 
-#define ISR(id, type) \
+#define ISR(id, type, dpl) \
     void isr_handle##id(); \
-    addEntry(&idt[id], isr_handle##id, type);
+    addEntry(&idt[id], isr_handle##id, type, dpl);
 
-#define ISR_ERROR(id, type) \
+#define ISR_ERROR(id, type, dpl) \
     void isr_handle##id(); \
-    addEntry(&idt[id], isr_handle##id, type);
+    addEntry(&idt[id], isr_handle##id, type, dpl);
 
 #include "macros_isr.def"
 

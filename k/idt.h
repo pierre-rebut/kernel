@@ -19,22 +19,11 @@ struct idt_entry {
     u16 offset2;
 }__attribute__((packed));
 
-struct idt_context {
-    u32 edi;
-    u32 esi;
-    u32 ebp;
-    u32 esp;
-    u32 ebx;
-    u32 edx;
-    u32 ecx;
-    u32 eax;
-    u32 int_no;
-    u32 err_code;
-    u32 eip;
-    u32 cs;
-    u32 eflags;
-    u32 useresp;
-    u32 ss;
+struct esp_context {
+    u32 gs, fs, es, ds;
+    u32 edi, esi, ebp, ebx, edx, ecx, eax;
+    u32 int_no, err_code;
+    u32 eip, cs, eflags, useresp, ss;
 };
 
 #endif //KERNEL_EPITA_INTERRUPT_H

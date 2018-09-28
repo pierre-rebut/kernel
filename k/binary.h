@@ -9,6 +9,5 @@
 #include "multiboot.h"
 
 int loadBinary(const module_t *module, u32 cmdline);
-u32 task_switch();
 
 #endif //KERNEL_EPITA_BINARY_H

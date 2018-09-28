@@ -9,7 +9,6 @@
 #include "kfilesystem.h"
 #include "terminal.h"
 #include "binary.h"
-#include "userland.h"
 
 #include <stdio.h>
 
@@ -61,8 +60,7 @@ static void k_test() {
 
     char buf[100];
 
-    int i = 0;
-    u32 fileLength = length("test");
+    u32 i = 0, fileLength = length("test");
     while (i < fileLength) {
 
         int tmp = read(fd, buf, 99);
@@ -80,7 +78,6 @@ static char keyMapShift[] = "1234567890°+\r\tAZERTYUIOP\0\0\n\0QSDFGHJKLM%\0>WX
 static char keyMapCtrl[] = "\0~#{[|`\\^@]}\r\t";
 
 static char running = 1;
-static char videoMode = VIDEO_TEXT;
 static int keyMode[3] = {0};
 
 static void keyHandler(int key) {
@@ -108,20 +105,20 @@ static void keyHandler(int key) {
             clearTerminal();
             break;
         case KEY_F2:
-            if (videoMode == VIDEO_TEXT) {
-                videoMode = VIDEO_GRAPHIC;
-                libvga_switch_mode13h();
-            } else {
-                videoMode = VIDEO_TEXT;
-                libvga_switch_mode3h();
-                updateTerminalCursor();
-            }
+            printf("### Trying executing binary ###\n");
+            asm volatile("int $50");
+            break;
+        case KEY_F7:
+            switchVgaMode(VIDEO_TEXT);
+            break;
+        case KEY_F8:
+            switchVgaMode(VIDEO_TEXT);
             break;
         case KEY_MAJLOCK:
             keyMode[2] = (keyMode[2] ? 0 : 1);
             break;
         default:
-            if (videoMode != VIDEO_TEXT)
+            if (getVideoMode() != VIDEO_TEXT)
                 return;
 
             if (key < 87 && key >= 2) {
@@ -176,15 +173,14 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
     printf("\n### Kernel test ok ###\n### Trying init binary [%s] ###\n\n", (char*)info->cmdline);
     loadBinary((module_t *) info->mods_addr, info->cmdline);
 
-    printf("### Trying executing binary ###\n");
-    enterUserland();
-
 
     while (running) {
         int key = getkey();
         if (key >= 0) {
             keyHandler(key);
         }
+
+        int videoMode = getVideoMode();
 
         unsigned long tick = gettick() / 1000;
         if (videoMode == VIDEO_TEXT && tick > oldTick) {
