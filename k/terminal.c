@@ -54,7 +54,7 @@ static void putchar(char c) {
             break;
 
         case '\t':
-            terminalColumn += 8;
+            terminalColumn += 4;
             break;
 
         case ' ':

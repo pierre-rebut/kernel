@@ -9,6 +9,7 @@
 #include "kfilesystem.h"
 #include "terminal.h"
 #include "binary.h"
+#include "task.h"
 
 #include <stdio.h>
 
@@ -58,23 +59,23 @@ static void k_test() {
     int fd = open("test", O_RDONLY);
     printf("Open file: %d\n", fd);
 
-    char buf[100];
+    if (fd >= 0) {
+        char buf[100];
+        u32 i = 0, fileLength = length("test");
 
-    u32 i = 0, fileLength = length("test");
-    while (i < fileLength) {
+        while (i < fileLength) {
+            int tmp = read(fd, buf, 99);
+            buf[tmp] = 0;
 
-        int tmp = read(fd, buf, 99);
-        buf[tmp] = 0;
-
-        i += tmp;
-
-        printf("%s", buf);
+            i += tmp;
+            printf("%s", buf);
+        }
+        printf("\nClosing file: %d\n", close(fd));
     }
-    printf("\nClosing file: %d\n", close(fd));
 }
 
 static char keyMap[] = "&\0\"'(-\0_\0\0)=\r\tazertyuiop^$\n\0qsdfghjklm\0*<wxcvbn,;:!";
-static char keyMapShift[] = "1234567890°+\r\tAZERTYUIOP\0\0\n\0QSDFGHJKLM%\0>WXCVBN?./\0";
+static char keyMapShift[] = "1234567890°+\r\tAZERTYUIOP\0\0\nQSDFGHJKLM%\0>WXCVBN?./\0";
 static char keyMapCtrl[] = "\0~#{[|`\\^@]}\r\t";
 
 static char running = 1;
@@ -106,10 +107,10 @@ static void keyHandler(int key) {
             break;
         case KEY_F2:
             printf("### Trying executing binary ###\n");
-            asm volatile("int $50");
+            launchTask();
             break;
         case KEY_F7:
-            switchVgaMode(VIDEO_TEXT);
+            switchVgaMode(VIDEO_GRAPHIC);
             break;
         case KEY_F8:
             switchVgaMode(VIDEO_TEXT);
@@ -172,6 +173,8 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
     k_test();
     printf("\n### Kernel test ok ###\n### Trying init binary [%s] ###\n\n", (char*)info->cmdline);
     loadBinary((module_t *) info->mods_addr, info->cmdline);
+
+    writeStringTerminal("\n[F1] Clear - [F2] Start bin - [F7] - Graphic mode test - [F8] Text mode\n", 73);
 
 
     while (running) {

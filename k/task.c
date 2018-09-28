@@ -17,6 +17,10 @@ struct task {
 static struct task myTask = {0};
 static struct esp_context appStack = {0};
 
+void launchTask() {
+    asm volatile("int $50");
+}
+
 void createTask(u32 entry, u32 esp) {
     appStack.ss = 0x23;
     appStack.useresp = esp + 0x1500000;

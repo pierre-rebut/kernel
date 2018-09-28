@@ -12,6 +12,7 @@
 #include "task.h"
 
 #include <k/kstd.h>
+#include <stdio.h>
 
 static void sys_write(struct esp_context *ctx);
 static void sys_writeSerial(struct esp_context *ctx);
@@ -25,6 +26,7 @@ static void sys_close(struct esp_context *ctx);
 static void sys_setvideo(struct esp_context *ctx);
 static void sys_setVgaFrameBuffer(struct esp_context *ctx);
 static void sys_getMouse(struct esp_context *ctx);
+static void sys_playsound(struct esp_context *ctx);
 static void sys_getkeymode(struct esp_context *ctx);
 
 typedef void (*syscall_t)(struct esp_context *);
@@ -41,12 +43,13 @@ static syscall_t syscall[] = {
         sys_close, // SYSCALL_CLOSE
         sys_setvideo, // SYSCALL_SETVIDEO
         sys_setVgaFrameBuffer, // SYSCALL_SWAP_FRONTBUFFER
-        NULL, // SYSCALL_PLAYSOUND
+        sys_playsound, // SYSCALL_PLAYSOUND
         sys_getMouse, // SYSCALL_GETMOUSE
         sys_getkeymode, // SYSCALL_GETKEYMODE
 };
 
 void syscall_handler(struct esp_context *ctx) {
+    printf("syscall %d\n", ctx->eax);
     if (ctx->eax >= NR_SYSCALL)
         return;
 
@@ -58,6 +61,7 @@ void syscall_handler(struct esp_context *ctx) {
     }
 
     fct(ctx);
+    printf("syscall end\n");
 }
 
 /*** SYSCALL FCT ***/
@@ -89,7 +93,7 @@ static void sys_gettick(struct esp_context *ctx) {
 
 static void sys_open(struct esp_context *ctx) {
     int tmp = open((const char *)ctx->ebx, ctx->ecx);
-    printf("open: %s %d\n", (char*)ctx->ebx, tmp);
+    printf("open: %s (%d)\n", (char*)ctx->ebx, tmp);
     ctx->eax = (u32)tmp;
 }
 
@@ -122,7 +126,10 @@ static void sys_getMouse(struct esp_context *ctx) {
     ctx->eax = 0;
 }
 
+static void sys_playsound(struct esp_context *ctx) {
+    ctx->eax = 0;
+}
+
 static void sys_getkeymode(struct esp_context *ctx) {
-    breakpointhere:
-        return;
+    ctx->eax = 0;
 }

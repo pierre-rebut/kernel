@@ -601,6 +601,8 @@ struct anim *load_anim(char *paths, int delay)
 
 	p = strdup(paths);
 
+    getkeymode(0);
+
 	for (i = 0; i < anim->nr_img; i++) {
 		filename = p;
 

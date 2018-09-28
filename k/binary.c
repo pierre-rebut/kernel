@@ -38,13 +38,13 @@ int loadBinary(const module_t *module, u32 cmdline) {
         return -1;
 
     if (memcmp(binHeader.e_ident, ELFMAG, SELFMAG) != 0) {
-        printf("user bin: wrong magic code\n");
+        printf("bin header: wrong magic code\n");
         return -1;
     }
 
     printf("elf: %d - %d - %d\n", binHeader.e_ehsize, binHeader.e_phentsize, binHeader.e_entry);
 
-    u32 pos;
+    u32 pos = 0;
 
     for (u32 i = 0; i < binHeader.e_phnum; i++) {
         seek(fd, binHeader.e_phoff + (i * binHeader.e_phentsize), SEEK_SET);
@@ -70,6 +70,9 @@ int loadBinary(const module_t *module, u32 cmdline) {
 
         pos += prgHeader.p_memsz;
     }
+
+    if (pos == 0)
+        return -1;
 
 
     createTask(module->mod_end + binHeader.e_entry, pos);
