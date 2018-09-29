@@ -49,7 +49,6 @@ static syscall_t syscall[] = {
 };
 
 void syscall_handler(struct esp_context *ctx) {
-    printf("syscall %d\n", ctx->eax);
     if (ctx->eax >= NR_SYSCALL)
         return;
 
@@ -61,7 +60,6 @@ void syscall_handler(struct esp_context *ctx) {
     }
 
     fct(ctx);
-    printf("syscall end\n");
 }
 
 /*** SYSCALL FCT ***/
