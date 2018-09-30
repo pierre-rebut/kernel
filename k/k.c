@@ -184,11 +184,11 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
     writeStringTerminal("Init ok\n", 8);
 
     printf("\n### Starting kernel test ###\n\n");
-    k_test();
+    // k_test();
     printf("\n### Kernel test ok ###\n### Trying init binary [%s] ###\n\n", (char*)info->cmdline);
     printf("mem total: %d %d\n", info->mem_upper, info->mem_lower);
 
-    // execute((char*)info->cmdline);
+    execute((char*)info->cmdline);
 
     writeStringTerminal("\n[F1] Clear - [F2] Start bin - [F7] - Graphic mode test - [F8] Text mode\n", 73);
 

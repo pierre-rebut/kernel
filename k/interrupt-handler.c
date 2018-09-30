@@ -9,6 +9,7 @@
 #include "sys/syscall.h"
 #include "task.h"
 #include "io/mouse.h"
+#include "cpu.h"
 
 #include <stdio.h>
 
@@ -40,7 +41,9 @@ static void exception_handler(struct esp_context *ctx) {
     if (ctx->int_no > 20)
         printf("Interrupt: %s\n", exceptionList[15]);
     else
-        printf("Interrupt: %s (%d)\n", exceptionList[ctx->int_no], ctx->eip);
+        printf("Interrupt: %s (eip: %d, error: %d)\n", exceptionList[ctx->int_no], ctx->eip, ctx->err_code);
+    cli();
+    hlt();
 }
 
 static void isq_handler(struct esp_context *ctx) {

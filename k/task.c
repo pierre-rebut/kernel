@@ -5,8 +5,10 @@
 #include "task.h"
 #include "sys/idt.h"
 #include "sys/gdt.h"
-#include "sys/paging.h"
+#include "sys/paging2.h"
 #include "binary.h"
+#include "kfilesystem.h"
+#include "sys/kalloc.h"
 
 #include <stdio.h>
 
@@ -14,7 +16,7 @@ struct task {
     u32 esp;
     u32 dataSegment;
     u32 brk;
-    pageDirectory_t *pd;
+    struct PageDirectory *pd;
 };
 
 static struct task myTask = {0};
@@ -24,19 +26,59 @@ void launchTask() {
     asm volatile("int $50");
 }
 
-void execute(const char *cmdline) {
-    /*pageDirectory_t *pd = paging_createPageDirectory();
+static char *getFileData(const char *file, u32 size) {
+    printf("malloc 1\n");
+    char *data = kmalloc(size, 0);
+    printf("malloc 2\n");
+    if (data == NULL)
+        return NULL;
 
-    u32 entry = loadBinary(pd, cmdline);
+    int fd = open(file, O_RDONLY);
+    if (fd < 0) {
+        kfree(data);
+        return NULL;
+    }
+
+    ssize_t tmp = read(fd, data, size);
+    close(fd);
+    if (tmp != (ssize_t) size) {
+        kfree(data);
+        return NULL;
+    }
+    return data;
+}
+
+void execute(const char *cmdline) {
+    u32 size = length(cmdline);
+    if (size == 0) {
+        printf("bin size 0\n");
+        return;
+    }
+
+    printf("alloc data tmp\n");
+    char *data = getFileData(cmdline, size);
+    if (data == NULL) {
+        printf("null data bin\n");
+        return;
+    }
+
+    printf("creating page directory\n");
+    struct PageDirectory *pd = createPageDirrectory();
+
+    printf("loading binary\n");
+    u32 entry = loadBinary(pd, data, size);
     if (entry == 0) {
-        paging_destroyPageDirectory(pd);
+        destroyPageDirectory(pd);
         printf("can 't execute bin\n");
         return;
     }
 
+    printf("LOADING END - INIT STACK\n");
+
     paging_alloc(pd, (void *) (0x1500000 - 10 * PAGESIZE), 10 * PAGESIZE, MEM_USER | MEM_WRITE);
+
     myTask.pd = pd;
-    createTask(entry, 0);*/
+    createTask(entry, 0);
 }
 
 void createTask(u32 entry, u32 esp) {
@@ -46,7 +88,7 @@ void createTask(u32 entry, u32 esp) {
 
     appStack.cs = 0x1B;
     appStack.eip = entry;
-    printf("eip: %d (%d), esp: %d\n", appStack.eip, *((u32 *) appStack.eip), appStack.useresp);
+    printf("eip: %d, esp: %d\n", appStack.eip, appStack.useresp);
 
     appStack.gs = 0x23;
     appStack.fs = 0x23;
@@ -60,7 +102,7 @@ void createTask(u32 entry, u32 esp) {
 
 u32 task_switch(u32 previousEsp) {
     switchTSS(previousEsp, myTask.esp, myTask.dataSegment);
-    //paging_switch(myTask.pd);
+    switchPaging(myTask.pd);
     return myTask.esp;
 }
 
@@ -68,11 +110,7 @@ u32 sbrk(ssize_t inc) {
     if (inc == 0)
         return myTask.brk;
 
-    u32 brk = myTask.brk;
-    myTask.brk += inc;
+    printf("brk: %X\n", myTask.brk);
 
-    if (myTask.brk <= myTask.esp)
-        myTask.brk = myTask.esp + 1;
-
-    return brk;
+    return 0;
 }

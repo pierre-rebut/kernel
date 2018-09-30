@@ -46,6 +46,7 @@ void destroyPageDirectory(struct PageDirectory *pd);
 
 int paging_alloc(struct PageDirectory *pd, void *addr, u32 size, enum MEMFLAGS flags);
 void paging_free(struct PageDirectory *pd, void *virtAddress, u32 size);
+int paging_setFlags(struct PageDirectory *pd, void *virtAddress, u32 size, enum MEMFLAGS flags);
 
 u32 getPhysAddr(const void *vaddr);
 

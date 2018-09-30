@@ -27,7 +27,7 @@ ENTRY(k_entry)
 
 SECTIONS
 {
-	. = 0x100000 + SIZEOF_HEADERS;
+	. = 0x100000;
 
     _kernel_beg = .;
 	.text :

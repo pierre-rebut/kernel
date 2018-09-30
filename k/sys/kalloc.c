@@ -76,7 +76,7 @@ static int heap_grow(size_t size, u8 *heapEnd, int continuous) {
     }
 
     // Enhance the memory
-    if (!paging_alloc(kernelPageDirectory, heapEnd, size, MEM_WRITE)) {
+    if (paging_alloc(kernelPageDirectory, heapEnd, size, MEM_WRITE)) {
         return (0);
     }
 
@@ -256,9 +256,8 @@ void *kmalloc(size_t size, u32 alignment) {
     u32 sizeToGrow = max(HEAP_MIN_GROWTH, alignUp(size * 3 / 2, PAGESIZE));
     int success = heap_grow(sizeToGrow, (u8 *) ((u32) heapStart + heapSize), continuous);
 
-
     if (!success) {
-        printf("\nmalloc failed, heap could not be expanded!");
+        printf("\nmalloc failed, heap could not be expanded!\n");
         return (0);
     } else {
 #ifdef _MALLOC_FREE_LOG_
@@ -335,7 +334,7 @@ void kfree(void *addr) {
         regionAddress += regions[i].size;
     }
 
-    printf("\nBroken free: %Xh", addr);
+    printf("Broken free: %Xh\n", addr);
 }
 
 void heap_logRegions(void) {

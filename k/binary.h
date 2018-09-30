@@ -7,8 +7,8 @@
 
 #include <k/types.h>
 #include "multiboot.h"
-#include "sys/paging.h"
+#include "sys/paging2.h"
 
-u32 loadBinary(pageDirectory_t *pd, const char *cmdline);
+u32 loadBinary(struct PageDirectory *pd, const void *data, u32 size);
 
 #endif //KERNEL_EPITA_BINARY_H

@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <utils.h>
 #include <string.h>
+#include <error.h>
 
 static u32 framesResaSize = 0;
 static u32 *framesResaTable;
@@ -110,7 +111,7 @@ static u32 initMemory(memory_map_t *memoryMap, size_t memoryMapLength) {
 
     for (memory_map_t *entry = memoryMap; entry < memoryMapEnd;) {
         if (entry->type == 1 && entry->regionBase < FOUR_GB)
-            memorySetRegion(entry->regionBase, entry->regionBase + entry->regionSize, 0);
+            memorySetRegion((u32)entry->regionBase, (u32)(entry->regionBase + entry->regionSize), 0);
         entry = (memory_map_t *) ((void *) entry + entry->entrySize + 4);
     }
 
@@ -119,6 +120,10 @@ static u32 initMemory(memory_map_t *memoryMap, size_t memoryMapLength) {
 
 static inline void invlpg(void *p) {
     asm volatile("invlpg (%0)"::"r" (p) : "memory");
+}
+
+static int checkPageAllowed(struct PageDirectory *pd, size_t i) {
+    return kernelPageDirectory == pd || (pd->tablesAddr[i] != kernelPageDirectory->tablesAddr[i]);
 }
 
 u32 allocFrame() {
@@ -140,26 +145,17 @@ void freeFrame(u32 addr) {
     framesResaTable[i] &= ~(1 << i / 32);
 }
 
-u32 allocFrames(u32 n, u32 *frames) {
-    for (u32 i = 0; i < n; i++) {
-        frames[i] = allocFrame();
-        if (frames[i] == 0)
-            return i;
-    }
-    return n;
-}
-
-void freeFrames(u32 n, u32 *frames) {
-    for (u32 i = 0; i < n; i++)
-        freeFrame(frames[i]);
-}
-
 void freePages(struct PageDirectory *pd, void *addr, size_t pages) {
     for (u32 i = 0; i < pages; i++) {
         u32 pageNumber = (u32) addr / PAGESIZE + i;
 
         if (!pd->tablesAddr[pageNumber / NBTABLE])
             return;
+
+        if (checkPageAllowed(pd, pageNumber / NBTABLE) == 0) {
+            printf("Alloc page not allowed: %u\n", pageNumber);
+            return;
+        }
 
         pd->tablesAddr[pageNumber / NBTABLE]->pages[pageNumber % NBPAGE] = 0;
 
@@ -199,6 +195,12 @@ int allocPages(struct PageDirectory *pd, void *addr, size_t pages) {
                 freePages(pd, addr, i * PAGESIZE);
                 return 0;
             }
+
+            if (checkPageAllowed(pd, pageNumber / NBTABLE) == 0) {
+                printf("Alloc page not allowed: %u\n", pageNumber);
+                freePages(pd, addr, i * PAGESIZE);
+                return 0;
+            }
         }
 
         pt->pages[pageNumber % NBPAGE] = MEM_ALLOCATED;
@@ -216,6 +218,11 @@ int mapPagesToFrames(struct PageDirectory *pd, void *vaddr, u32 paddr, size_t pa
             return 0;
         }
 
+        if (checkPageAllowed(pd, pageNumber / NBTABLE) == 0) {
+            printf("Alloc page not allowed: %u\n", pageNumber);
+            return 0;
+        }
+
         pd->tables[pageNumber / NBTABLE] = getPhysAddr(pt) | MEM_PRESENT | MEM_WRITE;
         pd->tables[pageNumber / NBTABLE] |= (flags & (~MEM_NOTLBUPDATE)); // Update codes
 
@@ -230,9 +237,35 @@ int mapPagesToFrames(struct PageDirectory *pd, void *vaddr, u32 paddr, size_t pa
     return 1;
 }
 
+static int pagingAllocRec(struct PageDirectory *pd, u32 index, u32 pages, void *addr, enum MEMFLAGS flags) {
+    u32 frame = allocFrame();
+
+    if (!mapPagesToFrames(pd, addr + index * PAGESIZE, frame, 1, flags)) {
+        printf("mapPagesToFrames(%X, %X, %X, %u, %X) failed.\n", (u32) pd, (u32) (addr + index * PAGESIZE),
+               frame, 1, flags);
+        printf("info: %d - %d\n", index, pages);
+        freeFrame(frame);
+        return -1;
+    }
+
+    if (flags & MEM_USER)
+        printf("page now allocated: %u physAddress: %Xh\n", index, frame);
+
+    if (index >= pages - 1)
+        return 0;
+
+    int tmp = pagingAllocRec(pd, index + 1, pages, addr, flags);
+    if (tmp != 0)
+        freeFrame(frame);
+    return tmp;
+}
+
 int paging_alloc(struct PageDirectory *pd, void *addr, u32 size, enum MEMFLAGS flags) {
-    // "virtAddress" and "size" must be page-aligned
-    // ASSERT(((u32) addr) % PAGESIZE == 0);
+    if (((u32) addr) % PAGESIZE != 0) {
+        printf("addr not page aligned\n");
+        return -1;
+    }
+
     if (size % PAGESIZE != 0) {
         printf("size not page aligned\n");
         return -1;
@@ -245,35 +278,18 @@ int paging_alloc(struct PageDirectory *pd, void *addr, u32 size, enum MEMFLAGS f
         return -2;
     }
 
-    u32 *lstFrames = kmalloc(sizeof(u32) * pages, 0);
-    u32 tmp = allocFrames(pages, lstFrames);
-    if (tmp != pages) {
-        freeFrames(tmp, lstFrames);
-        kfree(lstFrames);
-        printf("allocFrames err (expected %d, res %d)\n", (u32) pages, tmp);
+    if (pagingAllocRec(pd, 0, pages, addr, flags) != 0)
         return -3;
-    }
 
-    for (u32 i = 0; i < pages; i++) {
-        if (!mapPagesToFrames(pd, addr + i * PAGESIZE, lstFrames[i], 1, flags)) {
-            freeFrames(pages, lstFrames);
-            kfree(lstFrames);
-            printf("mapPagesToFrames(%X, %X, %X, %u, %X) failed.\n", (u32) pd, (u32) (addr + i * PAGESIZE),
-                   lstFrames[i], 1, flags);
-            return -4;
-        }
-
-        if (flags & MEM_USER)
-            printf("pagenumber now allocated: %u physAddress: %Xh\n", i, lstFrames[i]);
-    }
-
-    kfree(lstFrames);
     return 0;
 }
 
 void paging_free(struct PageDirectory *pd, void *virtAddress, u32 size) {
-    // "virtAddress" and "size" must be page-aligned
-    // ASSERT(((u32) virtAddress) % PAGESIZE == 0);
+    if (((u32) virtAddress) % PAGESIZE != 0) {
+        printf("addr not page aligned\n");
+        return;
+    }
+
     if (size % PAGESIZE != 0) {
         printf("size must be page aligned\n");
         return;
@@ -281,7 +297,7 @@ void paging_free(struct PageDirectory *pd, void *virtAddress, u32 size) {
 
     u32 pageNumber = (u32) virtAddress / PAGESIZE;
     while (size) {
-        if (!pd->tablesAddr[pageNumber / NBPAGE])
+        if (!pd->tablesAddr[pageNumber / NBPAGE] || checkPageAllowed(pd, pageNumber / NBTABLE) == 0)
             return;
 
         u32 physAddress = getPhysAddr(virtAddress);
@@ -294,19 +310,58 @@ void paging_free(struct PageDirectory *pd, void *virtAddress, u32 size) {
     }
 }
 
+int paging_setFlags(struct PageDirectory *pd, void *addr, u32 size, enum MEMFLAGS flags) {
+    // "virtAddress" and "size" must be page-aligned
+
+    printf("bite\n");
+    if (((u32) addr) % PAGESIZE != 0) {
+        printf("paging_setFlags: addr not page aligned\n");
+        return -1;
+    }
+
+    if (size % PAGESIZE != 0) {
+        printf("size not page aligned\n");
+        return -1;
+    }
+
+    // Check whether a page is allocated within the area
+    for (u32 done = 0; done < size / PAGESIZE; done++) {
+        u32 pageNumber = (u32) addr / PAGESIZE + done;
+        if (!pd->tablesAddr[pageNumber / NBTABLE]  || !(pd->tablesAddr[pageNumber / NBTABLE]->pages[pageNumber % NBPAGE] & MEM_ALLOCATED)) {
+            printf("page not init\n");
+            return -2;
+        }
+
+        if (checkPageAllowed(pd, pageNumber / NBPAGE) == 0) {
+            printf("Alloc page not allowed: %u\n", pageNumber);
+            return 0;
+        }
+
+        u32 *page = &pd->tablesAddr[pageNumber / NBTABLE]->pages[pageNumber % NBPAGE];
+        *page = (*page & 0xFFFFF000) | flags | MEM_PRESENT | MEM_ALLOCATED;
+
+        if (pd->tablesAddr[pageNumber / NBTABLE] == currentPageDirectory->tablesAddr[pageNumber / NBPAGE])
+            invlpg((void *) (pageNumber * PAGESIZE));
+    }
+
+    printf("bite end\n");
+    return 0;
+}
+
 struct PageDirectory *createPageDirrectory() {
     struct PageDirectory *pd = kmalloc(sizeof(struct PageDirectory), PAGESIZE);
     if (!pd)
         return (0);
 
     memcpy(pd, kernelPageDirectory, sizeof(struct PageDirectory));
+    // memset(pd, 0, sizeof(struct PageDirectory));
     pd->physAddr = getPhysAddr(pd->tables);
 
     return (pd);
 }
 
 void destroyPageDirectory(struct PageDirectory *pd) {
-    if (pd != kernelPageDirectory) {
+    if (pd == kernelPageDirectory) {
         printf("can not remove kernel page directory\n");
         return;
     }
@@ -315,7 +370,7 @@ void destroyPageDirectory(struct PageDirectory *pd) {
         switchPaging(kernelPageDirectory);
 
     for (u32 i = 0; i < NBTABLE; i++) {
-        if (pd->tables[i]) {
+        if (pd->tablesAddr[i] && checkPageAllowed(pd, i)) {
             for (u32 j = 0; j < NBPAGE; j++) {
                 u32 physAddress = pd->tablesAddr[i]->pages[j] & 0xFFFFF000;
 
@@ -323,7 +378,7 @@ void destroyPageDirectory(struct PageDirectory *pd) {
                     freeFrame(physAddress);
                 }
             }
-            kfree(pd->tables[i]);
+            kfree(pd->tablesAddr[i]);
         }
     }
     kfree(pd);

@@ -12,71 +12,51 @@
 #include <string.h>
 #include <utils.h>
 
-static u32 loadPrg(const Elf32_Phdr *prgHeader, int fd, u32 pos) {
-    u32 limit = pos;
+u32 loadBinary(struct PageDirectory *pd, const void *data, u32 size) {
 
-    size_t size = 0;
-    while (size < prgHeader->p_filesz) {
-        u8 data[500];
-        ssize_t tmp = read(fd, data, 500);
-        if (tmp == -1)
-            break;
-
-        memcpy((void *) limit, data, (size_t) tmp);
-        limit += tmp;
-        size += tmp;
-    }
-    return limit;
-}
-
-u32 loadBinary(pageDirectory_t *pd, const char *cmdline) {
-    int fd = open(cmdline, O_RDONLY);
-    if (fd < 0)
-        return 0;
-
-    Elf32_Ehdr binHeader;
-    ssize_t size = read(fd, &binHeader, sizeof(Elf32_Ehdr));
-    if (size != sizeof(Elf32_Ehdr))
-        return 0;
-
-    if (memcmp(binHeader.e_ident, ELFMAG, SELFMAG) != 0) {
+    const Elf32_Ehdr *binHeader = data;
+    if (memcmp(binHeader->e_ident, ELFMAG, SELFMAG) != 0) {
         printf("bin header: wrong magic code\n");
         return 0;
     }
 
-    printf("elf: %d - %d - %d\n", binHeader.e_ehsize, binHeader.e_phentsize, binHeader.e_entry);
+    printf("elf: %d - %d - %d\n", binHeader->e_ehsize, binHeader->e_phentsize, binHeader->e_entry);
+    const Elf32_Phdr *ph = data + binHeader->e_phoff;
+    for (u32 i = 0; i < binHeader->e_phnum; i++) {
+        if ((const void*)(ph+i) >= data + size)
+            return (0);
 
-    /*for (u32 i = 0; i < binHeader.e_phnum; i++) {
-        seek(fd, binHeader.e_phoff + (i * binHeader.e_phentsize), SEEK_SET);
-
-        Elf32_Phdr prgHeader;
-        size = read(fd, &prgHeader, binHeader.e_phentsize);
-        if (size != binHeader.e_phentsize)
-            return 0;
-
-        printf("prgHeader %d: %d - %d - %d - %d\n", i, prgHeader.p_type, prgHeader.p_filesz, prgHeader.p_offset,
-               prgHeader.p_flags);
-        printf("prgHeader %d: %d - %d - %d - %d\n", i, prgHeader.p_memsz, prgHeader.p_vaddr, prgHeader.p_paddr,
-               prgHeader.p_align);
-
-        if (prgHeader.p_type != PT_LOAD)
+        if (ph[i].p_memsz == 0)
             continue;
 
-        if (!paging_alloc(pd, (void*)alignUp(prgHeader.p_vaddr, PAGESIZE), alignUp(prgHeader.p_memsz, PAGESIZE), (MEMFLAGS_t)(MEM_USER | MEM_WRITE)))
+        printf("prgHeader %d: %d - %d - %d - %d\n", i, ph[i].p_type, ph[i].p_filesz, ph[i].p_offset, ph[i].p_flags);
+        printf("prgHeader %d: %d - %d - %d - %d\n", i, ph[i].p_memsz, ph[i].p_vaddr, ph[i].p_paddr, ph[i].p_align);
+
+        u32 vaddr = alignUp(ph[i].p_vaddr, PAGESIZE);
+        u32 memsz = alignUp(ph[i].p_memsz, PAGESIZE);
+
+        printf("vaddr = %X, vaddr alignDown %X\n", ph[i].p_paddr, vaddr);
+        printf("memsz = %X, memsz alignDown %X\n", ph[i].p_memsz, memsz);
+
+        if (paging_alloc(pd, (void *) vaddr, memsz, MEM_USER | MEM_WRITE))
             return 0;
 
-        printf("ok\n");
-
-        seek(fd, prgHeader.p_offset, SEEK_SET);
-
+        printf("paging alloc ok\n");
 
         cli();
-        paging_switch(pd); // Switch to PD we want to write to
-        loadPrg(&prgHeader, fd, prgHeader.p_vaddr);
-        memset((void *) (prgHeader.p_vaddr + prgHeader.p_filesz), 0, prgHeader.p_memsz - prgHeader.p_filesz);
-        paging_switch(currentPageDirectory); // Switch back to continue normal execution
+        struct PageDirectory *tmp = currentPageDirectory;
+        switchPaging(pd);
+        printf("memcpy start\n");
+        memcpy(vaddr, data + ph[i].p_offset, ph[i].p_filesz);
+        printf("memcpy end\n");
+        memset((void *) (vaddr + ph[i].p_filesz), 0, ph[i].p_memsz - ph[i].p_filesz);
+        printf("memset end\n");
+        switchPaging(tmp);
         sti();
+
+        if (!(ph[i].p_flags & PF_W)) // Disallow writing after we filled the page, if the ELF file doesn't request write-access
+            paging_setFlags(pd, (void*)vaddr, memsz, MEM_USER);
     }
 
-    return binHeader.e_entry;*/
+    return binHeader->e_entry;
 }
