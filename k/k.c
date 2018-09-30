@@ -1,15 +1,18 @@
 #include "multiboot.h"
-#include "serial.h"
-#include "gdt.h"
-#include "idt.h"
-#include "pic.h"
-#include "getkey.h"
-#include "pit.h"
-#include "libvga.h"
+#include "io/serial.h"
+#include "sys/gdt.h"
+#include "sys/idt.h"
+#include "io/pic.h"
+#include "io/keyboard.h"
+#include "io/pit.h"
+#include "io/libvga.h"
 #include "kfilesystem.h"
 #include "terminal.h"
-#include "binary.h"
+// #include "binary.h"
 #include "task.h"
+#include "io/mouse.h"
+#include "sys/paging2.h"
+#include "sys/kalloc.h"
 
 #include <stdio.h>
 
@@ -17,12 +20,18 @@
     printf("- Test interrupt: "#id"\n"); \
     asm volatile("int $"#id"\n")
 
-static void k_init() {
+static void k_init(multiboot_info_t *info) {
     initSerial(38400);
     printf("Serial init\n");
 
-    initMemory();
+    initSegmentation();
     printf("Memory init\n");
+
+    u32 totalRam = initPaging((memory_map_t *)info->mmap_addr, info->mmap_length);
+    printf("Paging init: (ram: %d)\n", totalRam);
+
+    heap_install();
+    printf("Heap install\n");
 
     initTerminal();
     printf("Terminal init\n");
@@ -36,8 +45,15 @@ static void k_init() {
     initPit();
     printf("Pit init\n");
 
+    initMouse();
+    printf("Mouse init\n");
+
+    initKFileSystem((module_t *) info->mods_addr);
+    printf("KFS init\n");
+
     allowIrq(ISQ_KEYBOARD_VALUE);
     allowIrq(ISQ_PIT_VALUE);
+    allowIrq(ISQ_MOUSE_VALUE);
 }
 
 static void k_test() {
@@ -162,17 +178,17 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
     if (magic != MULTIBOOT_BOOTLOADER_MAGIC || info->mods_count != 1)
         goto error;
 
-    k_init();
+    k_init(info);
     unsigned long oldTick = 0;
     writeTerminalAt('0', CONS_GREEN, 0, 24);
     writeStringTerminal("Init ok\n", 8);
 
-    initKFileSystem((module_t *) info->mods_addr);
-
     printf("\n### Starting kernel test ###\n\n");
     k_test();
     printf("\n### Kernel test ok ###\n### Trying init binary [%s] ###\n\n", (char*)info->cmdline);
-    loadBinary((module_t *) info->mods_addr, info->cmdline);
+    printf("mem total: %d %d\n", info->mem_upper, info->mem_lower);
+
+    // execute((char*)info->cmdline);
 
     writeStringTerminal("\n[F1] Clear - [F2] Start bin - [F7] - Graphic mode test - [F8] Text mode\n", 73);
 

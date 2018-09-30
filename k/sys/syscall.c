@@ -2,14 +2,14 @@
 // Created by rebut_p on 23/09/18.
 //
 
-#include "terminal.h"
-#include "serial.h"
-#include "getkey.h"
-#include "pit.h"
-#include "kfilesystem.h"
+#include "../terminal.h"
+#include "../io/serial.h"
+#include "../io/keyboard.h"
+#include "../io/pit.h"
+#include "../kfilesystem.h"
 #include "syscall.h"
-#include "libvga.h"
-#include "task.h"
+#include "../io/libvga.h"
+#include "../task.h"
 
 #include <k/kstd.h>
 #include <stdio.h>

@@ -2,12 +2,13 @@
 // Created by rebut_p on 22/09/18.
 //
 
-#include "pic.h"
-#include "idt.h"
-#include "getkey.h"
-#include "pit.h"
-#include "syscall.h"
+#include "io/pic.h"
+#include "sys/idt.h"
+#include "io/keyboard.h"
+#include "io/pit.h"
+#include "sys/syscall.h"
 #include "task.h"
+#include "io/mouse.h"
 
 #include <stdio.h>
 
@@ -35,21 +36,25 @@ static char *exceptionList[] = {
         "Virtualization Exception"
 };
 
-static void isr_exception_handler(struct esp_context *ctx) {
+static void exception_handler(struct esp_context *ctx) {
     if (ctx->int_no > 20)
         printf("Interrupt: %s\n", exceptionList[15]);
     else
         printf("Interrupt: %s (%d)\n", exceptionList[ctx->int_no], ctx->eip);
 }
 
-static void isq_normal_handler(struct esp_context *ctx) {
+static void isq_handler(struct esp_context *ctx) {
 
     switch (ctx->int_no) {
+        case 32:
+            pit_handler();
+            break;
         case 33:
             keyboard_handler();
             break;
-        case 32:
-            pit_handler();
+        case 44:
+            printf("toto\n");
+            mouse_handler();
             break;
         default:
             printf("Interrupt ISQ handle: %d\n", ctx->int_no);
@@ -64,9 +69,9 @@ u32 interrupt_handler(u32 esp) {
     struct esp_context *ctx = (struct esp_context *) esp;
 
     if (ctx->int_no < 32)
-        isr_exception_handler(ctx);
+        exception_handler(ctx);
     else if (ctx->int_no < 48)
-        isq_normal_handler(ctx);
+        isq_handler(ctx);
     else {
         switch (ctx->int_no) {
             case 0x80:

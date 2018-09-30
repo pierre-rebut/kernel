@@ -29,14 +29,17 @@ SECTIONS
 {
 	. = 0x100000 + SIZEOF_HEADERS;
 
+    _kernel_beg = .;
 	.text :
 	{
+	    _ro_start = .;
 		*(.multiboot) *(.text)
 	}
 
 	.rodata :
 	{
 		*(.rodata)
+		_ro_end = .;
 	}
 
 	.data :
@@ -46,8 +49,11 @@ SECTIONS
 
 	.bss :
 	{
+	    _ro_start = .;
 		*(.bss) *(COMMON)
+		_ro_start = .;
 	}
 
 	PROVIDE(_end = .);
+	_kernel_end = .;
 }

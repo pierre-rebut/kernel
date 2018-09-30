@@ -22,7 +22,7 @@
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <k/kstd.h>
-#include "compiler.h"
+#include "../compiler.h"
 #include "libvga.h"
 #include "io.h"
 

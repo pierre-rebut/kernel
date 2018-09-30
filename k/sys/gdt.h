@@ -7,7 +7,7 @@
 
 #include <k/types.h>
 
-void initMemory();
+void initSegmentation();
 void switchTSS(u32 esp0, u32 esp, u32 ss);
 
 struct gdt_entry {

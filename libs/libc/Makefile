@@ -27,6 +27,7 @@ LIB	= libc.a
 OBJS	= \
 	  memcmp.o \
 	  memcpy.o \
+	  memmove.o \
 	  memset.o \
 	  printf.o \
 	  puts.o \
@@ -35,6 +36,7 @@ OBJS	= \
 	  strlen.o \
 	  strncmp.o \
 	  strnlen.o \
+	  strncpy.o \
 
 DEPS = $(OBJS:.o=.d)
 

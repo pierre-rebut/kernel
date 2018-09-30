@@ -10,6 +10,8 @@
 #include <k/types.h>
 #include <k/kstd.h>
 
+void execute(const char *cmdline);
+
 void launchTask();
 void createTask(u32 entry, u32 esp);
 u32 task_switch(u32 previousEsp);

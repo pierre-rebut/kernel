@@ -1,5 +1,5 @@
 #include "terminal.h"
-#include "io.h"
+#include "io/io.h"
 
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 24

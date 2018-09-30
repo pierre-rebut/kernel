@@ -27,20 +27,24 @@ TARGET	= k
 OBJS	= \
 	  crt0.o \
 	  k.o \
-	  libvga.o \
-	  serial.o \
-	  gdt.o \
-	  idt.o \
+	  io/libvga.o \
+	  io/serial.o \
+	  sys/gdt.o \
+	  sys/idt.o \
 	  interrupt-entry.o \
 	  interrupt-handler.o \
-	  pic.o \
-	  getkey.o \
-	  pit.o \
-	  syscall.o \
+	  io/pic.o \
+	  io/keyboard.o \
+	  io/pit.o \
+	  sys/syscall.o \
 	  kfilesystem.o \
 	  terminal.o \
 	  task.o \
 	  binary.o \
+	  io/mouse.o \
+	  sys/paging2.o \
+	  utils/error.o \
+	  sys/kalloc.o \
 
 
 DEPS = $(OBJS:.o=.d)

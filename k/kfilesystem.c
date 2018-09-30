@@ -22,7 +22,6 @@ void initKFileSystem(module_t *module) {
         return;
     }
 
-    printf("KFS - init\n");
     kfs = tmp;
 }
 

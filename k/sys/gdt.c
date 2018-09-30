@@ -1,5 +1,5 @@
 #include "gdt.h"
-#include "compiler.h"
+#include "../compiler.h"
 
 struct tss_entry tss = {
         .ss0 = 0x10, // Kernel Data Segment
@@ -75,7 +75,7 @@ static void initTaskSegment() {
             "ltr %ax\n");
 }
 
-void initMemory() {
+void initSegmentation() {
     initGdt();
     initProtectedMode();
     setDataSegment();

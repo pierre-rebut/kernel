@@ -3,8 +3,10 @@
 //
 
 #include "task.h"
-#include "idt.h"
-#include "gdt.h"
+#include "sys/idt.h"
+#include "sys/gdt.h"
+#include "sys/paging.h"
+#include "binary.h"
 
 #include <stdio.h>
 
@@ -12,6 +14,7 @@ struct task {
     u32 esp;
     u32 dataSegment;
     u32 brk;
+    pageDirectory_t *pd;
 };
 
 static struct task myTask = {0};
@@ -21,9 +24,24 @@ void launchTask() {
     asm volatile("int $50");
 }
 
+void execute(const char *cmdline) {
+    /*pageDirectory_t *pd = paging_createPageDirectory();
+
+    u32 entry = loadBinary(pd, cmdline);
+    if (entry == 0) {
+        paging_destroyPageDirectory(pd);
+        printf("can 't execute bin\n");
+        return;
+    }
+
+    paging_alloc(pd, (void *) (0x1500000 - 10 * PAGESIZE), 10 * PAGESIZE, MEM_USER | MEM_WRITE);
+    myTask.pd = pd;
+    createTask(entry, 0);*/
+}
+
 void createTask(u32 entry, u32 esp) {
     appStack.ss = 0x23;
-    appStack.useresp = esp + 0x1500000;
+    appStack.useresp = 0x1500000;
     appStack.eflags = 0x0202;
 
     appStack.cs = 0x1B;
@@ -37,11 +55,12 @@ void createTask(u32 entry, u32 esp) {
 
     myTask.dataSegment = 0x23;
     myTask.esp = (u32) &appStack;
-    myTask.brk = esp + 0x1500000 + 1;
+    myTask.brk = 0x1500000 + 1;
 }
 
 u32 task_switch(u32 previousEsp) {
     switchTSS(previousEsp, myTask.esp, myTask.dataSegment);
+    //paging_switch(myTask.pd);
     return myTask.esp;
 }
 
