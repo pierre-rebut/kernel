@@ -4,11 +4,14 @@
 
 #include "paging2.h"
 #include "kalloc.h"
+#include "../cpu.h"
 
 #include <stdio.h>
 #include <utils.h>
 #include <string.h>
 #include <error.h>
+
+#define HIGHER_HALF_POS 0xC0000000
 
 static u32 framesResaSize = 0;
 static u32 *framesResaTable;
@@ -27,28 +30,30 @@ u32 initPaging(memory_map_t *memoryMap, u32 memoryMapLength) {
 
     u32 addr = 0;
     for (u8 i = 0; i < 3; i++) {
-        kernelPageDirectory->tablesAddr[i] = kmalloc(sizeof(struct TableDirectory), PAGESIZE);
-        kernelPageDirectory->tables[i] = (u32) kernelPageDirectory->tablesAddr[i] | MEM_PRESENT | MEM_WRITE;
+        u32 pos = HIGHER_HALF_POS / PAGESIZE / NBTABLE;
+
+        kernelPageDirectory->tablesAddr[pos + i] = kmalloc(sizeof(struct TableDirectory), PAGESIZE);
+        kernelPageDirectory->tables[pos + i] = (u32) kernelPageDirectory->tablesAddr[pos + i] | MEM_PRESENT | MEM_WRITE;
 
         for (u32 j = 0; j < NBPAGE; j++) {
             u32 flags = MEM_PRESENT | MEM_WRITE | MEM_ALLOCATED;
             if (addr >= 0x100000)
                 flags |= MEM_NOTLBUPDATE;
 
-            kernelPageDirectory->tablesAddr[i]->pages[j] = addr | flags;
+            kernelPageDirectory->tablesAddr[pos + i]->pages[j] = addr | flags;
             addr += PAGESIZE;
         }
     }
 
-    kernelPageDirectory->tablesAddr[0]->pages[0] = 0 | MEM_PRESENT | MEM_ALLOCATED;
+    kernelPageDirectory->tablesAddr[HIGHER_HALF_POS / PAGESIZE / NBTABLE]->pages[0] = 0 | MEM_PRESENT | MEM_ALLOCATED;
 
     size_t kernelpts = totalRam / PAGESIZE / NBPAGE;
     struct TableDirectory *heap_pts = kmalloc(kernelpts * sizeof(struct TableDirectory), PAGESIZE);
     memset(heap_pts, 0, kernelpts * sizeof(struct TableDirectory));
 
     for (u32 i = 0; i < kernelpts; i++) {
-        kernelPageDirectory->tablesAddr[KERNEL_HEAP_START / PAGESIZE / NBPAGE + i] = heap_pts + i;
-        kernelPageDirectory->tables[KERNEL_HEAP_START / PAGESIZE / NBPAGE + i] = (u32) (heap_pts + i) | MEM_PRESENT;
+        kernelPageDirectory->tablesAddr[KERNEL_HEAP_START / PAGESIZE / NBTABLE + i] = heap_pts + i;
+        kernelPageDirectory->tables[KERNEL_HEAP_START / PAGESIZE / NBTABLE + i] = (u32) (heap_pts + i) | MEM_PRESENT;
     }
 
     switchPaging(kernelPageDirectory);
@@ -56,8 +61,12 @@ u32 initPaging(memory_map_t *memoryMap, u32 memoryMapLength) {
     u32 cr0;
     asm volatile ("movl %%cr0, %0": "=r"(cr0));
     cr0 |= (1 << 31) | (1 << 16);
+    printf("setting cr0 to %X\n", cr0);
     asm volatile ("movl %0, %%cr0": :"a"(cr0));
 
+    printf("tout est ok\n");
+
+    hlt();
     return totalRam;
 }
 
@@ -111,7 +120,7 @@ static u32 initMemory(memory_map_t *memoryMap, size_t memoryMapLength) {
 
     for (memory_map_t *entry = memoryMap; entry < memoryMapEnd;) {
         if (entry->type == 1 && entry->regionBase < FOUR_GB)
-            memorySetRegion((u32)entry->regionBase, (u32)(entry->regionBase + entry->regionSize), 0);
+            memorySetRegion((u32) entry->regionBase, (u32) (entry->regionBase + entry->regionSize), 0);
         entry = (memory_map_t *) ((void *) entry + entry->entrySize + 4);
     }
 
@@ -327,7 +336,8 @@ int paging_setFlags(struct PageDirectory *pd, void *addr, u32 size, enum MEMFLAG
     // Check whether a page is allocated within the area
     for (u32 done = 0; done < size / PAGESIZE; done++) {
         u32 pageNumber = (u32) addr / PAGESIZE + done;
-        if (!pd->tablesAddr[pageNumber / NBTABLE]  || !(pd->tablesAddr[pageNumber / NBTABLE]->pages[pageNumber % NBPAGE] & MEM_ALLOCATED)) {
+        if (!pd->tablesAddr[pageNumber / NBTABLE] ||
+            !(pd->tablesAddr[pageNumber / NBTABLE]->pages[pageNumber % NBPAGE] & MEM_ALLOCATED)) {
             printf("page not init\n");
             return -2;
         }

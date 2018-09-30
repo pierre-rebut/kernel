@@ -33,7 +33,7 @@ PHDRS
 
 SECTIONS
 {
-	. = 0x14000000;
+	. = 0x4000;
 
 	.text :
 	{

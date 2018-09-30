@@ -35,8 +35,8 @@ u32 loadBinary(struct PageDirectory *pd, const void *data, u32 size) {
         u32 vaddr = alignUp(ph[i].p_vaddr, PAGESIZE);
         u32 memsz = alignUp(ph[i].p_memsz, PAGESIZE);
 
-        printf("vaddr = %X, vaddr alignDown %X\n", ph[i].p_paddr, vaddr);
-        printf("memsz = %X, memsz alignDown %X\n", ph[i].p_memsz, memsz);
+        printf("vaddr = %X, vaddr alignUp %X\n", ph[i].p_paddr, vaddr);
+        printf("memsz = %X, memsz alignUp %X\n", ph[i].p_memsz, memsz);
 
         if (paging_alloc(pd, (void *) vaddr, memsz, MEM_USER | MEM_WRITE))
             return 0;
@@ -47,7 +47,7 @@ u32 loadBinary(struct PageDirectory *pd, const void *data, u32 size) {
         struct PageDirectory *tmp = currentPageDirectory;
         switchPaging(pd);
         printf("memcpy start\n");
-        memcpy(vaddr, data + ph[i].p_offset, ph[i].p_filesz);
+        memcpy((void *) vaddr, data + ph[i].p_offset, ph[i].p_filesz);
         printf("memcpy end\n");
         memset((void *) (vaddr + ph[i].p_filesz), 0, ph[i].p_memsz - ph[i].p_filesz);
         printf("memset end\n");

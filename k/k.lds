@@ -29,31 +29,25 @@ SECTIONS
 {
 	. = 0x100000;
 
-    _kernel_beg = .;
-	.text :
+	.text BLOCK(4K) : ALIGN(4K)
 	{
-	    _ro_start = .;
 		*(.multiboot) *(.text)
 	}
 
-	.rodata :
+	.rodata BLOCK(4K) : ALIGN(4K)
 	{
 		*(.rodata)
-		_ro_end = .;
 	}
 
-	.data :
+	.data BLOCK(4K) : ALIGN(4K)
 	{
 		*(.data)
 	}
 
-	.bss :
+	.bss BLOCK(4K) : ALIGN(4K)
 	{
-	    _ro_start = .;
 		*(.bss) *(COMMON)
-		_ro_start = .;
 	}
 
 	PROVIDE(_end = .);
-	_kernel_end = .;
 }
