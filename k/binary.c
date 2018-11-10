@@ -64,7 +64,7 @@ int loadBinary(const module_t *module, u32 cmdline) {
 
         seek(fd, prgHeader.p_offset, SEEK_SET);
 
-        pos = module->mod_end + prgHeader.p_vaddr;
+        pos = prgHeader.p_vaddr;
         loadPrg(&prgHeader, fd, pos);
         memset((void *) (pos + prgHeader.p_filesz), 0, prgHeader.p_memsz - prgHeader.p_filesz);
 
@@ -74,7 +74,6 @@ int loadBinary(const module_t *module, u32 cmdline) {
     if (pos == 0)
         return -1;
 
-
-    createTask(module->mod_end + binHeader.e_entry, pos);
+    createTask(binHeader.e_entry, pos);
     return 0;
 }

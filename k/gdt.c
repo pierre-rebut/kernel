@@ -2,13 +2,13 @@
 #include "compiler.h"
 
 struct tss_entry tss = {
-        .ss0 = 0x10, // Kernel Data Segment
+        .ss0 = 0x10,
         .esp0 = 0,
-        .es = 0x10, // Kernel Data Segment
-        .cs = 0x08, // Kernel Code Segment
-        .ds = 0x10, // Kernel Data Segment
-        .fs = 0x10, // Kernel Data Segment
-        .gs = 0x10, // Kernel Data Segment
+        .es = 0x10,
+        .cs = 0x08,
+        .ds = 0x10,
+        .fs = 0x10,
+        .gs = 0x10,
 };
 
 struct gdt_entry gdt[6] = {};
@@ -18,8 +18,7 @@ void addGdtEntry(u32 id, u32 base, u32 limit, u8 access, u8 gran) {
     gdt[id].base_mid = (u8) ((base >> 16) & 0xFF);
     gdt[id].base_high = (u8) ((base >> 24) & 0xFF);
     gdt[id].limit_low = (u16) (limit & 0xFFFF);
-    gdt[id].granularity = (u8) ((limit >> 16) & 0x0F);
-    gdt[id].granularity |= (gran & 0xF0);
+    gdt[id].granularity = (u8) (((limit >> 16) & 0x0F) | (gran & 0xF0));
     gdt[id].access = access;
     gdt[id].present = 1;
 }
