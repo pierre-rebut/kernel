@@ -14,9 +14,9 @@ void initSerial(int bps) {
     outb(COM1 + 1, 0x1);
 }
 
-int writeSerial(const void *str, size_t length) {
+int writeSerial(const void *str, u32 length) {
     int res = 0;
-    for (size_t i = 0; i < length; i++) {
+    for (u32 i = 0; i < length; i++) {
         outb(COM1, ((u8 *) str)[i]);
         res ++;
     }

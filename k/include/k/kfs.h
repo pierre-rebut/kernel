@@ -75,11 +75,11 @@ struct kfs_superblock {
 /**
  * @brief Adler32 checksum.
  */
-static inline unsigned int kfs_checksum(const void *data, size_t size)
+static inline unsigned int kfs_checksum(const void *data, u32 size)
 {
 	unsigned int a = 1;
 	unsigned int b = 0;
-	size_t i = 0;
+	u32 i = 0;
 	const u8 *buf = data;
 
 	while (i < size) {

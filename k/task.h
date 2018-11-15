@@ -11,7 +11,7 @@
 #include <k/kstd.h>
 
 void launchTask();
-void createTask(u32 entry, u32 esp);
+int createTask(const char *cmdline);
 u32 task_switch(u32 previousEsp);
 u32 sbrk(ssize_t inc);
 

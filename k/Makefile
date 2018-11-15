@@ -34,13 +34,16 @@ OBJS	= \
 	  interrupt-entry.o \
 	  interrupt-handler.o \
 	  pic.o \
-	  getkey.o \
+	  keyboard.o \
 	  pit.o \
 	  syscall.o \
 	  kfilesystem.o \
 	  terminal.o \
 	  task.o \
 	  binary.o \
+	  physical-memory.o \
+	  allocator.o \
+	  paging.o \
 
 
 DEPS = $(OBJS:.o=.d)

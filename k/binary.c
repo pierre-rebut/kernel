@@ -3,77 +3,56 @@
 //
 
 #include "binary.h"
-#include "kfilesystem.h"
 #include "elf.h"
-#include "task.h"
+#include "cpu.h"
+#include "physical-memory.h"
 
 #include <stdio.h>
 #include <string.h>
 
-static u32 loadPrg(const Elf32_Phdr *prgHeader, int fd, u32 pos) {
-    u32 limit = pos;
+u32 loadBinary(struct PageDirectory *pd, const void *data, u32 size) {
 
-    size_t size = 0;
-    while (size < prgHeader->p_filesz) {
-        u8 data[500];
-        ssize_t tmp = read(fd, data, 500);
-        if (tmp == -1)
-            break;
-
-        memcpy((void *) limit, data, (size_t) tmp);
-        limit += tmp;
-        size += tmp;
-    }
-    return limit;
-}
-
-int loadBinary(const module_t *module, u32 cmdline) {
-    int fd = open((const char *) (cmdline), O_RDONLY);
-    if (fd < 0)
-        return -1;
-
-    Elf32_Ehdr binHeader;
-    ssize_t size = read(fd, &binHeader, sizeof(Elf32_Ehdr));
-    if (size != sizeof(Elf32_Ehdr))
-        return -1;
-
-    if (memcmp(binHeader.e_ident, ELFMAG, SELFMAG) != 0) {
+    const Elf32_Ehdr *binHeader = data;
+    if (memcmp(binHeader->e_ident, ELFMAG, SELFMAG) != 0) {
         printf("bin header: wrong magic code\n");
-        return -1;
+        return 0;
     }
 
-    printf("elf: %d - %d - %d\n", binHeader.e_ehsize, binHeader.e_phentsize, binHeader.e_entry);
+    printf("elf: %d - %d - %d\n", binHeader->e_ehsize, binHeader->e_phentsize, binHeader->e_entry);
+    const Elf32_Phdr *prgHeader = (Elf32_Phdr*)(data + binHeader->e_phoff);
+    for (u32 i = 0; i < binHeader->e_phnum; i++) {
+        if ((const void*)(prgHeader + i) >= data + size)
+            return (0);
 
-    u32 pos = 0;
-
-    for (u32 i = 0; i < binHeader.e_phnum; i++) {
-        seek(fd, binHeader.e_phoff + (i * binHeader.e_phentsize), SEEK_SET);
-
-        Elf32_Phdr prgHeader;
-        size = read(fd, &prgHeader, binHeader.e_phentsize);
-        if (size != binHeader.e_phentsize)
-            return -1;
-
-        printf("prgHeader %d: %d - %d - %d - %d\n", i, prgHeader.p_type, prgHeader.p_filesz, prgHeader.p_offset,
-               prgHeader.p_flags);
-        printf("prgHeader %d: %d - %d - %d - %d\n", i, prgHeader.p_memsz, prgHeader.p_vaddr, prgHeader.p_paddr,
-               prgHeader.p_align);
-
-        if (prgHeader.p_type != PT_LOAD)
+        if (prgHeader[i].p_memsz == 0)
             continue;
 
-        seek(fd, prgHeader.p_offset, SEEK_SET);
+        if (prgHeader[i].p_type != PT_LOAD)
+            continue;
 
-        pos = prgHeader.p_vaddr;
-        loadPrg(&prgHeader, fd, pos);
-        memset((void *) (pos + prgHeader.p_filesz), 0, prgHeader.p_memsz - prgHeader.p_filesz);
+        u32 vaddr = alignUp(prgHeader[i].p_vaddr, PAGESIZE);
+        u32 memsz = alignUp(prgHeader[i].p_memsz, PAGESIZE);
 
-        pos += prgHeader.p_memsz;
+        printf("vaddr = %X, vaddr alignUp %X\n", prgHeader[i].p_paddr, vaddr);
+        printf("memsz = %X, memsz alignUp %X\n", prgHeader[i].p_memsz, memsz);
+
+        if (pagingAlloc(pd, (void *) vaddr, memsz, MEM_USER | MEM_WRITE))
+            return 0;
+
+        printf("Paging alloc ok\n");
+
+        cli();
+        struct PageDirectory *tmp = currentPageDirectory;
+        switchPageDirectory(pd);
+        memcpy((void *) vaddr, data + prgHeader[i].p_offset, prgHeader[i].p_filesz);
+        memset((void *) (vaddr + prgHeader[i].p_filesz), 0, prgHeader[i].p_memsz - prgHeader[i].p_filesz);
+        switchPageDirectory(tmp);
+        sti();
+
+        if (!(prgHeader[i].p_flags & PF_W))
+            pagingSetFlags(pd, (void*)vaddr, memsz, MEM_USER);
+
     }
 
-    if (pos == 0)
-        return -1;
-
-    createTask(binHeader.e_entry, pos);
-    return 0;
+    return binHeader->e_entry;
 }

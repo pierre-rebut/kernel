@@ -27,7 +27,7 @@ void initKFileSystem(module_t *module) {
 }
 
 static int strcmp(const char *a, const char *b) {
-    size_t i = 0;
+    u32 i = 0;
     while (a[i] && b[i]) {
         if (a[i] != b[i])
             return -1;
@@ -128,7 +128,7 @@ static char changeIBlock(struct file_entry *file, struct kfs_inode *node) {
     return 0;
 }
 
-ssize_t read(int fd, void *buf, size_t size) {
+ssize_t read(int fd, void *buf, u32 size) {
     if (fd < 0 || fd > 255 || kfs == NULL)
         return -1;
 
@@ -139,7 +139,7 @@ ssize_t read(int fd, void *buf, size_t size) {
     struct kfs_inode *node = file->node;
     u8 *buffer = (u8 *) buf;
 
-    for (size_t i = 0; i < size; i++) {
+    for (u32 i = 0; i < size; i++) {
         if (file->dataIndex >= file->block->usage) {
             if ((file->iblock == NULL && file->blockIndex >= node->d_blk_cnt) ||
                 (file->iblock != NULL && file->blockIndex >= file->iblock->blk_cnt)) {

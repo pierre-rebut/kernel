@@ -147,9 +147,9 @@ static unsigned int libvga_default_palette[256] = {
         0xff, 0xff00ff, 0xffff, 0xffffff
 };
 
-static void libvga_set_palette(unsigned int *new_palette, size_t size) {
+static void libvga_set_palette(unsigned int *new_palette, u32 size) {
     outb(VGA_DAC_WRITE_INDEX, 0);
-    for (size_t i = 0; i < size; i++) {
+    for (u32 i = 0; i < size; i++) {
         outb(VGA_DAC_DATA, ((new_palette[i] >> 16) >> 2) & 0xFF);
         outb(VGA_DAC_DATA, ((new_palette[i] >> 8) >> 2) & 0xFF);
         outb(VGA_DAC_DATA, ((new_palette[i]) >> 2) & 0xFF);
@@ -232,7 +232,7 @@ static void libvga_switch_mode13h(void) {
 
     // plane 2 is now map in the memory, save it
     char *vram = libvga_get_framebuffer();
-    for (size_t i = 0; i < array_size(libvga_txt_mode_font); i++) {
+    for (u32 i = 0; i < array_size(libvga_txt_mode_font); i++) {
         libvga_txt_mode_font[i] = vram[i];
         vram[i] = 0;
     }
@@ -241,7 +241,7 @@ static void libvga_switch_mode13h(void) {
 static void libvga_switch_mode3h(void) {
     // restore the VGA plane 2 to the text font
     char *vram = libvga_get_framebuffer();
-    for (size_t i = 0; i < array_size(libvga_txt_mode_font); i++)
+    for (u32 i = 0; i < array_size(libvga_txt_mode_font); i++)
         vram[i] = libvga_txt_mode_font[i];
 
     libvga_write_regs(libvga_regs_80x25xtext);
@@ -274,22 +274,22 @@ int getVideoMode() {
 
 void setVgaFrameBuffer(const void *buffer) {
     char *vram = libvga_get_framebuffer();
-    for (size_t i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++)
+    for (u32 i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++)
         vram[i] = ((char*)buffer)[i];
 }
 
-static size_t posX = 0;
+static u32 posX = 0;
 
 void moveBlock() {
     if (currentMode != VIDEO_GRAPHIC)
         return;
 
     char *vram = libvga_get_framebuffer();
-    for (size_t i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++)
+    for (u32 i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++)
         vram[i] = 0;
 
-    for (size_t y = 150; y < 160; y++) {
-        for (size_t x = posX; x < posX + 10; x++) {
+    for (u32 y = 150; y < 160; y++) {
+        for (u32 x = posX; x < posX + 10; x++) {
             vram[y * VGA_WIDTH + x] = 0x8;
         }
     }

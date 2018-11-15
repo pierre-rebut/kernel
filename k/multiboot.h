@@ -70,11 +70,9 @@ typedef struct {
 } module_t;
 
 typedef struct {
-	unsigned int size;
-	unsigned int base_addr_low;
-	unsigned int base_addr_high;
-	unsigned int length_low;
-	unsigned int length_high;
+	unsigned int entrySize;
+	unsigned long long regionAddr;
+	unsigned long regionSize;
 	unsigned int type;
 } memory_map_t;
 

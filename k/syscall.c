@@ -4,7 +4,7 @@
 
 #include "terminal.h"
 #include "serial.h"
-#include "getkey.h"
+#include "keyboard.h"
 #include "pit.h"
 #include "kfilesystem.h"
 #include "syscall.h"

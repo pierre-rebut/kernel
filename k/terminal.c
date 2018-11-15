@@ -18,12 +18,12 @@ static inline u16 vgaEntry(char uc, u8 color) {
 static void scroll() {
     u16 *buf = terminalBuffer;
 
-    for (size_t y = 1; y < VGA_HEIGHT; y++) {
-        for (size_t x = 0; x < VGA_WIDTH; x++)
+    for (u32 y = 1; y < VGA_HEIGHT; y++) {
+        for (u32 x = 0; x < VGA_WIDTH; x++)
             buf[(y - 1) * VGA_WIDTH + x] = buf[y * VGA_WIDTH + x];
     }
 
-    for (size_t x = 0; x < VGA_WIDTH; x++)
+    for (u32 x = 0; x < VGA_WIDTH; x++)
         buf[(VGA_HEIGHT - 1) * VGA_WIDTH + x] = vgaEntry(' ', terminalColor);
 }
 
@@ -84,7 +84,7 @@ void initTerminal() {
 }
 
 void clearTerminal() {
-    for (size_t i = 0; i < VGA_HEIGHT * VGA_WIDTH; i++)
+    for (u32 i = 0; i < VGA_HEIGHT * VGA_WIDTH; i++)
         terminalBuffer[i] = vgaEntry(' ', terminalColor);
 
     terminalColumn = 0;
@@ -117,8 +117,8 @@ void writeTerminalAt(char c, u8 color, u16 x, u16 y) {
     terminalBuffer[index] = vgaEntry(c, color);
 }
 
-int writeStringTerminal(const char *data, size_t size) {
-    size_t i;
+int writeStringTerminal(const char *data, u32 size) {
+    u32 i;
     for (i = 0; i < size; i++)
         putchar(data[i]);
     updateTerminalCursor();

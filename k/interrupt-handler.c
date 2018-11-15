@@ -4,7 +4,7 @@
 
 #include "pic.h"
 #include "idt.h"
-#include "getkey.h"
+#include "keyboard.h"
 #include "pit.h"
 #include "syscall.h"
 #include "task.h"

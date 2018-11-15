@@ -13,7 +13,7 @@
 void initKFileSystem(module_t *module);
 
 int open(const char *pathname, int flags);
-ssize_t read(int fd, void *buf, size_t size);
+ssize_t read(int fd, void *buf, u32 size);
 off_t seek(int fd, off_t offset, int whence);
 int close(int fd);
 

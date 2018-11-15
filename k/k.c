@@ -3,13 +3,16 @@
 #include "gdt.h"
 #include "idt.h"
 #include "pic.h"
-#include "getkey.h"
+#include "keyboard.h"
 #include "pit.h"
 #include "libvga.h"
 #include "kfilesystem.h"
 #include "terminal.h"
 #include "binary.h"
 #include "task.h"
+#include "allocator.h"
+#include "physical-memory.h"
+#include "paging.h"
 
 #include <stdio.h>
 
@@ -19,23 +22,37 @@
 
 static void k_init(const multiboot_info_t *info) {
     initSerial(38400);
-    printf("Serial init\n");
+    printf("Init Serial\n");
 
+    printf("Init Memory\n");
     initMemory();
-    printf("Memory init\n");
-    
+
+    printf("Init Temporary allocator\n");
+    initTemporaryAllocator(info);
+
+    printf("Init Physical Memory\n");
+    u32 memSize = initPhysicalMemory(info);
+    printf("Total memory size: %d\n", memSize);
+
+    printf("Init Paging\n");
+    initPaging(memSize);
+
+    printf("Init Allocator\n");
+    initAllocator();
+
+    printf("Init Terminal\n");
     initTerminal();
-    printf("Terminal init\n");
 
+    printf("Init Interrupt\n");
     initInterrupt();
-    printf("Interrupt init\n");
 
+    printf("Init Pic\n");
     initPic();
-    printf("Pic init\n");
 
+    printf("Init Pit\n");
     initPit();
-    printf("Pit init\n");
 
+    printf("Allow KEYBOARD & PIT interrupt\n");
     allowIrq(ISQ_KEYBOARD_VALUE);
     allowIrq(ISQ_PIT_VALUE);
 }
@@ -131,7 +148,7 @@ static void keyHandler(int key) {
     }
 }
 
-void my_putnbr(unsigned long n, size_t pos) {
+void my_putnbr(unsigned long n, u32 pos) {
     if (n > 9) {
         my_putnbr(n / 10, pos++);
         my_putnbr(n % 10, pos++);
@@ -154,10 +171,9 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
     printf("\n### Starting kernel test ###\n\n");
     k_test();
     printf("\n### Kernel test ok ###\n### Trying init binary [%s] ###\n\n", (char *) info->cmdline);
-    loadBinary((module_t *) info->mods_addr, info->cmdline);
+    createTask((const char*)info->cmdline);
 
     writeStringTerminal("\n[F1] Clear - [F2] Start bin - [F7] - Graphic mode test - [F8] Text mode\n", 73);
-
 
     while (running) {
         int key = getkey();
@@ -184,6 +200,6 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
             asm volatile ("hlt");
 }
 
-int write(const char *s, size_t i) {
+int write(const char *s, u32 i) {
     return writeSerial((const void *) s, i);
 }
