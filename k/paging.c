@@ -16,22 +16,21 @@ static void freePages(struct PageDirectory *pd, void *addr, u32 pages);
 
 void initPaging(u32 memSize) {
     kernelPageDirectory = kmalloc(sizeof(struct PageDirectory), PAGESIZE);
-    memset(kernelPageDirectory, 0, sizeof(struct PageDirectory));
-    kernelPageDirectory->physAddr = (u32)kernelPageDirectory;
+    memset(kernelPageDirectory, 0, sizeof(struct PageDirectory) - 4);
+    kernelPageDirectory->physAddr = (u32) kernelPageDirectory;
 
     u32 addr = 0;
     for (u8 i = 0; i < 3; i++) {
-        u32 pos = 0;
 
-        kernelPageDirectory->tablesInfo[pos + i] = kmalloc(sizeof(struct TableDirectory), PAGESIZE);
-        kernelPageDirectory->tablesAddr[pos + i] = (u32) kernelPageDirectory->tablesAddr[pos + i] | MEM_PRESENT | MEM_WRITE;
+        kernelPageDirectory->tablesInfo[i] = kmalloc(sizeof(struct TableDirectory), PAGESIZE);
+        kernelPageDirectory->tablesAddr[i] = (u32) kernelPageDirectory->tablesInfo[i] | MEM_PRESENT | MEM_WRITE;
 
         for (u32 j = 0; j < NB_PAGE; j++) {
             u32 flags = MEM_PRESENT | MEM_WRITE | MEM_ALLOCATED;
             if (addr >= 0x100000)
                 flags |= MEM_NOTLBUPDATE;
 
-            kernelPageDirectory->tablesInfo[pos + i]->pages[j] = addr | flags;
+            kernelPageDirectory->tablesInfo[i]->pages[j] = addr | flags;
             addr += PAGESIZE;
         }
     }
@@ -44,7 +43,8 @@ void initPaging(u32 memSize) {
 
     for (u32 i = 0; i < kernelpts; i++) {
         kernelPageDirectory->tablesInfo[KERNEL_HEAP_START / PAGESIZE / NB_TABLE + i] = heap_pts + i;
-        kernelPageDirectory->tablesAddr[KERNEL_HEAP_START / PAGESIZE / NB_TABLE + i] = (u32) (heap_pts + i) | MEM_PRESENT;
+        kernelPageDirectory->tablesAddr[KERNEL_HEAP_START / PAGESIZE / NB_TABLE + i] =
+                (u32) (heap_pts + i) | MEM_PRESENT;
     }
 
     switchPageDirectory(kernelPageDirectory);
@@ -74,13 +74,14 @@ struct PageDirectory *createPageDirectory() {
     if (!pageDirectory)
         return NULL;
 
-    memcpy(pageDirectory, kernelPageDirectory, sizeof(struct PageDirectory));
+    memcpy(pageDirectory, kernelPageDirectory, sizeof(struct PageDirectory) - 4);
     pageDirectory->physAddr = getPhysAddr(pageDirectory->tablesAddr);
     return pageDirectory;
 }
 
 static int checkPageAllowed(struct PageDirectory *pageDirectory, u32 index) {
-    return kernelPageDirectory == pageDirectory || (pageDirectory->tablesAddr[index] != kernelPageDirectory->tablesAddr[index]);
+    return kernelPageDirectory == pageDirectory ||
+           (pageDirectory->tablesAddr[index] != kernelPageDirectory->tablesAddr[index]);
 }
 
 void destroyPageDirectory(struct PageDirectory *pageDirectory) {
@@ -107,6 +108,9 @@ void destroyPageDirectory(struct PageDirectory *pageDirectory) {
 }
 
 void switchPageDirectory(struct PageDirectory *pageDirectory) {
+    if (pageDirectory == currentPageDirectory)
+        return;
+
     printf("Switching page directory\n");
     currentPageDirectory = pageDirectory;
     asm volatile("mov %0, %%cr3" : : "r"(pageDirectory->physAddr));

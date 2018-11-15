@@ -264,6 +264,9 @@ u32 length(const char *pathname) {
     if (kfs == NULL || pathname == NULL)
         return 0;
 
+    if (pathname[0] == '/')
+        pathname++;
+
     struct kfs_inode *node = getFileINode(pathname);
     if (node == NULL)
         return 0;

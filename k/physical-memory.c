@@ -39,7 +39,6 @@ static void memorySetRegion(u32 addrBegin, u32 addrEnd, u8 isReserved) {
 }
 
 u32 initPhysicalMemory(const multiboot_info_t *info) {
-
     memory_map_t *memEntry = (memory_map_t*)info->mmap_addr;
 
     u32 memSize = getMemorySize(memEntry, info->mmap_length);

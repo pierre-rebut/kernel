@@ -9,7 +9,7 @@
 #include "multiboot.h"
 
 #define MAX(a, b) ((a) > (b) ? (a): (b))
-#define MAX_MEMORY 0x100000000
+#define MAX_MEMORY 0x100000000ull
 #define PAGESIZE 4096
 
 static inline u32 alignUp(u32 val, u32 alignment) {

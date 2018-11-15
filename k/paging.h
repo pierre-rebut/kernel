@@ -12,13 +12,13 @@
 
 struct TableDirectory {
     u32 pages[NB_PAGE];
-};
+} __attribute__((packed));
 
 struct PageDirectory {
     u32 tablesAddr[NB_TABLE];
     struct TableDirectory *tablesInfo[NB_TABLE];
     u32 physAddr;
-};
+} __attribute__((packed));
 
 enum MEMFLAGS {
     MEM_PRESENT = 1,

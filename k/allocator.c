@@ -11,7 +11,7 @@ static void *temporaryAllocAddr;
 
 void initTemporaryAllocator(const multiboot_info_t *info) {
     isTemporaryAllocator = 1;
-    temporaryAllocAddr = (void *) (((module_t *) (info->mods_addr))->mod_end);
+    temporaryAllocAddr = (void*) ((module_t *)info->mods_addr)->mod_end;
 }
 
 void initAllocator() {
@@ -26,11 +26,12 @@ static void *temporaryKMalloc(u32 size, u32 allign) {
         return 0;
 
     temporaryAllocAddr = currPlacement + size;
-
     return currPlacement;
 }
 
 void *kmalloc(u32 size, u32 allign) {
+    allign &= 0x00FFFFFF;
+
     if (isTemporaryAllocator)
         return temporaryKMalloc(size, allign);
 
