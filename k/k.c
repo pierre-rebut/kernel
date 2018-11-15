@@ -17,13 +17,13 @@
     printf("- Test interrupt: "#id"\n"); \
     asm volatile("int $"#id"\n")
 
-static void k_init() {
+static void k_init(const multiboot_info_t *info) {
     initSerial(38400);
     printf("Serial init\n");
 
     initMemory();
     printf("Memory init\n");
-
+    
     initTerminal();
     printf("Terminal init\n");
 
@@ -51,7 +51,7 @@ static void k_test() {
 
     u32 res;
     char *str = "Syscall write ok\n";
-    asm volatile ("int $0x80" : "=a"(res) : "a"(0), "b"((u32)str), "c"(17));
+    asm volatile ("int $0x80" : "=a"(res) : "a"(0), "b"((u32) str), "c"(17));
 
     printf("Write syscall result: %d\n", res);
 
@@ -74,30 +74,14 @@ static void k_test() {
     }
 }
 
-static char keyMap[] = "&\0\"'(-\0_\0\0)=\r\tazertyuiop^$\n\0qsdfghjklm\0*<wxcvbn,;:!";
-static char keyMapShift[] = "1234567890°+\r\tAZERTYUIOP\0\0\nQSDFGHJKLM%\0>WXCVBN?./\0";
-static char keyMapCtrl[] = "\0~#{[|`\\^@]}\r\t";
+static char keyMap[] = "&\0\"'(-\0_\0\0)=\r\tazertyuiop^$\n\0qsdfghjklm\0\0\0*wxcvbn,;:!";
+static char keyMapShift[] = "1234567890\0+\r\tAZERTYUIOP\0\0\n\0QSDFGHJKLM%\0\0\0WXCVBN?./\0";
+// static char keyMapCtrl[] = "\0~#{[|`\\^@]}\r\t";
 
 static char running = 1;
-static int keyMode[3] = {0};
+static char isUpper = 0;
 
 static void keyHandler(int key) {
-    int release = key >> 7;
-    key &= ~(1 << 7);
-
-    if (key == 42 || key == 54) {
-        keyMode[0] = (release ? 0 : 1);
-        return;
-    }
-
-    if (key == 29 || key == 96) {
-        keyMode[1] = (release ? 0 : 1);
-        return;
-    }
-
-    if (release == 1)
-        return;
-
     switch (key) {
         case KEY_ESC:
             running = 0;
@@ -116,35 +100,33 @@ static void keyHandler(int key) {
             switchVgaMode(VIDEO_TEXT);
             break;
         case KEY_MAJLOCK:
-            keyMode[2] = (keyMode[2] ? 0 : 1);
+            isUpper = (char) (isUpper ? 0 : 1);
+            break;
+        case 29:
+        case 42:
             break;
         default:
             if (getVideoMode() != VIDEO_TEXT)
                 return;
 
-            if (key < 87 && key >= 2) {
-                if (key == 57) {
-                    writeTerminal(' ');
-                } else {
-                    char c;
+            if (key == 57)
+                writeTerminal(' ');
+            else {
+                char c = 0;
 
-                    if (keyMode[0] == 1)
-                        c = keyMapShift[key - 2];
-                    else if (keyMode[1] == 1) {
-                        if (key > 16)
-                            c = '\0';
-                        else
-                            c = keyMapCtrl[key];
-                    } else if (keyMode[2] == 1)
+                if (key == 86)
+                    c = (char) (isUpper ? '>' : '<');
+                else if (key < 53 && key >= 2) {
+                    if (isUpper)
                         c = keyMapShift[key - 2];
                     else
                         c = keyMap[key - 2];
-
-                    if (c == '\0')
-                        writeStringTerminal("^@", 2);
-                    else
-                        writeTerminal(c);
                 }
+
+                if (!c)
+                    writeStringTerminal("^@", 2);
+                else
+                    writeTerminal(c);
             }
     }
 }
@@ -162,7 +144,7 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
     if (magic != MULTIBOOT_BOOTLOADER_MAGIC || info->mods_count != 1)
         goto error;
 
-    k_init();
+    k_init(info);
     unsigned long oldTick = 0;
     writeTerminalAt('0', CONS_GREEN, 0, 24);
     writeStringTerminal("Init ok\n", 8);
@@ -171,7 +153,7 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
 
     printf("\n### Starting kernel test ###\n\n");
     k_test();
-    printf("\n### Kernel test ok ###\n### Trying init binary [%s] ###\n\n", (char*)info->cmdline);
+    printf("\n### Kernel test ok ###\n### Trying init binary [%s] ###\n\n", (char *) info->cmdline);
     loadBinary((module_t *) info->mods_addr, info->cmdline);
 
     writeStringTerminal("\n[F1] Clear - [F2] Start bin - [F7] - Graphic mode test - [F8] Text mode\n", 73);

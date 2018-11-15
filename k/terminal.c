@@ -33,6 +33,8 @@ static void newline() {
         scroll();
     else
         terminalRow++;
+    writeTerminalAt('>', terminalColor, terminalColumn, terminalRow);
+    terminalColumn++;
 }
 
 void updateTerminalCursor(){
@@ -50,7 +52,10 @@ static void putchar(char c) {
             break;
 
         case '\r':
-            terminalColumn = 0;
+	    if (terminalColumn > 1) {
+	      terminalColumn --;
+	      writeTerminalAt('\0', terminalColor, terminalColumn, terminalRow);
+	    }
             break;
 
         case '\t':
@@ -84,6 +89,8 @@ void clearTerminal() {
 
     terminalColumn = 0;
     terminalRow = 0;
+    writeTerminalAt('>', terminalColor, terminalColumn, terminalRow);
+    terminalColumn++;
     updateTerminalCursor();
 }
 

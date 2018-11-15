@@ -4,7 +4,7 @@
 
 #include "io.h"
 
-#define BUFFER_SIZE 20
+#define BUFFER_SIZE 40
 #define KEYBOARD_REGISTER 0x60
 
 static int keyBuffer[BUFFER_SIZE] = {0};
@@ -17,11 +17,15 @@ int getkey() {
 
     int tmp = keyBuffer[read_ptr];
     read_ptr = (read_ptr + 1) % BUFFER_SIZE;
+
     return tmp;
 }
 
 void keyboard_handler() {
     u8 recv = inb(KEYBOARD_REGISTER);
+
+    if ((recv >> 7))
+      return;
 
     // check readptr circular buffer
     if ((write_ptr + 1) % BUFFER_SIZE == read_ptr)

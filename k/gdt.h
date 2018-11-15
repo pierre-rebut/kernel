@@ -6,6 +6,7 @@
 #define KERNEL_EPITA_GDT_H
 
 #include <k/types.h>
+#include "multiboot.h"
 
 void initMemory();
 void switchTSS(u32 esp0, u32 esp, u32 ss);
