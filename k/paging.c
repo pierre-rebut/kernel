@@ -15,13 +15,13 @@ static int allocPages(struct PageDirectory *pd, void *addr, u32 pages);
 static void freePages(struct PageDirectory *pd, void *addr, u32 pages);
 
 void initPaging(u32 memSize) {
+
     kernelPageDirectory = kmalloc(sizeof(struct PageDirectory), PAGESIZE);
     memset(kernelPageDirectory, 0, sizeof(struct PageDirectory) - 4);
     kernelPageDirectory->physAddr = (u32) kernelPageDirectory;
 
     u32 addr = 0;
     for (u8 i = 0; i < 3; i++) {
-
         kernelPageDirectory->tablesInfo[i] = kmalloc(sizeof(struct TableDirectory), PAGESIZE);
         kernelPageDirectory->tablesAddr[i] = (u32) kernelPageDirectory->tablesInfo[i] | MEM_PRESENT | MEM_WRITE;
 
@@ -37,7 +37,8 @@ void initPaging(u32 memSize) {
 
     kernelPageDirectory->tablesInfo[0]->pages[0] = 0 | MEM_PRESENT | MEM_ALLOCATED;
 
-    u32 kernelpts = memSize / PAGESIZE / NB_PAGE;
+    u32 kernelpts = MIN(NB_TABLE / 8, memSize / PAGESIZE / NB_PAGE);
+
     struct TableDirectory *heap_pts = kmalloc(kernelpts * sizeof(struct TableDirectory), PAGESIZE);
     memset(heap_pts, 0, kernelpts * sizeof(struct TableDirectory));
 
@@ -65,7 +66,7 @@ static u32 getPhysAddr(const void *vaddr) {
     if (!pt)
         return 0;
 
-    printf("\nvirt-->phys: pagenr: %u, pt: %Xh\n", pageNumber, (u32) pt);
+    printf("GetPhysAddr: virt-->phys: pageNb: %u, pt: %Xh\n", pageNumber, (u32) pt);
     return ((pt->pages[pageNumber % NB_PAGE] & 0xFFFFF000) + ((u32) vaddr & 0x00000FFF));
 }
 
@@ -113,7 +114,7 @@ void switchPageDirectory(struct PageDirectory *pageDirectory) {
 
     printf("Switching page directory\n");
     currentPageDirectory = pageDirectory;
-    asm volatile("mov %0, %%cr3" : : "r"(pageDirectory->physAddr));
+    asm volatile("mov %0, %%cr3" : : "r" (pageDirectory->physAddr));
 }
 
 static int allocPages(struct PageDirectory *pd, void *addr, u32 pages) {
@@ -185,7 +186,7 @@ static int mapPagesToFrames(struct PageDirectory *pd, void *vaddr, u32 paddr, u3
         }
 
         pd->tablesAddr[pageNumber / NB_TABLE] = getPhysAddr(pt) | MEM_PRESENT | MEM_WRITE;
-        pd->tablesAddr[pageNumber / NB_TABLE] |= (flags & (~MEM_NOTLBUPDATE)); // Update codes
+        pd->tablesAddr[pageNumber / NB_TABLE] |= (flags & (~MEM_NOTLBUPDATE));
 
         pt->pages[pageNumber % NB_PAGE] = (paddr + i * PAGESIZE) | flags | MEM_PRESENT | MEM_ALLOCATED;
 
@@ -222,6 +223,8 @@ static int pagingAllocRec(struct PageDirectory *pd, u32 index, u32 pages, void *
 }
 
 int pagingAlloc(struct PageDirectory *pd, void *addr, u32 size, enum MEMFLAGS flags) {
+    printf("pagingAlloc: %p - %u\n", addr, size);
+
     if (((u32) addr) % PAGESIZE != 0) {
         printf("addr not page aligned\n");
         return -1;

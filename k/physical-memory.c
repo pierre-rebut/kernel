@@ -3,16 +3,20 @@
 //
 
 #include <string.h>
+#include <stdio.h>
 #include "physical-memory.h"
 #include "allocator.h"
+#include "multiboot.h"
 
 static u32 *physicalMemTable = NULL;
 static u32 physicalMemSize;
 
-static u32 getMemorySize(memory_map_t *memEntry, u32 mapSize) {
+static u32 getMemorySize(memory_map_t *memEntry, memory_map_t *memEnd) {
     u32 memSize = 0;
 
-    for (u32 i = 0; i < mapSize; i++) {
+    while (memEntry < memEnd) {
+        printf("getInfo: %d - %p - %lu\n", memEntry->type, (void*)memEntry->regionAddr, memEntry->regionSize);
+
         if (memEntry->regionAddr < MAX_MEMORY && memEntry->regionSize != 0) {
             if (memEntry->regionAddr + memEntry->regionSize >= MAX_MEMORY)
                 memEntry->regionSize = ((u32) MAX_MEMORY - memEntry->regionAddr);
@@ -40,16 +44,20 @@ static void memorySetRegion(u32 addrBegin, u32 addrEnd, u8 isReserved) {
 
 u32 initPhysicalMemory(const multiboot_info_t *info) {
     memory_map_t *memEntry = (memory_map_t*)info->mmap_addr;
+    memory_map_t *memEnd = ((void *) memEntry + info->mmap_length);
 
-    u32 memSize = getMemorySize(memEntry, info->mmap_length);
+    u32 memSize = getMemorySize(memEntry, memEnd);
     physicalMemSize = memSize / PAGESIZE / 32;
 
     physicalMemTable = kmalloc(physicalMemSize * 4, 0);
     memset(physicalMemTable, 0xFF, physicalMemSize * 4);
 
-    for (u32 i = 0; i < info->mmap_length; i++) {
-        if (memEntry->type == 1 && memEntry->regionAddr < MAX_MEMORY)
+    while (memEntry < memEnd) {
+        printf("mem type: %d - memAddr: %p\n", memEntry->type, (void*)memEntry->regionAddr);
+        if (memEntry->type == 1 && memEntry->regionAddr < MAX_MEMORY) {
+            printf("la salope du weekend est partie: %p - %p\n", (void*)memEntry->regionAddr, memEntry->regionAddr + memEntry->regionSize);
             memorySetRegion((u32) memEntry->regionAddr, (u32) (memEntry->regionAddr + memEntry->regionSize), 0);
+        }
         memEntry = (memory_map_t *) ((void *) memEntry + memEntry->entrySize + 4);
     }
 
@@ -59,12 +67,15 @@ u32 initPhysicalMemory(const multiboot_info_t *info) {
 }
 
 u32 allocPhysicalMemory() {
+
     for (u32 i = 0; i < physicalMemSize; i++) {
         if (physicalMemTable[i] == 0xFFFFFFFF)
             continue;
 
+        printf("alloc la salope merci\n");
+
         u32 freeBite = 0;
-        asm volatile ("bsfl %1, %0" : "=r"(freeBite) : "r"(~physicalMemTable[i]));
+        asm volatile ("bsfl %1, %0\n\t" : "=r"(freeBite) : "r"(~physicalMemTable[i]));
 
         physicalMemTable[i] |= 1 << freeBite;
         return (i * 32 + freeBite) * PAGESIZE;

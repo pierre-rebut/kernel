@@ -72,8 +72,8 @@ typedef struct {
 typedef struct {
 	unsigned int entrySize;
 	unsigned long long regionAddr;
-	unsigned long regionSize;
+	unsigned long long regionSize;
 	unsigned int type;
-} memory_map_t;
+}  __attribute__((packed)) memory_map_t;
 
 #endif				/* !MULTIBOOT_H_ */

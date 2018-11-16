@@ -51,12 +51,14 @@ int createTask(const char *cmdline) {
         return -1;
     }
 
+    printf("task: openfile\n");
     int fd = open(cmdline, O_RDONLY);
     if (fd < 0) {
         printf("Can not open file: %s\n", cmdline);
         return -1;
     }
 
+    printf("task: kmalloc\n");
     char *data = kmalloc(sizeof(char) * fileSize, 0);
     if (data == NULL) {
         close(fd);
@@ -64,6 +66,7 @@ int createTask(const char *cmdline) {
         return -1;
     }
 
+    printf("task: read\n");
     if (read(fd, data, fileSize) != fileSize) {
         kfree(data);
         close(fd);
@@ -72,6 +75,7 @@ int createTask(const char *cmdline) {
     }
 
     close(fd);
+    printf("task: alloc pagedirec\n");
     struct PageDirectory *pageDirectory = createPageDirectory();
     if (pageDirectory == NULL) {
         kfree(data);
@@ -79,6 +83,7 @@ int createTask(const char *cmdline) {
         return -1;
     }
 
+    printf("task: loadbin\n");
     u32 entryPrg = loadBinary(pageDirectory, data, fileSize);
     kfree(data);
 
@@ -86,7 +91,9 @@ int createTask(const char *cmdline) {
         printf("Can not load binary: %s\n", cmdline);
         return -1;
     }
+    printf("task: add task\n");
     addTask(entryPrg, 0);
+    printf("task: end\n");
     return 0;
 }
 

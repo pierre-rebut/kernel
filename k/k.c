@@ -13,6 +13,7 @@
 #include "allocator.h"
 #include "physical-memory.h"
 #include "paging.h"
+#include "cpu.h"
 
 #include <stdio.h>
 
@@ -20,7 +21,7 @@
     printf("- Test interrupt: "#id"\n"); \
     asm volatile("int $"#id"\n")
 
-static void k_init(const multiboot_info_t *info) {
+static int k_init(const multiboot_info_t *info) {
     initSerial(38400);
     printf("Init Serial\n");
 
@@ -32,13 +33,14 @@ static void k_init(const multiboot_info_t *info) {
 
     printf("Init Physical Memory\n");
     u32 memSize = initPhysicalMemory(info);
-    printf("Total memory size: %d\n", memSize);
+    printf("Total memory size: %u\n", memSize);
 
     printf("Init Paging\n");
     initPaging(memSize);
 
     printf("Init Allocator\n");
-    initAllocator();
+    if (initAllocator())
+        return -1;
 
     printf("Init Terminal\n");
     initTerminal();
@@ -55,6 +57,8 @@ static void k_init(const multiboot_info_t *info) {
     printf("Allow KEYBOARD & PIT interrupt\n");
     allowIrq(ISQ_KEYBOARD_VALUE);
     allowIrq(ISQ_PIT_VALUE);
+
+    return 0;
 }
 
 static void k_test() {
@@ -161,7 +165,11 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
     if (magic != MULTIBOOT_BOOTLOADER_MAGIC || info->mods_count != 1)
         goto error;
 
-    k_init(info);
+    if (k_init(info)) {
+        cli();
+        hlt();
+    }
+
     unsigned long oldTick = 0;
     writeTerminalAt('0', CONS_GREEN, 0, 24);
     writeStringTerminal("Init ok\n", 8);
