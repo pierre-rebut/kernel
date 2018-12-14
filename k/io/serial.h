@@ -6,4 +6,6 @@
 void initSerial(int);
 int writeSerial(const void *str, u32 length);
 
+int writeSerialFromFD(void *tmp, void *data, u32 size);
+
 #endif //KERNEL_EPITA_SERIAL_H

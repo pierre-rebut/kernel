@@ -29,8 +29,6 @@ void initPic() {
     // mask all interrupt
     outb(PIC_MASTER_B, PIC_MASK_ALL);
     outb(PIC_SLAVE_B, PIC_MASK_ALL);
-
-    asm volatile("sti");
 }
 
 void allowIrq(int irq) {

@@ -43,6 +43,5 @@ void pagingFree(struct PageDirectory *pd, void *virtAddress, u32 size);
 int pagingSetFlags(struct PageDirectory *pd, void *virtAddress, u32 size, enum MEMFLAGS flags);
 
 extern struct PageDirectory *kernelPageDirectory;
-extern struct PageDirectory *currentPageDirectory;
 
 #endif //KERNEL_EPITA_PAGGING_H

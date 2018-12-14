@@ -17,6 +17,9 @@
 #define HEAP_WITHIN_64K 1 << 25
 #define HEAP_CONTINUOUS 1 << 31
 
+#define USER_STACK        0x1500000
+#define KERNEL_STACK_SIZE 0x1000
+
 typedef struct
 {
     u32 size;

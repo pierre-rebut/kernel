@@ -175,7 +175,7 @@ static void game_loop(void)
 	}
 }
 
-void entry(void)
+int main(void)
 {
 	switch_graphic();
 
@@ -183,4 +183,7 @@ void entry(void)
 		splash_screen();
 		game_loop();
 	}
+
+	switch_text();
+	return 0;
 }

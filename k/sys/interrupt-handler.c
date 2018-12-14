@@ -10,6 +10,8 @@
 #include "task.h"
 
 #include <stdio.h>
+#include <include/cpu.h>
+#include <sheduler.h>
 
 static char *exceptionList[] = {
         "Division by zero",
@@ -36,10 +38,15 @@ static char *exceptionList[] = {
 };
 
 static void isr_exception_handler(struct esp_context *ctx) {
-    if (ctx->int_no > 20)
+    if (ctx->int_no > 20) {
         kSerialPrintf("Interrupt: %s\n", exceptionList[15]);
-    else
+    }
+    else {
         kSerialPrintf("Interrupt: %s (%d)\n", exceptionList[ctx->int_no], ctx->eip);
+    }
+
+    if (currentTask != &kernelTask)
+        taskExit();
 }
 
 static void isq_normal_handler(struct esp_context *ctx) {
@@ -63,6 +70,10 @@ static void isq_normal_handler(struct esp_context *ctx) {
 u32 interrupt_handler(u32 esp) {
     struct esp_context *ctx = (struct esp_context *) esp;
 
+    if ((ctx->int_no == 32 && taskSwitching) || ctx->int_no == 126) {
+        esp = schedulerSwitchTask(esp);
+    }
+
     if (ctx->int_no < 32)
         isr_exception_handler(ctx);
     else if (ctx->int_no < 48)
@@ -71,9 +82,6 @@ u32 interrupt_handler(u32 esp) {
         switch (ctx->int_no) {
             case 0x80:
                 syscall_handler(ctx);
-                break;
-            case 50:
-                esp = task_switch(esp);
                 break;
             default:
                 kSerialPrintf("Interrupt ISR handle: %d\n", ctx->int_no);

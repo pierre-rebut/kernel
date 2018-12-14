@@ -5,24 +5,25 @@
 #ifndef KERNEL_EPITA_KFILESYSTEM_H
 #define KERNEL_EPITA_KFILESYSTEM_H
 
-#include "../include/multiboot.h"
+#include <multiboot.h>
 
 #include <k/kfs.h>
 #include <k/kstd.h>
+#include "filesystem.h"
 
 void initKFileSystem(module_t *module);
 
-int open(const char *pathname, int flags);
-s32 read(int fd, void *buf, u32 size);
-off_t seek(int fd, off_t offset, int whence);
-int close(int fd);
+struct FileDescriptor *kfsOpen(const char *pathname, int flags);
 
-u32 length(const char *pathname);
+s32 kfsRead(void *entryData, void *buf, u32 size);
+off_t kfsSeek(void *entryData, off_t offset, int whence);
+int kfsClose(void *entryData);
 
-void listFiles();
+u32 kfsLengthOfFile(const char *pathname);
+
+void kfsListFiles();
 
 struct file_entry {
-    char used : 1;
     u32 dataIndex;
     u32 blockIndex;
     u32 iblockIndex;

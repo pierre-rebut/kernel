@@ -35,22 +35,22 @@ SECTIONS
 {
 	. = 0x1400000;
 
-	.text :
+	.text : ALIGN(4K)
 	{
 		*(.text)
 	} : code
 
-	.rodata :
+	.rodata : ALIGN(4K)
 	{
 		*(.rodata)
 	} : data
 
-	.data :
+	.data : ALIGN(4K)
 	{
 		*(.data)
 	} : data
 
-	.bss :
+	.bss : ALIGN(4K)
 	{
 		*(.bss) *(COMMON)
 	} : data

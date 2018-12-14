@@ -14,7 +14,6 @@
 #include <stdio.h>
 
 static void sys_write(struct esp_context *ctx);
-static void sys_writeSerial(struct esp_context *ctx);
 static void sys_sbrk(struct esp_context *ctx);
 static void sys_getkey(struct esp_context *ctx);
 static void sys_gettick(struct esp_context *ctx);
@@ -27,24 +26,33 @@ static void sys_setVgaFrameBuffer(struct esp_context *ctx);
 static void sys_getMouse(struct esp_context *ctx);
 static void sys_playsound(struct esp_context *ctx);
 static void sys_getkeymode(struct esp_context *ctx);
+static void sys_sleep(struct esp_context *ctx);
+static void sys_waitPid(struct esp_context *ctx);
+static void sys_exit(struct esp_context *ctx);
+static void sys_kill(struct esp_context *ctx);
+static void sys_getPid(struct esp_context *ctx);
 
 typedef void (*syscall_t)(struct esp_context *);
 
 static syscall_t syscall[] = {
-        sys_write, // SYSCALL_WRITE
-        sys_writeSerial, // SYSCALL_WRITESERIAL
-        sys_sbrk, // SYSCALL_SBR
-        sys_getkey, // SYSCALL_GETKEY
-        sys_gettick, // SYSCALL_GETTICK
-        sys_open, // SYSCALL_OPEN
-        sys_read, // SYSCALL_READ
-        sys_seek, // SYSCALL_SEEK
-        sys_close, // SYSCALL_CLOSE
-        sys_setvideo, // SYSCALL_SETVIDEO
-        sys_setVgaFrameBuffer, // SYSCALL_SWAP_FRONTBUFFER
-        sys_playsound, // SYSCALL_PLAYSOUND
-        sys_getMouse, // SYSCALL_GETMOUSE
-        sys_getkeymode, // SYSCALL_GETKEYMODE
+        sys_exit,
+        sys_sbrk,
+        sys_getkey,
+        sys_gettick,
+        sys_open,
+        sys_read,
+        sys_write,
+        sys_seek,
+        sys_close,
+        sys_setvideo,
+        sys_setVgaFrameBuffer,
+        sys_playsound,
+        sys_getMouse,
+        sys_getkeymode,
+        sys_sleep,
+        sys_waitPid,
+        sys_kill,
+        sys_getPid
 };
 
 void syscall_handler(struct esp_context *ctx) {
@@ -63,19 +71,12 @@ void syscall_handler(struct esp_context *ctx) {
 
 /*** SYSCALL FCT ***/
 
-static void sys_write(struct esp_context *ctx) {
-    writeStringTerminal((const char *)ctx->ebx, ctx->ecx);
-    ctx->eax = ctx->ecx;
-}
-
-static void sys_writeSerial(struct esp_context *ctx) {
-    writeSerial((const void *)ctx->ebx, ctx->ecx);
-    ctx->eax = ctx->ecx;
+static void sys_exit(struct esp_context *ctx) {
+    ctx->eax = (u32) taskExit();
 }
 
 static void sys_sbrk(struct esp_context *ctx) {
-    u32 tmp = sbrk((s32)ctx->ebx);
-    ctx->eax = tmp;
+    ctx->eax = taskSetHeapInc((s32)ctx->ebx);
 }
 
 static void sys_getkey(struct esp_context *ctx) {
@@ -91,11 +92,16 @@ static void sys_gettick(struct esp_context *ctx) {
 static void sys_open(struct esp_context *ctx) {
     int tmp = open((const char *)ctx->ebx, ctx->ecx);
     kSerialPrintf("open: %s (%d)\n", (char*)ctx->ebx, tmp);
-    ctx->eax = (u32)tmp;
+    ctx->eax = (u32) tmp;
 }
 
 static void sys_read(struct esp_context *ctx) {
     s32 tmp = read(ctx->ebx, (void *)ctx->ecx, ctx->edx);
+    ctx->eax = (u32) tmp;
+}
+
+static void sys_write(struct esp_context *ctx) {
+    s32 tmp = write(ctx->ebx, (void *)ctx->ecx, ctx->edx);
     ctx->eax = (u32) tmp;
 }
 
@@ -130,3 +136,22 @@ static void sys_playsound(struct esp_context *ctx) {
 static void sys_getkeymode(struct esp_context *ctx) {
     ctx->eax = 0;
 }
+
+static void sys_sleep(struct esp_context *ctx) {
+    ctx->eax = 0;
+    taskAddEvent(TaskEventTimer, ctx->ebx);
+}
+
+static void sys_waitPid(struct esp_context *ctx) {
+    ctx->eax = 0;
+    taskAddEvent(TaskEventWaitPid, ctx->ebx);
+}
+
+static void sys_kill(struct esp_context *ctx) {
+    ctx->eax = (u32) taskKillByPid(ctx->ebx);
+}
+
+static void sys_getPid(struct esp_context *ctx) {
+    ctx->eax = taskGetpid();
+}
+

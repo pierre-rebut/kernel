@@ -3,11 +3,12 @@
 //
 
 #include "kfilesystem.h"
+#include "filesystem.h"
 
 #include <stdio.h>
+#include <sys/allocator.h>
 
 static struct kfs_superblock *kfs = NULL;
-static struct file_entry fdTable[256] = {0};
 
 void initKFileSystem(module_t *module) {
     struct kfs_superblock *tmp = (struct kfs_superblock *) module->mod_start;
@@ -22,7 +23,6 @@ void initKFileSystem(module_t *module) {
         return;
     }
 
-    kSerialPrintf("KFS - init\n");
     kfs = tmp;
 }
 
@@ -79,34 +79,47 @@ static struct kfs_inode *getFileINode(const char *pathname) {
     return node;
 }
 
-int open(const char *pathname, int flags) {
+struct FileDescriptor *kfsOpen(const char *pathname, int flags) {
     if (kfs == NULL || pathname == NULL || flags != O_RDONLY)
-        return -1;
+        return NULL;
 
     if (pathname[0] == '/')
         pathname++;
 
     struct kfs_inode *node = getFileINode(pathname);
     if (node == NULL)
-        return -2;
+        return NULL;
 
-    for (int i = 0; i < 256; i++) {
-        if (fdTable[i].used == 0) {
-            fdTable[i].blockIndex = 0;
-            fdTable[i].d_blks = node->d_blks;
-            if (changeBlock(&fdTable[i]) == -1) {
-                return -4;
-            }
-            fdTable[i].used = 1;
-            fdTable[i].node = node;
-            fdTable[i].iblock = NULL;
-            fdTable[i].iblockIndex = 0;
-            fdTable[i].flags = flags;
-            fdTable[i].dataIndex = 0;
-            return i;
-        }
+    struct file_entry *file = kmalloc(sizeof(struct file_entry), 0);
+    if (!file)
+        return NULL;
+
+    file->blockIndex = 0;
+    file->d_blks = node->d_blks;
+
+    if (changeBlock(file) == -1) {
+        kfree(file);
+        return NULL;
     }
-    return -5;
+
+    file->node = node;
+    file->iblock = NULL;
+    file->iblockIndex = 0;
+    file->flags = flags;
+    file->dataIndex = 0;
+
+    struct FileDescriptor *fd = kmalloc(sizeof(struct FileDescriptor), 0);
+    if (!fd) {
+        kfree(file);
+        return NULL;
+    }
+
+    fd->entryData = file;
+    fd->writeFct = NULL;
+    fd->readFct = &kfsRead;
+    fd->seekFct = &kfsSeek;
+    fd->closeFct = &kfsClose;
+    return fd;
 }
 
 static char changeIBlock(struct file_entry *file, struct kfs_inode *node) {
@@ -128,14 +141,11 @@ static char changeIBlock(struct file_entry *file, struct kfs_inode *node) {
     return 0;
 }
 
-s32 read(int fd, void *buf, u32 size) {
-    if (fd < 0 || fd > 255 || kfs == NULL)
+s32 kfsRead(void *entryData, void *buf, u32 size) {
+    if (entryData == NULL || kfs == NULL)
         return -1;
 
-    struct file_entry *file = &(fdTable[fd]);
-    if (file->used == 0)
-        return -1;
-
+    struct file_entry *file = (struct file_entry *) entryData;
     struct kfs_inode *node = file->node;
     u8 *buffer = (u8 *) buf;
 
@@ -198,12 +208,12 @@ off_t getOffset(struct file_entry *file) {
     return res;
 }
 
-off_t seek(int fd, off_t offset, int whence) {
-    if (fd < 0 || fd > 255 || kfs == NULL)
+off_t kfsSeek(void *entryData, off_t offset, int whence) {
+    if (!entryData || !kfs)
         return -1;
 
-    struct file_entry *file = &(fdTable[fd]);
-    if (file->used == 0 || offset >= (off_t) file->node->file_sz)
+    struct file_entry *file = (struct file_entry *) entryData;
+    if (offset >= (off_t) file->node->file_sz)
         return -1;
 
     if (whence != SEEK_CUR) {
@@ -226,21 +236,18 @@ off_t seek(int fd, off_t offset, int whence) {
         return -1;
 
     offset = (currentOffset + offset) % file->node->file_sz;
-    return seek(fd, offset, offset < 0 ? SEEK_END : SEEK_SET);
+    return kfsSeek(entryData, offset, offset < 0 ? SEEK_END : SEEK_SET);
 }
 
-int close(int fd) {
-    if (fd < 0 || fd > 255 || kfs == NULL)
+int kfsClose(void *entryData) {
+    if (!entryData || kfs == NULL)
         return -1;
 
-    if (fdTable[fd].used == 0)
-        return -2;
-
-    fdTable[fd].used = 0;
+    kfree(entryData);
     return 0;
 }
 
-void listFiles() {
+void kfsListFiles() {
     if (kfs == NULL)
         return;
 
@@ -255,12 +262,12 @@ void listFiles() {
         }
 
         kSerialPrintf("%d - file: %s, size: %d (cnt: %d, db_cnt: %d, ib_cnt: %d)\n", node->inumber, node->filename,
-               node->file_sz, node->blk_cnt, node->d_blk_cnt, node->i_blk_cnt);
+                      node->file_sz, node->blk_cnt, node->d_blk_cnt, node->i_blk_cnt);
         node = (struct kfs_inode *) ((void *) kfs + (node->next_inode * KFS_BLK_SZ));
     }
 }
 
-u32 length(const char *pathname) {
+u32 kfsLengthOfFile(const char *pathname) {
     if (kfs == NULL || pathname == NULL)
         return 0;
 

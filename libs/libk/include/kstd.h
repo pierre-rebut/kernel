@@ -104,13 +104,13 @@ enum e_mouse_codes {
 ** syscalls
 */
 
-#define SYSCALL_WRITE			0
-#define SYSCALL_WRITESERIAL		1
-#define SYSCALL_SBRK			2
-#define SYSCALL_GETKEY			3
-#define SYSCALL_GETTICK			4
-#define SYSCALL_OPEN			5
-#define SYSCALL_READ			6
+#define SYSCALL_EXIT            0
+#define SYSCALL_SBRK			1
+#define SYSCALL_GETKEY			2
+#define SYSCALL_GETTICK			3
+#define SYSCALL_OPEN			4
+#define SYSCALL_READ			5
+#define SYSCALL_WRITE			6
 #define SYSCALL_SEEK			7
 #define SYSCALL_CLOSE			8
 #define SYSCALL_SETVIDEO		9
@@ -121,12 +121,13 @@ enum e_mouse_codes {
 
 #define NR_SYSCALL			(SYSCALL_GETKEYMODE + 1)
 
-int write(const void *s, size_t length);
+int exit(int value);
 void *sbrk(ssize_t increment);
 int getkey(void);
 unsigned long gettick(void);
 int open(const char *pathname, int flags);
 ssize_t read(int fd, void *buf, size_t count);
+int write(int fd, const void *s, size_t length);
 off_t seek(int filedes, off_t offset, int whence);
 int close(int fd);
 int setvideo(int mode);

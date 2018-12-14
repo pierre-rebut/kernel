@@ -6,7 +6,7 @@ set(FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/chiche.bmp
         ${CMAKE_CURRENT_SOURCE_DIR}/intro.ksf)
 
-add_executable(pong ${SOURCE})
+add_executable(pong ${SOURCE} ${ENTRYFILE})
 target_link_libraries(pong k c)
 
 add_custom_command(TARGET pong

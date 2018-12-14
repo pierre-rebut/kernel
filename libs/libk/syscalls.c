@@ -24,103 +24,90 @@
 #include <kstd.h>
 #include <stddef.h>
 
-static inline u32 syscall0(int syscall_nb)
-{
-	u32 res;
+static inline u32 syscall0(int syscall_nb) {
+    u32 res;
 
-	asm volatile ("int $0x80" : "=a"(res) : "a"(syscall_nb));
+    asm volatile ("int $0x80" : "=a"(res) : "a"(syscall_nb));
 
-	return res;
+    return res;
 }
 
-static inline u32 syscall1(int syscall_nb, u32 ebx)
-{
-	u32 res;
+static inline u32 syscall1(int syscall_nb, u32 ebx) {
+    u32 res;
 
-	asm volatile ("int $0x80" : "=a"(res) : "a"(syscall_nb), "b"(ebx));
+    asm volatile ("int $0x80" : "=a"(res) : "a"(syscall_nb), "b"(ebx));
 
-	return res;
+    return res;
 }
 
-static inline u32 syscall2(int syscall_nb, u32 ebx, u32 ecx)
-{
-	u32 res;
+static inline u32 syscall2(int syscall_nb, u32 ebx, u32 ecx) {
+    u32 res;
 
-	asm volatile ("int $0x80" : "=a"(res) : "a"(syscall_nb), "b"(ebx), "c"(ecx));
+    asm volatile ("int $0x80" : "=a"(res) : "a"(syscall_nb), "b"(ebx), "c"(ecx));
 
-	return res;
+    return res;
 }
 
-static inline u32 syscall3(int syscall_nb, u32 ebx, u32 ecx, u32 edx)
-{
-	u32 res;
+static inline u32 syscall3(int syscall_nb, u32 ebx, u32 ecx, u32 edx) {
+    u32 res;
 
-	asm volatile ("int $0x80" : "=a"(res) : "a"(syscall_nb), "b"(ebx), "c"(ecx), "d"(edx));
+    asm volatile ("int $0x80" : "=a"(res) : "a"(syscall_nb), "b"(ebx), "c"(ecx), "d"(edx));
 
-	return res;
+    return res;
 }
 
-int write(const void *s, size_t length)
-{
-	return ((int)syscall2(SYSCALL_WRITE, (u32)s, length));
+int exit(int value) {
+    return ((int) syscall1(SYSCALL_EXIT, (u32) value));
 }
 
-void *sbrk(ssize_t increment)
-{
-	return ((void *)syscall1(SYSCALL_SBRK, increment));
+void *sbrk(ssize_t increment) {
+    return ((void *) syscall1(SYSCALL_SBRK, increment));
 }
 
-int getkey(void)
-{
-	return ((int)syscall0(SYSCALL_GETKEY));
+int getkey(void) {
+    return ((int) syscall0(SYSCALL_GETKEY));
 }
 
-unsigned long gettick(void)
-{
-	return ((unsigned long)syscall0(SYSCALL_GETTICK));
+unsigned long gettick(void) {
+    return ((unsigned long) syscall0(SYSCALL_GETTICK));
 }
 
-int open(const char *pathname, int flags)
-{
-	return ((int)syscall2(SYSCALL_OPEN, (u32)pathname, flags));
+int open(const char *pathname, int flags) {
+    return ((int) syscall2(SYSCALL_OPEN, (u32) pathname, flags));
 }
 
-ssize_t read(int fd, void *buf, size_t count)
-{
-	return ((ssize_t)syscall3(SYSCALL_READ, fd, (u32)buf, count));
+ssize_t read(int fd, void *buf, size_t count) {
+    return ((ssize_t) syscall3(SYSCALL_READ, fd, (u32) buf, count));
 }
 
-off_t seek(int filedes, off_t offset, int whence)
-{
-	return ((off_t)syscall3(SYSCALL_SEEK, filedes, offset, whence));
+int write(int fd, const void *s, size_t length) {
+    return ((int) syscall3(SYSCALL_WRITE, fd, (u32) s, length));
 }
 
-int close(int fd)
-{
-	return ((int)syscall1(SYSCALL_CLOSE, fd));
+off_t seek(int filedes, off_t offset, int whence) {
+    return ((off_t) syscall3(SYSCALL_SEEK, filedes, offset, whence));
 }
 
-int playsound(struct melody *melody, int repeat)
-{
-	return ((int)syscall2(SYSCALL_PLAYSOUND, (u32)melody, repeat));
+int close(int fd) {
+    return ((int) syscall1(SYSCALL_CLOSE, fd));
 }
 
-int setvideo(int mode)
-{
-	return ((int)syscall1(SYSCALL_SETVIDEO, mode));
+int playsound(struct melody *melody, int repeat) {
+    return ((int) syscall2(SYSCALL_PLAYSOUND, (u32) melody, repeat));
 }
 
-void swap_frontbuffer(const void *buffer)
-{
-	syscall1(SYSCALL_SWAP_FRONTBUFFER, (u32)buffer);
+int setvideo(int mode) {
+    return ((int) syscall1(SYSCALL_SETVIDEO, mode));
 }
 
-int getmouse(int *x, int *y, int *buttons)
-{
-	return ((int)syscall3(SYSCALL_GETMOUSE, (u32)x, (u32)y, (u32)buttons));
+void swap_frontbuffer(const void *buffer) {
+    syscall1(SYSCALL_SWAP_FRONTBUFFER, (u32) buffer);
 }
 
-int getkeymode(int mode)
-{
-	return ((int)syscall1(SYSCALL_GETKEYMODE, mode));
+int getmouse(int *x, int *y, int *buttons) {
+    return ((int) syscall3(SYSCALL_GETMOUSE, (u32) x, (u32) y, (u32) buttons));
+}
+
+int getkeymode(int mode) {
+    return ((int) syscall1(SYSCALL_GETKEYMODE, mode));
 }

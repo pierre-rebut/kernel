@@ -651,21 +651,21 @@ static void blue_screen_cons(const char *message)
 	char *chiche1 = "If this is not the first time you encounter";
 	char *chiche2 = "this problem, please contact chiche@epita.fr";
 
-	write(seq, sizeof(seq) / sizeof(char));
+	write(2, seq, sizeof(seq) / sizeof(char));
 
-	write(fatal, sizeof(fatal) / sizeof(char));
+	write(2, fatal, sizeof(fatal) / sizeof(char));
 	printf("K -- FATAL ERROR", fatal);
 
 	msg[2] = 40 - strlen(message) / 2;
-	write(msg, sizeof(msg) / sizeof(char));
+	write(2, msg, sizeof(msg) / sizeof(char));
 	printf("%s", message);
 	msg[2] = 40 - strlen(chiche1) / 2;
 	msg[5] += 2;
-	write(msg, sizeof(msg) / sizeof(char));
+	write(2, msg, sizeof(msg) / sizeof(char));
 	printf("%s", chiche1);
 	msg[2] = 40 - strlen(chiche2) / 2;
 	msg[5]++;
-	write(msg, sizeof(msg) / sizeof(char));
+	write(2, msg, sizeof(msg) / sizeof(char));
 	printf("%s", chiche2);
 
 	while (1)

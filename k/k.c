@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <cpu.h>
 #include <multiboot.h>
+#include <include/multiboot.h>
 
 #include "io/serial.h"
 #include "sys/gdt.h"
@@ -39,6 +40,9 @@ static int k_init(const multiboot_info_t *info) {
     if (initAllocator())
         return -1;
 
+    kSerialPrintf("Init Tasking\n");
+    initTasking();
+
     kSerialPrintf("Init Terminal\n");
     initTerminal();
 
@@ -55,6 +59,11 @@ static int k_init(const multiboot_info_t *info) {
     allowIrq(ISQ_KEYBOARD_VALUE);
     allowIrq(ISQ_PIT_VALUE);
 
+    kSerialPrintf("Init KFileSystem\n");
+    initKFileSystem((module_t *) info->mods_addr);
+
+    kSerialPrintf("Start listening interruption\n");
+    sti();
     return 0;
 }
 
@@ -73,13 +82,13 @@ static void k_test() {
 
     kSerialPrintf("Write syscall result: %d\n", res);
 
-    listFiles();
+    kfsListFiles();
     int fd = open("test", O_RDONLY);
     kSerialPrintf("Open file: %d\n", fd);
 
     if (fd >= 0) {
         char buf[100];
-        u32 i = 0, fileLength = length("test");
+        u32 i = 0, fileLength = kfsLengthOfFile("test");
         kSerialPrintf("len of file = %d\n", fileLength);
 
         while (i < fileLength) {
@@ -107,10 +116,6 @@ static void keyHandler(int key) {
             break;
         case KEY_F1:
             clearTerminal();
-            break;
-        case KEY_F2:
-            kSerialPrintf("### Trying executing binary ###\n");
-            launchTask();
             break;
         case KEY_F7:
             switchVgaMode(VIDEO_GRAPHIC);
@@ -163,45 +168,28 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
     if (magic != MULTIBOOT_BOOTLOADER_MAGIC || info->mods_count != 1)
         goto error;
 
-    if (k_init(info)) {
-        cli();
-        hlt();
-    }
+    if (k_init(info))
+        goto error;
 
-    unsigned long oldTick = 0;
     writeTerminalAt('0', CONS_GREEN, 0, 24);
     writeStringTerminal("Init ok\n", 8);
-
-    initKFileSystem((module_t *) info->mods_addr);
 
     kSerialPrintf("\n### Starting kernel test ###\n\n");
     k_test();
     kSerialPrintf("\n### Kernel test ok ###\n### Trying init binary [%s] ###\n\n", (char *) info->cmdline);
-    createTask((const char*)info->cmdline);
 
     writeStringTerminal("\n[F1] Clear - [F2] Start bin - [F7] - Graphic mode test - [F8] Text mode\n", 73);
 
-    while (running) {
-        int key = getkey();
-        if (key >= 0) {
-            keyHandler(key);
-        }
+    createProcess((char*)info->cmdline);
 
-        int videoMode = getVideoMode();
+    kSerialPrintf("Kernel loop start\n");
 
-        unsigned long tick = gettick() / 1000;
-        if (videoMode == VIDEO_TEXT && tick > oldTick) {
-            my_putnbr(tick, 0);
-            oldTick = tick;
-        }
-
-        if (videoMode == VIDEO_GRAPHIC && (gettick() / 10) % 4 == 0)
-            moveBlock();
+    while (1) {
+        hlt();
     }
 
-    kSerialPrintf("Stop running\n");
-
     error:
-    for (;;)
-            asm volatile ("hlt");
+    kSerialPrintf("An error occurred\n");
+    cli();
+    hlt();
 }

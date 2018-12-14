@@ -10,7 +10,7 @@ set(K_FILES
         include/compiler.h include/cpu.h elf.h io/io.h include/multiboot.h
         sys/gdt.c sys/gdt.h
         sys/idt.c sys/idt.h
-        interrupt-handler.c
+        sys/interrupt-handler.c
         k.c
         io/keyboard.c io/keyboard.h
         io/kfilesystem.c io/kfilesystem.h
@@ -22,7 +22,7 @@ set(K_FILES
         io/serial.c io/serial.h
         sys/syscall.c sys/syscall.h
         task.c task.h
-        io/terminal.c io/terminal.h elf.c)
+        io/terminal.c io/terminal.h elf.c io/filesystem.c io/filesystem.h sheduler.c sheduler.h)
 
 set(K_LIBS
         utils/memcmp.c
@@ -37,10 +37,10 @@ set(K_LIBS
         utils/strnlen.c utils/strncpy.c)
 
 set_property(SOURCE crt0.S PROPERTY LANGUAGE C)
-set_property(SOURCE interrupt-entry.S PROPERTY LANGUAGE C)
+set_property(SOURCE sys/interrupt-entry.S PROPERTY LANGUAGE C)
 
 set(K_ASM
         crt0.S
-        interrupt-entry.S)
+        sys/interrupt-entry.S)
 
 add_executable(kernel_epita ${K_FILES} ${K_ASM} ${K_LIBS})

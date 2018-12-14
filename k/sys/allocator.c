@@ -10,7 +10,6 @@ static u32 regionCount = 0;
 static u32 regionMaxCount = 0;
 static u32 firstFreeRegion = 0;
 static void *firstFreeAddr = (void *) KERNEL_HEAP_START;
-static u8 const *heapStart = (void *) KERNEL_HEAP_START;
 static u32 heapSize = 0;
 static const u32 HEAP_MIN_GROWTH = 0x10000;
 
@@ -24,15 +23,11 @@ int initAllocator(void) {
     return 0;
 }
 
-void *heap_getCurrentEnd(void) {
-    return (heapStart + heapSize);
-}
-
 static char heap_grow(size_t size, u8 *heapEnd) {
     if ((regionCount > 0) && regions[regionCount - 1].reserved && (regionCount >= regionMaxCount))
         return 0;
 
-    if (!pagingAlloc(kernelPageDirectory, heapEnd, size, MEM_WRITE))
+    if (pagingAlloc(kernelPageDirectory, heapEnd, size, MEM_WRITE) != 0)
         return 0;
 
     if ((regionCount > 0) && !regions[regionCount - 1].reserved)
@@ -157,7 +152,7 @@ void *kmalloc(size_t size, u32 alignment) {
     }
 
     u32 sizeToGrow = MAX(HEAP_MIN_GROWTH, alignUp(size * 3 / 2, PAGESIZE));
-    char success = heap_grow(sizeToGrow, (u8*)((u32) heapStart + heapSize));
+    char success = heap_grow(sizeToGrow, (u8*)((u32) KERNEL_HEAP_START + heapSize));
 
     if (!success) {
         kSerialPrintf("\nmalloc (\"%s\") failed, heap could not be expanded!");
@@ -172,7 +167,7 @@ void kfree(void *addr) {
     if (addr == 0)
         return;
 
-    u8 *regionAddress = heapStart;
+    u8 *regionAddress = (u8*) KERNEL_HEAP_START;
     for (u32 i = 0; i < regionCount; i++) {
         if (regionAddress == addr && regions[i].reserved) {
 
@@ -206,7 +201,7 @@ void kfree(void *addr) {
         regionAddress += regions[i].size;
     }
 
-    kSerialPrintf("\nBroken free: %Xh", addr);
+    kSerialPrintf("Broken free: %Xh\n", addr);
 }
 
 
