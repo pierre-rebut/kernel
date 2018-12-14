@@ -13,16 +13,16 @@ void initKFileSystem(module_t *module) {
     struct kfs_superblock *tmp = (struct kfs_superblock *) module->mod_start;
 
     if (tmp->magic != KFS_MAGIC) {
-        printf("KFS - Bad magic number\n");
+        kSerialPrintf("KFS - Bad magic number\n");
         return;
     }
 
     if (kfs_checksum(tmp, sizeof(struct kfs_superblock) - 4) != tmp->cksum) {
-        printf("KFS - Bad checksum\n");
+        kSerialPrintf("KFS - Bad checksum\n");
         return;
     }
 
-    printf("KFS - init\n");
+    kSerialPrintf("KFS - init\n");
     kfs = tmp;
 }
 
@@ -52,7 +52,7 @@ static char changeBlock(struct file_entry *file) {
     file->block = ((void *) kfs) + (file->d_blks[file->blockIndex] * KFS_BLK_SZ);
 
     if (checkBlockChecksum(file->block) == 0) {
-        printf("KFS read - Bad checksum\n");
+        kSerialPrintf("KFS read - Bad checksum\n");
         return -1;
     }
 
@@ -111,13 +111,13 @@ int open(const char *pathname, int flags) {
 
 static char changeIBlock(struct file_entry *file, struct kfs_inode *node) {
     if (file->iblockIndex >= node->i_blk_cnt) {
-        printf("KFS end of file\n");
+        kSerialPrintf("KFS end of file\n");
         return -1;
     }
 
     file->iblock = ((void *) kfs) + (node->i_blks[file->iblockIndex] * KFS_BLK_SZ);
     if (kfs_checksum(file->iblock, sizeof(struct kfs_iblock) - 4) != file->iblock->cksum) {
-        printf("KFS iblock - Bad checksum\n");
+        kSerialPrintf("KFS iblock - Bad checksum\n");
         return -1;
     }
 
@@ -128,7 +128,7 @@ static char changeIBlock(struct file_entry *file, struct kfs_inode *node) {
     return 0;
 }
 
-ssize_t read(int fd, void *buf, u32 size) {
+s32 read(int fd, void *buf, u32 size) {
     if (fd < 0 || fd > 255 || kfs == NULL)
         return -1;
 
@@ -145,10 +145,10 @@ ssize_t read(int fd, void *buf, u32 size) {
                 (file->iblock != NULL && file->blockIndex >= file->iblock->blk_cnt)) {
                 char res = changeIBlock(file, node);
                 if (res == -1)
-                    return i > 0 ? (ssize_t) i : -1;
+                    return i > 0 ? (s32) i : -1;
             }
             if (changeBlock(file) == -1)
-                return i > 0 ? (ssize_t) i : -1;
+                return i > 0 ? (s32) i : -1;
             file->dataIndex = 0;
         }
 
@@ -156,7 +156,7 @@ ssize_t read(int fd, void *buf, u32 size) {
         file->dataIndex++;
     }
 
-    return (ssize_t) size;
+    return (s32) size;
 }
 
 static char seekSet(struct file_entry *file, off_t offset) {
@@ -244,17 +244,17 @@ void listFiles() {
     if (kfs == NULL)
         return;
 
-    printf("KFS - Files: (%d)\n", kfs->inode_cnt);
+    kSerialPrintf("KFS - Files: (%d)\n", kfs->inode_cnt);
 
     struct kfs_inode *node = (struct kfs_inode *) ((void *) kfs + (kfs->inode_idx * KFS_BLK_SZ));
     for (u32 i = 0; i < kfs->inode_cnt; i++) {
         if (kfs_checksum(node, sizeof(struct kfs_inode) - 4) != node->cksum) {
-            printf("KFS node - Bad checksum\n");
+            kSerialPrintf("KFS node - Bad checksum\n");
             kfs = NULL;
             return;
         }
 
-        printf("%d - file: %s, size: %d (cnt: %d, db_cnt: %d, ib_cnt: %d)\n", node->inumber, node->filename,
+        kSerialPrintf("%d - file: %s, size: %d (cnt: %d, db_cnt: %d, ib_cnt: %d)\n", node->inumber, node->filename,
                node->file_sz, node->blk_cnt, node->d_blk_cnt, node->i_blk_cnt);
         node = (struct kfs_inode *) ((void *) kfs + (node->next_inode * KFS_BLK_SZ));
     }

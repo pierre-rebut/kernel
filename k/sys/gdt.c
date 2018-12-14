@@ -1,5 +1,4 @@
 #include "gdt.h"
-#include "compiler.h"
 
 struct tss_entry tss = {
         .ss0 = 0x10,

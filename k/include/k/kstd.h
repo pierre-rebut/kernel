@@ -25,8 +25,6 @@
 #define K_KSTD_H_
 
 #include <k/types.h>
-
-typedef s32 ssize_t;
 typedef s32 off_t;
 
 struct melody {

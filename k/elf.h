@@ -47,6 +47,11 @@
  */
 
 #include <k/types.h>
+#include <multiboot.h>
+
+#include "sys/paging.h"
+
+u32 loadBinary(struct PageDirectory *pd, const void *data, u32 size);
 
 #define ELF32_MACHDEP_ENDIANNESS ELFDATA2LSB
 #define ELF32_MACHDEP_ID_CASES \

@@ -6,6 +6,7 @@
 #define KERNEL_EPITA_PAGGING_H
 
 #include <k/types.h>
+#include <compiler.h>
 
 #define NB_TABLE 1024
 #define NB_PAGE 1024
@@ -31,9 +32,11 @@ enum MEMFLAGS {
 };
 
 void initPaging(u32 memSize);
-struct PageDirectory *createPageDirectory();
-void destroyPageDirectory(struct PageDirectory *pageDirectory);
-void switchPageDirectory(struct PageDirectory *pageDirectory);
+u32 pagingGetPhysAddr(const void *vaddr);
+
+struct PageDirectory *pagingCreatePageDirectory();
+void pagingDestroyPageDirectory(struct PageDirectory *pageDirectory);
+void pagingSwitchPageDirectory(struct PageDirectory *pageDirectory);
 
 int pagingAlloc(struct PageDirectory *pd, void *addr, u32 size, enum MEMFLAGS flags);
 void pagingFree(struct PageDirectory *pd, void *virtAddress, u32 size);

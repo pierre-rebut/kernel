@@ -5,7 +5,7 @@
 #ifndef KERNEL_EPITA_KFILESYSTEM_H
 #define KERNEL_EPITA_KFILESYSTEM_H
 
-#include "multiboot.h"
+#include "../include/multiboot.h"
 
 #include <k/kfs.h>
 #include <k/kstd.h>
@@ -13,7 +13,7 @@
 void initKFileSystem(module_t *module);
 
 int open(const char *pathname, int flags);
-ssize_t read(int fd, void *buf, u32 size);
+s32 read(int fd, void *buf, u32 size);
 off_t seek(int fd, off_t offset, int whence);
 int close(int fd);
 

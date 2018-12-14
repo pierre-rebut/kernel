@@ -45,7 +45,7 @@ void allowIrq(int irq) {
         outb(PIC_SLAVE_B, tmp);
     }
 
-    printf("PIC - Allow irq %d\n", irq);
+    kSerialPrintf("PIC - Allow irq %d\n", irq);
 }
 
 void pic_eoi_master(int irq) {

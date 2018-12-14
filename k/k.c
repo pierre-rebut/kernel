@@ -1,60 +1,57 @@
-#include "multiboot.h"
-#include "serial.h"
-#include "gdt.h"
-#include "idt.h"
-#include "pic.h"
-#include "keyboard.h"
-#include "pit.h"
-#include "libvga.h"
-#include "kfilesystem.h"
-#include "terminal.h"
-#include "binary.h"
-#include "task.h"
-#include "allocator.h"
-#include "physical-memory.h"
-#include "paging.h"
-#include "cpu.h"
-
 #include <stdio.h>
+#include <cpu.h>
+#include <multiboot.h>
+
+#include "io/serial.h"
+#include "sys/gdt.h"
+#include "sys/idt.h"
+#include "io/pic.h"
+#include "io/keyboard.h"
+#include "io/pit.h"
+#include "io/libvga.h"
+#include "io/kfilesystem.h"
+#include "io/terminal.h"
+#include "task.h"
+#include "sys/allocator.h"
+#include "sys/physical-memory.h"
+#include "sys/paging.h"
+
 
 #define TEST_INTERRUPT(id) \
-    printf("- Test interrupt: "#id"\n"); \
+    kSerialPrintf("- Test interrupt: "#id"\n"); \
     asm volatile("int $"#id"\n")
 
 static int k_init(const multiboot_info_t *info) {
     initSerial(38400);
-    printf("Init Serial\n");
+    kSerialPrintf("Init Serial\n");
 
-    printf("Init Memory\n");
+    kSerialPrintf("Init Memory\n");
     initMemory();
 
-    printf("Init Temporary allocator\n");
-    initTemporaryAllocator(info);
-
-    printf("Init Physical Memory\n");
+    kSerialPrintf("Init Physical Memory\n");
     u32 memSize = initPhysicalMemory(info);
-    printf("Total memory size: %u\n", memSize);
+    kSerialPrintf("Total memory size: %u\n", memSize);
 
-    printf("Init Paging\n");
+    kSerialPrintf("Init Paging\n");
     initPaging(memSize);
 
-    printf("Init Allocator\n");
+    kSerialPrintf("Init Allocator\n");
     if (initAllocator())
         return -1;
 
-    printf("Init Terminal\n");
+    kSerialPrintf("Init Terminal\n");
     initTerminal();
 
-    printf("Init Interrupt\n");
+    kSerialPrintf("Init Interrupt\n");
     initInterrupt();
 
-    printf("Init Pic\n");
+    kSerialPrintf("Init Pic\n");
     initPic();
 
-    printf("Init Pit\n");
+    kSerialPrintf("Init Pit\n");
     initPit();
 
-    printf("Allow KEYBOARD & PIT interrupt\n");
+    kSerialPrintf("Allow KEYBOARD & PIT interrupt\n");
     allowIrq(ISQ_KEYBOARD_VALUE);
     allowIrq(ISQ_PIT_VALUE);
 
@@ -74,24 +71,25 @@ static void k_test() {
     char *str = "Syscall write ok\n";
     asm volatile ("int $0x80" : "=a"(res) : "a"(0), "b"((u32) str), "c"(17));
 
-    printf("Write syscall result: %d\n", res);
+    kSerialPrintf("Write syscall result: %d\n", res);
 
     listFiles();
     int fd = open("test", O_RDONLY);
-    printf("Open file: %d\n", fd);
+    kSerialPrintf("Open file: %d\n", fd);
 
     if (fd >= 0) {
         char buf[100];
         u32 i = 0, fileLength = length("test");
+        kSerialPrintf("len of file = %d\n", fileLength);
 
         while (i < fileLength) {
             int tmp = read(fd, buf, 99);
             buf[tmp] = 0;
 
             i += tmp;
-            printf("%s", buf);
+            kSerialPrintf("%s", buf);
         }
-        printf("\nClosing file: %d\n", close(fd));
+        kSerialPrintf("\nClosing file: %d\n", close(fd));
     }
 }
 
@@ -111,7 +109,7 @@ static void keyHandler(int key) {
             clearTerminal();
             break;
         case KEY_F2:
-            printf("### Trying executing binary ###\n");
+            kSerialPrintf("### Trying executing binary ###\n");
             launchTask();
             break;
         case KEY_F7:
@@ -176,9 +174,9 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
 
     initKFileSystem((module_t *) info->mods_addr);
 
-    printf("\n### Starting kernel test ###\n\n");
+    kSerialPrintf("\n### Starting kernel test ###\n\n");
     k_test();
-    printf("\n### Kernel test ok ###\n### Trying init binary [%s] ###\n\n", (char *) info->cmdline);
+    kSerialPrintf("\n### Kernel test ok ###\n### Trying init binary [%s] ###\n\n", (char *) info->cmdline);
     createTask((const char*)info->cmdline);
 
     writeStringTerminal("\n[F1] Clear - [F2] Start bin - [F7] - Graphic mode test - [F8] Text mode\n", 73);
@@ -201,13 +199,9 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
             moveBlock();
     }
 
-    printf("Stop running\n");
+    kSerialPrintf("Stop running\n");
 
     error:
     for (;;)
             asm volatile ("hlt");
-}
-
-int write(const char *s, u32 i) {
-    return writeSerial((const void *) s, i);
 }

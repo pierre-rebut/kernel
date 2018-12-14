@@ -6,7 +6,7 @@
 #define KERNEL_EPITA_PHYSICAL_MEMORY_H
 
 #include <k/types.h>
-#include "multiboot.h"
+#include <multiboot.h>
 
 #define MAX(a, b) ((a) > (b) ? (a): (b))
 #define MIN(a, b) ((a) < (b) ? (a): (b))

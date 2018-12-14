@@ -30,8 +30,10 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
+#include <getopt.h>
+#include <libgen.h>
 
-#include <k/kfs.h>
+#include "kfs.h"
 
 #define align_up(v, d)    ((((v) + (d) - 1) / (d)) * (d))
 

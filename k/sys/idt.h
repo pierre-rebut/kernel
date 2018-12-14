@@ -6,6 +6,7 @@
 #define KERNEL_EPITA_INTERRUPT_H
 
 #include <k/types.h>
+#include <compiler.h>
 
 void initInterrupt();
 

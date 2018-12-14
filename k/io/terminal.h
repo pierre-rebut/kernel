@@ -1,7 +1,7 @@
 #ifndef KERNEL_EPITA_TERMINAL_H
 #define KERNEL_EPITA_TERMINAL_H
 
-#include <stddef.h>
+#include <k/types.h>
 #include <k/kstd.h>
 
 void initTerminal();

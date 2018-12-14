@@ -3,12 +3,12 @@
 //
 
 #include "task.h"
-#include "idt.h"
-#include "gdt.h"
-#include "kfilesystem.h"
-#include "allocator.h"
-#include "paging.h"
-#include "binary.h"
+#include "sys/idt.h"
+#include "sys/gdt.h"
+#include "io/kfilesystem.h"
+#include "sys/allocator.h"
+#include "sys/paging.h"
+#include "elf.h"
 
 #include <stdio.h>
 
@@ -32,7 +32,7 @@ static void addTask(u32 entry, u32 esp) {
 
     appStack.cs = 0x1B;
     appStack.eip = entry;
-    printf("eip: %d (%d), esp: %d\n", appStack.eip, *((u32 *) appStack.eip), appStack.useresp);
+    kSerialPrintf("eip: %d (%d), esp: %d\n", appStack.eip, *((u32 *) appStack.eip), appStack.useresp);
 
     appStack.gs = 0x23;
     appStack.fs = 0x23;
@@ -45,55 +45,55 @@ static void addTask(u32 entry, u32 esp) {
 }
 
 int createTask(const char *cmdline) {
-    u32 fileSize = length(cmdline);
+    s32 fileSize = length(cmdline);
     if (fileSize == 0) {
-        printf("Can not get file info: %s\n", cmdline);
+        kSerialPrintf("Can not get file info: %s\n", cmdline);
         return -1;
     }
 
-    printf("task: openfile\n");
+    kSerialPrintf("task: openfile\n");
     int fd = open(cmdline, O_RDONLY);
     if (fd < 0) {
-        printf("Can not open file: %s\n", cmdline);
+        kSerialPrintf("Can not open file: %s\n", cmdline);
         return -1;
     }
 
-    printf("task: kmalloc\n");
+    kSerialPrintf("task: kmalloc\n");
     char *data = kmalloc(sizeof(char) * fileSize, 0);
     if (data == NULL) {
         close(fd);
-        printf("Can not alloc memory\n");
+        kSerialPrintf("Can not alloc memory\n");
         return -1;
     }
 
-    printf("task: read\n");
-    if (read(fd, data, fileSize) != fileSize) {
+    kSerialPrintf("task: read\n");
+    if (read(fd, data, fileSize) != (s32)fileSize) {
         kfree(data);
         close(fd);
-        printf("Can not read bin data\n");
+        kSerialPrintf("Can not read bin data\n");
         return -1;
     }
 
     close(fd);
-    printf("task: alloc pagedirec\n");
-    struct PageDirectory *pageDirectory = createPageDirectory();
+    kSerialPrintf("task: alloc pagedirec\n");
+    struct PageDirectory *pageDirectory = pagingCreatePageDirectory();
     if (pageDirectory == NULL) {
         kfree(data);
-        printf("Can not alloc new page directory\n");
+        kSerialPrintf("Can not alloc new page directory\n");
         return -1;
     }
 
-    printf("task: loadbin\n");
+    kSerialPrintf("task: loadbin\n");
     u32 entryPrg = loadBinary(pageDirectory, data, fileSize);
     kfree(data);
 
     if (entryPrg == 0) {
-        printf("Can not load binary: %s\n", cmdline);
+        kSerialPrintf("Can not load binary: %s\n", cmdline);
         return -1;
     }
-    printf("task: add task\n");
+    kSerialPrintf("task: add task\n");
     addTask(entryPrg, 0);
-    printf("task: end\n");
+    kSerialPrintf("task: end\n");
     return 0;
 }
 
@@ -102,7 +102,7 @@ u32 task_switch(u32 previousEsp) {
     return myTask.esp;
 }
 
-u32 sbrk(ssize_t inc) {
+u32 sbrk(s32 inc) {
     if (inc == 0)
         return myTask.brk;
 

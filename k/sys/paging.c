@@ -4,6 +4,7 @@
 
 #include <string.h>
 #include <stdio.h>
+
 #include "paging.h"
 #include "allocator.h"
 #include "physical-memory.h"
@@ -48,7 +49,7 @@ void initPaging(u32 memSize) {
                 (u32) (heap_pts + i) | MEM_PRESENT;
     }
 
-    switchPageDirectory(kernelPageDirectory);
+    pagingSwitchPageDirectory(kernelPageDirectory);
 
     u32 cr0;
     asm volatile ("movl %%cr0, %0": "=r"(cr0));
@@ -60,23 +61,23 @@ static inline void invlpg(void *p) {
     asm volatile("invlpg (%0)"::"r" (p) : "memory");
 }
 
-static u32 getPhysAddr(const void *vaddr) {
+u32 pagingGetPhysAddr(const void *vaddr) {
     u32 pageNumber = (u32) vaddr / PAGESIZE;
     struct TableDirectory *pt = currentPageDirectory->tablesInfo[pageNumber / NB_TABLE];
     if (!pt)
         return 0;
 
-    printf("GetPhysAddr: virt-->phys: pageNb: %u, pt: %Xh\n", pageNumber, (u32) pt);
+    kSerialPrintf("GetPhysAddr: virt-->phys: pageNb: %u, pt: %Xh\n", pageNumber, (u32) pt);
     return ((pt->pages[pageNumber % NB_PAGE] & 0xFFFFF000) + ((u32) vaddr & 0x00000FFF));
 }
 
-struct PageDirectory *createPageDirectory() {
+struct PageDirectory *pagingCreatePageDirectory() {
     struct PageDirectory *pageDirectory = kmalloc(sizeof(struct PageDirectory), PAGESIZE);
     if (!pageDirectory)
         return NULL;
 
     memcpy(pageDirectory, kernelPageDirectory, sizeof(struct PageDirectory) - 4);
-    pageDirectory->physAddr = getPhysAddr(pageDirectory->tablesAddr);
+    pageDirectory->physAddr = pagingGetPhysAddr(pageDirectory->tablesAddr);
     return pageDirectory;
 }
 
@@ -85,14 +86,14 @@ static int checkPageAllowed(struct PageDirectory *pageDirectory, u32 index) {
            (pageDirectory->tablesAddr[index] != kernelPageDirectory->tablesAddr[index]);
 }
 
-void destroyPageDirectory(struct PageDirectory *pageDirectory) {
+void pagingDestroyPageDirectory(struct PageDirectory *pageDirectory) {
     if (pageDirectory == kernelPageDirectory) {
-        printf("Can not free kernel page directory\n");
+        kSerialPrintf("Can not free kernel page directory\n");
         return;
     }
 
     if (pageDirectory == currentPageDirectory)
-        switchPageDirectory(kernelPageDirectory);
+        pagingSwitchPageDirectory(kernelPageDirectory);
 
     for (u32 i = 0; i < NB_TABLE; i++) {
         if (pageDirectory->tablesInfo[i] && checkPageAllowed(pageDirectory, i)) {
@@ -108,11 +109,11 @@ void destroyPageDirectory(struct PageDirectory *pageDirectory) {
     kfree(pageDirectory);
 }
 
-void switchPageDirectory(struct PageDirectory *pageDirectory) {
+void pagingSwitchPageDirectory(struct PageDirectory *pageDirectory) {
     if (pageDirectory == currentPageDirectory)
         return;
 
-    printf("Switching page directory\n");
+    kSerialPrintf("Switching page directory\n");
     currentPageDirectory = pageDirectory;
     asm volatile("mov %0, %%cr3" : : "r" (pageDirectory->physAddr));
 }
@@ -131,16 +132,16 @@ static int allocPages(struct PageDirectory *pd, void *addr, u32 pages) {
 
             memset(pt, 0, sizeof(struct TableDirectory));
             pd->tablesInfo[pageNumber / NB_TABLE] = pt;
-            pd->tablesAddr[pageNumber / NB_TABLE] = getPhysAddr(pt) | MEM_PRESENT | MEM_WRITE;
+            pd->tablesAddr[pageNumber / NB_TABLE] = pagingGetPhysAddr(pt) | MEM_PRESENT | MEM_WRITE;
         } else {
             if (pt->pages[pageNumber % NB_PAGE] & MEM_ALLOCATED) {
-                printf("Page already allocated: %u\n", pageNumber);
+                kSerialPrintf("Page already allocated: %u\n", pageNumber);
                 freePages(pd, addr, i * PAGESIZE);
                 return 0;
             }
 
             if (checkPageAllowed(pd, pageNumber / NB_TABLE) == 0) {
-                printf("Alloc page not allowed: %u\n", pageNumber);
+                kSerialPrintf("Alloc page not allowed: %u\n", pageNumber);
                 freePages(pd, addr, i * PAGESIZE);
                 return 0;
             }
@@ -159,7 +160,7 @@ static void freePages(struct PageDirectory *pd, void *addr, u32 pages) {
             return;
 
         if (checkPageAllowed(pd, pageNumber / NB_TABLE) == 0) {
-            printf("Alloc page not allowed: %u\n", pageNumber);
+            kSerialPrintf("Alloc page not allowed: %u\n", pageNumber);
             return;
         }
 
@@ -176,16 +177,16 @@ static int mapPagesToFrames(struct PageDirectory *pd, void *vaddr, u32 paddr, u3
         struct TableDirectory *pt = pd->tablesInfo[pageNumber / NB_TABLE];
 
         if (!pt || !(pt->pages[pageNumber % NB_PAGE] & MEM_ALLOCATED)) {
-            printf("Page not allocated: %u\n", pageNumber);
+            kSerialPrintf("Page not allocated: %u\n", pageNumber);
             return 0;
         }
 
         if (checkPageAllowed(pd, pageNumber / NB_TABLE) == 0) {
-            printf("Alloc page not allowed: %u\n", pageNumber);
+            kSerialPrintf("Alloc page not allowed: %u\n", pageNumber);
             return 0;
         }
 
-        pd->tablesAddr[pageNumber / NB_TABLE] = getPhysAddr(pt) | MEM_PRESENT | MEM_WRITE;
+        pd->tablesAddr[pageNumber / NB_TABLE] = pagingGetPhysAddr(pt) | MEM_PRESENT | MEM_WRITE;
         pd->tablesAddr[pageNumber / NB_TABLE] |= (flags & (~MEM_NOTLBUPDATE));
 
         pt->pages[pageNumber % NB_PAGE] = (paddr + i * PAGESIZE) | flags | MEM_PRESENT | MEM_ALLOCATED;
@@ -194,7 +195,7 @@ static int mapPagesToFrames(struct PageDirectory *pd, void *vaddr, u32 paddr, u3
             invlpg(vaddr + i * PAGESIZE);
 
         if (flags & MEM_USER)
-            printf("page %u now associated to physAddress %Xh\n", pageNumber, paddr + i * PAGESIZE);
+            kSerialPrintf("page %u now associated to physAddress %Xh\n", pageNumber, paddr + i * PAGESIZE);
     }
     return 1;
 }
@@ -203,15 +204,15 @@ static int pagingAllocRec(struct PageDirectory *pd, u32 index, u32 pages, void *
     u32 frame = allocPhysicalMemory();
 
     if (!mapPagesToFrames(pd, addr + index * PAGESIZE, frame, 1, flags)) {
-        printf("mapPagesToFrames(%X, %X, %X, %u, %X) failed.\n", (u32) pd, (u32) (addr + index * PAGESIZE),
+        kSerialPrintf("mapPagesToFrames(%X, %X, %X, %u, %X) failed.\n", (u32) pd, (u32) (addr + index * PAGESIZE),
                frame, 1, flags);
-        printf("info: %d - %d\n", index, pages);
+        kSerialPrintf("info: %d - %d\n", index, pages);
         freePhysicalMemory(frame);
         return -1;
     }
 
     if (flags & MEM_USER)
-        printf("page now allocated: %u physAddress: %Xh\n", index, frame);
+        kSerialPrintf("page now allocated: %u physAddress: %Xh\n", index, frame);
 
     if (index >= pages - 1)
         return 0;
@@ -223,22 +224,22 @@ static int pagingAllocRec(struct PageDirectory *pd, u32 index, u32 pages, void *
 }
 
 int pagingAlloc(struct PageDirectory *pd, void *addr, u32 size, enum MEMFLAGS flags) {
-    printf("pagingAlloc: %p - %u\n", addr, size);
+    kSerialPrintf("pagingAlloc: %p - %u\n", addr, size);
 
     if (((u32) addr) % PAGESIZE != 0) {
-        printf("addr not page aligned\n");
+        kSerialPrintf("addr not page aligned\n");
         return -1;
     }
 
     if (size % PAGESIZE != 0) {
-        printf("size not page aligned\n");
+        kSerialPrintf("size not page aligned\n");
         return -1;
     }
 
     u32 pages = size / PAGESIZE;
 
     if (!allocPages(pd, addr, pages)) {
-        printf("allocPages(%X, %X, %u) failed.\n", (u32) pd, (u32) addr, (u32) pages);
+        kSerialPrintf("allocPages(%X, %X, %u) failed.\n", (u32) pd, (u32) addr, (u32) pages);
         return -2;
     }
 
@@ -250,12 +251,12 @@ int pagingAlloc(struct PageDirectory *pd, void *addr, u32 size, enum MEMFLAGS fl
 
 void pagingFree(struct PageDirectory *pd, void *virtAddress, u32 size) {
     if (((u32) virtAddress) % PAGESIZE != 0) {
-        printf("addr not page aligned\n");
+        kSerialPrintf("addr not page aligned\n");
         return;
     }
 
     if (size % PAGESIZE != 0) {
-        printf("size must be page aligned\n");
+        kSerialPrintf("size must be page aligned\n");
         return;
     }
 
@@ -264,7 +265,7 @@ void pagingFree(struct PageDirectory *pd, void *virtAddress, u32 size) {
         if (!pd->tablesInfo[pageNumber / NB_PAGE] || checkPageAllowed(pd, pageNumber / NB_TABLE) == 0)
             return;
 
-        u32 physAddress = getPhysAddr(virtAddress);
+        u32 physAddress = pagingGetPhysAddr(virtAddress);
 
         freePages(pd, virtAddress, 1);
         freePhysicalMemory(physAddress);
@@ -276,12 +277,12 @@ void pagingFree(struct PageDirectory *pd, void *virtAddress, u32 size) {
 
 int pagingSetFlags(struct PageDirectory *pd, void *addr, u32 size, enum MEMFLAGS flags) {
     if (((u32) addr) % PAGESIZE != 0) {
-        printf("paging_setFlags: addr not page aligned\n");
+        kSerialPrintf("paging_setFlags: addr not page aligned\n");
         return -1;
     }
 
     if (size % PAGESIZE != 0) {
-        printf("size not page aligned\n");
+        kSerialPrintf("size not page aligned\n");
         return -1;
     }
 
@@ -289,12 +290,12 @@ int pagingSetFlags(struct PageDirectory *pd, void *addr, u32 size, enum MEMFLAGS
         u32 pageNumber = (u32) addr / PAGESIZE + done;
         if (!pd->tablesInfo[pageNumber / NB_TABLE] ||
             !(pd->tablesInfo[pageNumber / NB_TABLE]->pages[pageNumber % NB_PAGE] & MEM_ALLOCATED)) {
-            printf("page not init\n");
+            kSerialPrintf("page not init\n");
             return -2;
         }
 
         if (checkPageAllowed(pd, pageNumber / NB_PAGE) == 0) {
-            printf("Alloc page not allowed: %u\n", pageNumber);
+            kSerialPrintf("Alloc page not allowed: %u\n", pageNumber);
             return 0;
         }
 

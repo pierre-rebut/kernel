@@ -2,16 +2,15 @@
 // Created by rebut_p on 23/09/18.
 //
 
-#include "terminal.h"
-#include "serial.h"
-#include "keyboard.h"
-#include "pit.h"
-#include "kfilesystem.h"
+#include "io/serial.h"
+#include "io/keyboard.h"
+#include "io/pit.h"
+#include "io/kfilesystem.h"
+#include "io/terminal.h"
 #include "syscall.h"
-#include "libvga.h"
+#include "io/libvga.h"
 #include "task.h"
 
-#include <k/kstd.h>
 #include <stdio.h>
 
 static void sys_write(struct esp_context *ctx);
@@ -54,7 +53,7 @@ void syscall_handler(struct esp_context *ctx) {
 
     syscall_t fct = syscall[ctx->eax];
     if (fct == NULL) {
-        printf("unhandled syscall %d\n", ctx->eax);
+        kSerialPrintf("unhandled syscall %d\n", ctx->eax);
         ctx->eax = 0;
         return;
     }
@@ -75,7 +74,7 @@ static void sys_writeSerial(struct esp_context *ctx) {
 }
 
 static void sys_sbrk(struct esp_context *ctx) {
-    u32 tmp = sbrk((ssize_t)ctx->ebx);
+    u32 tmp = sbrk((s32)ctx->ebx);
     ctx->eax = tmp;
 }
 
@@ -91,12 +90,12 @@ static void sys_gettick(struct esp_context *ctx) {
 
 static void sys_open(struct esp_context *ctx) {
     int tmp = open((const char *)ctx->ebx, ctx->ecx);
-    printf("open: %s (%d)\n", (char*)ctx->ebx, tmp);
+    kSerialPrintf("open: %s (%d)\n", (char*)ctx->ebx, tmp);
     ctx->eax = (u32)tmp;
 }
 
 static void sys_read(struct esp_context *ctx) {
-    ssize_t tmp = read(ctx->ebx, (void *)ctx->ecx, ctx->edx);
+    s32 tmp = read(ctx->ebx, (void *)ctx->ecx, ctx->edx);
     ctx->eax = (u32) tmp;
 }
 

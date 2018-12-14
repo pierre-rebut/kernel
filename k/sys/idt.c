@@ -3,7 +3,6 @@
 //
 
 #include "idt.h"
-#include "compiler.h"
 
 struct idt_entry idt[256] = {0};
 
@@ -42,7 +41,7 @@ void initInterrupt() {
     void isr_handle##id(); \
     addEntry(&idt[id], isr_handle##id, type, dpl);
 
-#include "macros_isr.def"
+#include "../macros_isr.def"
 
 #undef ISR
 #undef ISR_ERROR

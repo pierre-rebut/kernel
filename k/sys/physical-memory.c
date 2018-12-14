@@ -4,9 +4,9 @@
 
 #include <string.h>
 #include <stdio.h>
+
 #include "physical-memory.h"
 #include "allocator.h"
-#include "multiboot.h"
 
 static u32 *physicalMemTable = NULL;
 static u32 physicalMemSize;
@@ -15,7 +15,7 @@ static u32 getMemorySize(memory_map_t *memEntry, memory_map_t *memEnd) {
     u32 memSize = 0;
 
     while (memEntry < memEnd) {
-        printf("getInfo: %d - %p - %lu\n", memEntry->type, (void*)memEntry->regionAddr, memEntry->regionSize);
+        kSerialPrintf("getInfo: %d - %p - %lu\n", memEntry->type, (void*)memEntry->regionAddr, memEntry->regionSize);
 
         if (memEntry->regionAddr < MAX_MEMORY && memEntry->regionSize != 0) {
             if (memEntry->regionAddr + memEntry->regionSize >= MAX_MEMORY)
@@ -53,16 +53,15 @@ u32 initPhysicalMemory(const multiboot_info_t *info) {
     memset(physicalMemTable, 0xFF, physicalMemSize * 4);
 
     while (memEntry < memEnd) {
-        printf("mem type: %d - memAddr: %p\n", memEntry->type, (void*)memEntry->regionAddr);
+        kSerialPrintf("mem type: %d - memAddr: %p\n", memEntry->type, (void*)memEntry->regionAddr);
         if (memEntry->type == 1 && memEntry->regionAddr < MAX_MEMORY) {
-            printf("la salope du weekend est partie: %p - %p\n", (void*)memEntry->regionAddr, memEntry->regionAddr + memEntry->regionSize);
+            kSerialPrintf("la salope du weekend est partie: %p - %p\n", (void*)memEntry->regionAddr, memEntry->regionAddr + memEntry->regionSize);
             memorySetRegion((u32) memEntry->regionAddr, (u32) (memEntry->regionAddr + memEntry->regionSize), 0);
         }
         memEntry = (memory_map_t *) ((void *) memEntry + memEntry->entrySize + 4);
     }
 
-    u32 moduleEndPos = ((module_t *)(info->mods_addr))->mod_end;
-    memorySetRegion(moduleEndPos, moduleEndPos + TMP_MAX_SIZE, 1);
+    memorySetRegion(0x00, PLACEMENT_END, 1);
     return memSize;
 }
 
@@ -72,7 +71,7 @@ u32 allocPhysicalMemory() {
         if (physicalMemTable[i] == 0xFFFFFFFF)
             continue;
 
-        printf("alloc la salope merci\n");
+        kSerialPrintf("alloc la salope merci\n");
 
         u32 freeBite = 0;
         asm volatile ("bsfl %1, %0\n\t" : "=r"(freeBite) : "r"(~physicalMemTable[i]));

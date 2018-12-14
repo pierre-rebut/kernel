@@ -2,11 +2,11 @@
 // Created by rebut_p on 22/09/18.
 //
 
-#include "pic.h"
-#include "idt.h"
-#include "keyboard.h"
-#include "pit.h"
-#include "syscall.h"
+#include "io/pic.h"
+#include "sys/idt.h"
+#include "io/keyboard.h"
+#include "io/pit.h"
+#include "sys/syscall.h"
 #include "task.h"
 
 #include <stdio.h>
@@ -37,9 +37,9 @@ static char *exceptionList[] = {
 
 static void isr_exception_handler(struct esp_context *ctx) {
     if (ctx->int_no > 20)
-        printf("Interrupt: %s\n", exceptionList[15]);
+        kSerialPrintf("Interrupt: %s\n", exceptionList[15]);
     else
-        printf("Interrupt: %s (%d)\n", exceptionList[ctx->int_no], ctx->eip);
+        kSerialPrintf("Interrupt: %s (%d)\n", exceptionList[ctx->int_no], ctx->eip);
 }
 
 static void isq_normal_handler(struct esp_context *ctx) {
@@ -52,7 +52,7 @@ static void isq_normal_handler(struct esp_context *ctx) {
             pit_handler();
             break;
         default:
-            printf("Interrupt ISQ handle: %d\n", ctx->int_no);
+            kSerialPrintf("Interrupt ISQ handle: %d\n", ctx->int_no);
     }
 
     if (ctx->int_no >= 40)
@@ -76,7 +76,7 @@ u32 interrupt_handler(u32 esp) {
                 esp = task_switch(esp);
                 break;
             default:
-                printf("Interrupt ISR handle: %d\n", ctx->int_no);
+                kSerialPrintf("Interrupt ISR handle: %d\n", ctx->int_no);
         }
     }
     return esp;

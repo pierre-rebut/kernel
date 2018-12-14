@@ -24,7 +24,7 @@
 #ifndef LIBVGA_H
 #define LIBVGA_H
 
-#include <stddef.h>
+#include <k/types.h>
 
 int switchVgaMode(int mode);
 int getVideoMode();
