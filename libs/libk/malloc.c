@@ -20,7 +20,7 @@ void *malloc(size_t size)
 	return ptr;
 }
 
-void free(void *ptr)
+void free(const void *ptr)
 {
 	(void)ptr;
 

@@ -13,6 +13,8 @@
 
 #include <stdio.h>
 
+#define NB_SYSCALL 25
+
 static void sys_write(struct esp_context *ctx);
 static void sys_sbrk(struct esp_context *ctx);
 static void sys_getkey(struct esp_context *ctx);
@@ -32,6 +34,12 @@ static void sys_exit(struct esp_context *ctx);
 static void sys_kill(struct esp_context *ctx);
 static void sys_getPid(struct esp_context *ctx);
 static void sys_execve(struct esp_context *ctx);
+static void sys_stat(struct esp_context *ctx);
+static void sys_fstat(struct esp_context *ctx);
+static void sys_chdir(struct esp_context *ctx);
+static void sys_opendir(struct esp_context *ctx);
+static void sys_closedir(struct esp_context *ctx);
+static void sys_readdir(struct esp_context *ctx);
 
 typedef void (*syscall_t)(struct esp_context *);
 
@@ -54,11 +62,17 @@ static syscall_t syscall[] = {
         sys_kill,
         sys_getPid,
         sys_execve,
-        sys_getkeymode
+        sys_stat,
+        sys_fstat,
+        sys_chdir,
+        sys_getkeymode,
+        sys_opendir,
+        sys_closedir,
+        sys_readdir
 };
 
 void syscall_handler(struct esp_context *ctx) {
-    if (ctx->eax >= NR_SYSCALL)
+    if (ctx->eax >= NB_SYSCALL)
         return;
 
     syscall_t fct = syscall[ctx->eax];
@@ -158,11 +172,44 @@ static void sys_getPid(struct esp_context *ctx) {
 }
 
 static void sys_execve(struct esp_context *ctx) {
+    kSerialPrintf("here i am\n");
+
     if (ctx->ebx == 0 || ctx->ecx == 0 || ctx->edx == 0) {
         ctx->eax = 0;
         return;
     }
 
     ctx->eax = createProcess((const char*)ctx->ebx, (const char**)ctx->ecx, (const char **)ctx->edx);
+}
+
+static void sys_stat(struct esp_context *ctx) {
+    s32 tmp = stat((void*)ctx->ebx, (void *)ctx->ecx);
+    ctx->eax = (u32) tmp;
+}
+
+static void sys_fstat(struct esp_context *ctx) {
+    s32 tmp = fstat(ctx->ebx, (void*)ctx->ecx);
+    ctx->eax = (u32) tmp;
+}
+
+static void sys_chdir(struct esp_context *ctx) {
+    s32 tmp = taskChangeDirectory((void*)ctx->ebx);
+    ctx->eax = (u32) tmp;
+}
+
+static void sys_opendir(struct esp_context *ctx) {
+    int tmp = opendir((const char *)ctx->ebx);
+    kSerialPrintf("opendir: %s (%d)\n", (char*)ctx->ebx, tmp);
+    ctx->eax = (u32) tmp;
+}
+
+static void sys_readdir(struct esp_context *ctx) {
+    ctx->eax = (u32) readdir(ctx->ebx, (void*)ctx->ecx);
+}
+
+static void sys_closedir(struct esp_context *ctx) {
+    kSerialPrintf("closedir: %d\n", ctx->ebx);
+    int tmp = closedir(ctx->ebx);
+    ctx->eax = (u32) tmp;
 }
 

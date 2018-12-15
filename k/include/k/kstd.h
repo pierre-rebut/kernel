@@ -125,21 +125,4 @@ enum e_mouse_codes {
 ** syscalls
 */
 
-#define SYSCALL_WRITE			0
-#define SYSCALL_WRITESERIAL		1
-#define SYSCALL_SBRK			2
-#define SYSCALL_GETKEY			3
-#define SYSCALL_GETTICK			4
-#define SYSCALL_OPEN			5
-#define SYSCALL_READ			6
-#define SYSCALL_SEEK			7
-#define SYSCALL_CLOSE			8
-#define SYSCALL_SETVIDEO		9
-#define SYSCALL_SWAP_FRONTBUFFER	10
-#define SYSCALL_PLAYSOUND		11
-#define SYSCALL_GETMOUSE		12 /* XXX: not implemented */
-#define SYSCALL_GETKEYMODE		13
-
-#define NR_SYSCALL			(SYSCALL_GETKEYMODE + 1)
-
 #endif				/* !KSTD_H_ */

@@ -12,41 +12,27 @@
 #include <stdio.h>
 #include <sys/physical-memory.h>
 #include <io/kfilesystem.h>
+#include <cpu.h>
+#include <string.h>
 #include <io/terminal.h>
 #include <io/serial.h>
 #include <io/pit.h>
-#include <include/cpu.h>
-#include <string.h>
-#include <sys/allocator.h>
+#include <io/keyboard.h>
+#include <include/list.h>
 
-static u32 nextPid = 1;
+static u32 nextPid = 0;
 
 char taskSwitching = 0;
-struct Task *lstTasks = NULL;
 struct Task *currentTask = NULL;
-struct Task kernelTask = {
-        .pid = 0,
-        .privilege = TaskPrivilegeKernel,
-        .esp = 0,
-        .ss = 0x10,
-        .event.type = TaskEventNone,
-        .heap = {0}
-};
+struct Task *kernelTask = NULL;
 
 void initTasking() {
-    kernelTask.pageDirectory = kernelPageDirectory;
-    kernelTask.lstFiles[0] = createFileDescriptor(NULL, NULL, NULL, NULL);
-    kernelTask.lstFiles[1] = createFileDescriptor(NULL, &writeTerminalFromFD, NULL, NULL);
-    kernelTask.lstFiles[2] = createFileDescriptor(NULL, &writeSerialFromFD, NULL, NULL);
-
-    for (int i = 3; i < MAX_NB_FILE; i++)
-        kernelTask.lstFiles[i] = NULL;
-
-    currentTask = &kernelTask;
+    kernelTask = createTask(kernelPageDirectory, (u32)&schedulerDoNothing, TaskPrivilegeKernel, 0, NULL, NULL, "/");
+    currentTask = kernelTask;
 }
 
 struct Task *createTask(struct PageDirectory *pageDirectory, u32 entryPoint, enum TaskPrivilege privilege,
-                        u32 ac, const char **av, const char **env) {
+                        u32 ac, const char **av, const char **env, const char *dir) {
     struct Task *task = kmalloc(sizeof(struct Task), 0, "task");
     u32 *stack = kmalloc(KERNEL_STACK_SIZE, 0, "stack");
     if (!task || !stack)
@@ -61,12 +47,17 @@ struct Task *createTask(struct PageDirectory *pageDirectory, u32 entryPoint, enu
     task->heap.start = USER_HEAP_START;
     task->heap.pos = task->heap.nbPage = 0;
 
-    task->lstFiles[0] = createFileDescriptor(NULL, NULL, NULL, NULL);
-    task->lstFiles[1] = createFileDescriptor(NULL, &writeTerminalFromFD, NULL, NULL);
-    task->lstFiles[2] = createFileDescriptor(NULL, &writeSerialFromFD, NULL, NULL);
+    task->lstFiles[0] = createFileDescriptor(&readFromKeyboard, NULL, NULL, NULL, NULL);
+    task->lstFiles[1] = createFileDescriptor(NULL, &writeTerminalFromFD, NULL, NULL, NULL);
+    task->lstFiles[2] = createFileDescriptor(NULL, &writeSerialFromFD, NULL, NULL, NULL);
+
+    task->currentDir = strdup(dir);
 
     for (int i = 3; i < MAX_NB_FILE; i++)
         task->lstFiles[i] = NULL;
+
+    for (int i = 0; i < MAX_NB_FOLDER; i++)
+        task->lstFolder[i] = NULL;
 
     if (privilege == TaskPrivilegeUser)
         pagingAlloc(pageDirectory, (void *) (USER_STACK - 10 * PAGESIZE), 10 * PAGESIZE, MEM_USER | MEM_WRITE);
@@ -107,20 +98,6 @@ struct Task *createTask(struct PageDirectory *pageDirectory, u32 entryPoint, enu
     task->ss = dataSegment;
 
     return task;
-}
-
-static void addTask(struct Task *task) {
-    if (lstTasks == NULL) {
-        task->prev = NULL;
-        lstTasks = task;
-    } else {
-        struct Task *iter = lstTasks;
-        while (iter->next != NULL)
-            iter = iter->next;
-        iter->next = task;
-        task->prev = iter;
-    }
-    task->next = NULL;
 }
 
 static const char **copyArgEnvToUserland(struct PageDirectory *pd, u32 position, u32 ac, const char **av) {
@@ -209,11 +186,11 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
     const char **newEnv = copyArgEnvToUserland(pageDirectory, USER_ENV_BUFFER, envc, env);
 
     kSerialPrintf("task: add task\n");
-    struct Task *task = createTask(pageDirectory, entryPrg, TaskPrivilegeUser, ac, newAv, newEnv);
+    struct Task *task = createTask(pageDirectory, entryPrg, TaskPrivilegeUser, ac, newAv, newEnv, currentTask->currentDir);
     if (!task)
         return 0;
 
-    addTask(task);
+    schedulerAddTask(task);
 
     kSerialPrintf("task: end\n");
     return task->pid;
@@ -222,7 +199,7 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
 int taskKill(struct Task *task) {
     kSerialPrintf("Killing task: %u\n", task->pid);
 
-    if (task == &kernelTask) {
+    if (task == kernelTask) {
         kSerialPrintf("can not kill kernel task !!\n");
         return -1;
     }
@@ -239,25 +216,28 @@ int taskKill(struct Task *task) {
             kfree(file);
         }
     }
+
+    for (int fd = 0; fd < MAX_NB_FOLDER; fd++) {
+        struct FolderDescriptor *folder = task->lstFolder[fd];
+        if (folder) {
+            if (folder->closeFct) {
+                folder->closeFct(folder->entryData);
+            }
+            kfree(folder);
+        }
+    }
+
     kfree(task->kernelStack - KERNEL_STACK_SIZE);
+    kfree(task->currentDir);
 
     pagingDestroyPageDirectory(task->pageDirectory);
 
-    if (task->next)
-        task->next->prev = task->prev;
-
-    if (task->prev)
-        task->prev->next = task->next;
-    else
-        lstTasks = task->next;
+    schedulerRemoveTask(task);
 
     kfree(task);
     taskSwitching = tmpTaskSwitching;
 
-    kSerialPrintf("end kill process\n");
-
     if (currentTask == task) {
-        currentTask = &kernelTask;
         schedulerForceSwitchTask();
     }
 
@@ -269,13 +249,12 @@ u32 taskGetpid() {
 }
 
 u32 taskKillByPid(u32 pid) {
-    for (struct Task *task = lstTasks; task != NULL; task = task->next) {
-        if (task->pid == pid) {
-            taskKill(task);
-            return pid;
-        }
-    }
-    return 0;
+    struct Task *task = getTaskByPid(pid);
+    if (task == NULL)
+        return 0;
+
+    taskKill(task);
+    return pid;
 }
 
 int taskExit() {
@@ -301,12 +280,12 @@ u32 taskSwitch(struct Task *newTask) {
     pagingSwitchPageDirectory(newTask->pageDirectory);
 
     taskSwitching = 1;
-    kSerialPrintf("Task switch to pid %d\n", newTask->pid);
+    // kSerialPrintf("Task switch to pid %d\n", newTask->pid);
     return newTask->esp;
 }
 
 u32 taskSetHeapInc(s32 inc) {
-    if (currentTask == &kernelTask)
+    if (currentTask == kernelTask)
         return 0;
 
     struct Heap *heap = &currentTask->heap;
@@ -339,14 +318,21 @@ u32 taskSetHeapInc(s32 inc) {
 }
 
 struct Task *getTaskByPid(u32 pid) {
-    if (lstTasks == NULL)
+    if (taskLists.begin == NULL)
         return NULL;
 
-    struct Task *task = lstTasks;
-    while (task != NULL) {
+    struct ListElem *elem = taskLists.begin;
+    while (elem != NULL) {
+        struct Task *task = (struct Task *)elem->data;
         if (task->pid == pid)
             return task;
-        task = task->next;
+        elem = elem->next;
     }
     return NULL;
+}
+
+int taskChangeDirectory(const char *directory) {
+    kfree(currentTask->currentDir);
+    currentTask->currentDir = strdup(directory);
+    return 0;
 }

@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <sys/allocator.h>
+#include <string.h>
 
 static struct kfs_superblock *kfs = NULL;
 
@@ -24,19 +25,6 @@ void initKFileSystem(module_t *module) {
     }
 
     kfs = tmp;
-}
-
-static int strcmp(const char *a, const char *b) {
-    u32 i = 0;
-    while (a[i] && b[i]) {
-        if (a[i] != b[i])
-            return -1;
-
-        i++;
-    }
-    if (a[i] != b[i])
-        return -1;
-    return 0;
 }
 
 static char checkBlockChecksum(struct kfs_block *block) {
@@ -119,6 +107,7 @@ struct FileDescriptor *kfsOpen(const char *pathname, int flags) {
     fd->readFct = &kfsRead;
     fd->seekFct = &kfsSeek;
     fd->closeFct = &kfsClose;
+    fd->statFct = &kfsFStat;
     return fd;
 }
 
@@ -240,7 +229,7 @@ off_t kfsSeek(void *entryData, off_t offset, int whence) {
 }
 
 int kfsClose(void *entryData) {
-    if (!entryData || kfs == NULL)
+    if (!entryData)
         return -1;
 
     kfree(entryData);
@@ -279,4 +268,73 @@ u32 kfsLengthOfFile(const char *pathname) {
         return 0;
 
     return node->file_sz;
+}
+
+static void getStatInfo(struct kfs_inode *inode, struct stat *data) {
+    data->inumber = inode->inumber;
+    data->file_sz = inode->file_sz;
+    data->i_blk_cnt = inode->i_blk_cnt;
+    data->d_blk_cnt = inode->d_blk_cnt;
+    data->blk_cnt = inode->blk_cnt;
+    data->idx = inode->idx;
+    data->cksum = inode->cksum;
+}
+
+int kfsStat(const char *pathname, struct stat *data) {
+    struct kfs_inode *node = getFileINode(pathname);
+    if (node == NULL)
+        return -1;
+    getStatInfo(node, data);
+    return 0;
+}
+
+int kfsFStat(void *entryData, struct stat *data) {
+    if (!entryData || !kfs)
+        return -1;
+
+    struct file_entry *file = (struct file_entry *) entryData;
+    getStatInfo(file->node, data);
+
+    return 0;
+}
+
+struct FolderDescriptor *kfsOpendir(const char *pathname) {
+    if (kfs == NULL)
+        return NULL;
+
+    (void)pathname;
+
+    struct kfs_inode *node = kmalloc(sizeof(struct kfs_inode), 0, "folder inode");
+    if (!node)
+        return NULL;
+
+    memcpy(node, ((void *) kfs + (kfs->inode_idx * KFS_BLK_SZ)), sizeof(struct kfs_inode));
+
+    struct FolderDescriptor *fd = kmalloc(sizeof(struct FolderDescriptor), 0, "folderDescriptor");
+    if (!fd) {
+        kfree(node);
+        return NULL;
+    }
+
+    fd->entryData = node;
+    fd->readFct = &kfsReaddir;
+    fd->closeFct = &kfsClose;
+    return fd;
+}
+
+struct dirent *kfsReaddir(void *entry, struct dirent *data) {
+    if (entry == NULL || kfs == NULL)
+        return NULL;
+
+    struct kfs_inode *node = (struct kfs_inode*)entry;
+    if (node->idx >= kfs->inode_cnt)
+        return NULL;
+
+    strcpy(data->d_name, node->filename);
+    data->d_ino = node->idx;
+
+    node = (struct kfs_inode *) ((void *) kfs + (node->next_inode * KFS_BLK_SZ));
+    memcpy(entry, node, sizeof(struct kfs_inode));
+
+    return data;
 }

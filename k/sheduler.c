@@ -6,10 +6,19 @@
 #include <include/cpu.h>
 #include <sys/paging.h>
 #include <io/pit.h>
+#include <io/keyboard.h>
+#include <include/list.h>
 #include "sheduler.h"
-#include "task.h"
 
-struct Task *freeTimeTask = NULL;
+struct List taskLists = CREATE_LIST();
+
+void schedulerAddTask(struct Task *task) {
+    listAddElem(&taskLists, task);
+}
+
+void schedulerRemoveTask(struct Task *task) {
+    listDeleteElem(&taskLists, task);
+}
 
 void schedulerDoNothing() {
     while (1)
@@ -17,6 +26,7 @@ void schedulerDoNothing() {
 }
 
 static char checkTaskEvent(struct Task *task) {
+    //kSerialPrintf("putain de merde: %X\n", task);
     switch (task->event.type) {
         case TaskEventTimer:
             if (gettick() - task->event.timer >= task->event.arg) {
@@ -32,33 +42,27 @@ static char checkTaskEvent(struct Task *task) {
             }
             return 0;
         }
+        case TaskEventKeyboard:
+            if (isKeyboardReady() == 1) {
+                task->event.type = TaskEventNone;
+                return 1;
+            }
+            return 0;
         default:
             return 1;
     }
 }
 
 static struct Task *schedulerGetNextTask() {
-    char tmp = 1;
-    struct Task *newTask = currentTask->next;
+    u32 nbTask = listCountElem(&taskLists);
 
-    while (newTask != NULL || tmp) {
-        if (newTask) {
-            if (checkTaskEvent(newTask))
-                return newTask;
-
-            newTask = newTask->next;
-        }
-
-        if (newTask == NULL && tmp) {
-            tmp = 0;
-            newTask = lstTasks;
-        }
+    for (u32 i = 0; i < nbTask; i++) {
+        struct Task *newTask = listGetNextElem(&taskLists);
+        if (checkTaskEvent(newTask))
+            return newTask;
     }
 
-    if (!freeTimeTask)
-        freeTimeTask = createTask(kernelPageDirectory, (u32) (&schedulerDoNothing), TaskPrivilegeKernel, 0, NULL, NULL);
-
-    return freeTimeTask;
+    return kernelTask;
 }
 
 u32 schedulerSwitchTask(u32 esp) {
@@ -67,7 +71,7 @@ u32 schedulerSwitchTask(u32 esp) {
     struct Task *oldTask = currentTask;
     struct Task *newTask = schedulerGetNextTask();
 
-    // kSerialPrintf("oldTask: %p / newTask: %p - pid %d\n", oldTask, newTask, newTask->pid);
+    // kSerialPrintf("oldTask: %p / newTask: %p - pid %d %u %u\n", oldTask, newTask, newTask->pid, esp, newTask->esp);
 
     if (oldTask == newTask)
         return esp;
@@ -76,6 +80,6 @@ u32 schedulerSwitchTask(u32 esp) {
 }
 
 void schedulerForceSwitchTask() {
-    kSerialPrintf("Scheduler: force switch task\n");
+    // kSerialPrintf("Scheduler: force switch task\n");
     asm volatile("int $126");
 }

@@ -18,5 +18,5 @@ add_subdirectory(roms)
 
 add_custom_target(k.iso ALL
         COMMAND ${CMAKE_SOURCE_DIR}/tools/create-iso.sh k.iso kernel_epita .
-        DEPENDS kernel_epita hunter skate pong vaders yakanoid perrodlauncher
+        DEPENDS kernel_epita hunter skate pong vaders yakanoid perrodlauncher mysh
         )

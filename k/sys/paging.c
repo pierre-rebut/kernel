@@ -95,11 +95,8 @@ void pagingDestroyPageDirectory(struct PageDirectory *pageDirectory) {
     if (pageDirectory == currentPageDirectory)
         pagingSwitchPageDirectory(kernelPageDirectory);
 
-    kSerialPrintf("destroy paging directory\n");
-
     for (u32 i = 0; i < NB_TABLE; i++) {
         if (pageDirectory->tablesInfo[i] && checkPageAllowed(pageDirectory, i)) {
-            kSerialPrintf("destroy table directory: %d\n", i);
             for (u32 j = 0; j < NB_PAGE; j++) {
                 u32 physAddress = pageDirectory->tablesInfo[i]->pages[j] & 0xFFFFF000;
 
@@ -107,7 +104,6 @@ void pagingDestroyPageDirectory(struct PageDirectory *pageDirectory) {
                     freePhysicalMemory(physAddress);
             }
             kfree(pageDirectory->tablesInfo[i]);
-            kSerialPrintf("destroy table directory end: %d\n", i);
         }
     }
     kfree(pageDirectory);
@@ -117,7 +113,7 @@ void pagingSwitchPageDirectory(struct PageDirectory *pageDirectory) {
     if (pageDirectory == currentPageDirectory)
         return;
 
-    kSerialPrintf("Switching page directory\n");
+    // kSerialPrintf("Switching page directory\n");
     currentPageDirectory = pageDirectory;
     asm volatile("mov %0, %%cr3" : : "r" (pageDirectory->physAddr));
 }

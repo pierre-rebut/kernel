@@ -37,7 +37,7 @@ u32 loadBinary(struct PageDirectory *pd, const void *data, u32 size) {
         kSerialPrintf("vaddr = %X, vaddr alignUp %X\n", prgHeader[i].p_paddr, vaddr);
         kSerialPrintf("memsz = %X, memsz alignUp %X\n", prgHeader[i].p_memsz, memsz);
 
-        if (pagingAlloc(pd, (void *) vaddr, memsz, MEM_USER | MEM_WRITE))
+        if (pagingAlloc(pd, (void *)vaddr, memsz, MEM_USER | MEM_WRITE))
             return 0;
 
         kSerialPrintf("Paging alloc ok\n");
@@ -49,8 +49,7 @@ u32 loadBinary(struct PageDirectory *pd, const void *data, u32 size) {
         pagingSwitchPageDirectory(currentTask->pageDirectory);
         sti();
 
-        if (!(prgHeader[i].p_flags & PF_W))
-            pagingSetFlags(pd, (void*)vaddr, memsz, MEM_USER);
+
 
     }
 

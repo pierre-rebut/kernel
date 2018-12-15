@@ -32,6 +32,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <libgen.h>
+#include <zconf.h>
 
 #include "kfs.h"
 

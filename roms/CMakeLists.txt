@@ -12,4 +12,5 @@ add_subdirectory(chichevaders)
 add_subdirectory(perrodlauncher)
 add_subdirectory(skate)
 add_subdirectory(yakanoid)
-
+add_subdirectory(minishell)
+add_subdirectory(ls)

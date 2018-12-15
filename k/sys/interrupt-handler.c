@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include <sheduler.h>
+#include <include/cpu.h>
 
 static char *exceptionList[] = {
         "Division by zero",
@@ -36,16 +37,34 @@ static char *exceptionList[] = {
         "Virtualization Exception"
 };
 
-static void isr_exception_handler(struct esp_context *ctx) {
-    if (ctx->int_no > 20) {
-        kSerialPrintf("Interrupt: %s\n", exceptionList[15]);
-    }
-    else {
-        kSerialPrintf("Interrupt: %s (%d)\n", exceptionList[ctx->int_no], ctx->eip);
+static void quitTask(void)
+{
+    if (currentTask == NULL)
+        return;
+
+    if (currentTask == kernelTask) {
+        kSerialPrintf("<KERNEL PANIC> !!!!!!!\n\n");
+        cli();
+        hlt();
     }
 
-    if (currentTask != &kernelTask)
-        taskExit();
+    kSerialPrintf("<TASK ERROR>: %u\n\n", currentTask->pid);
+    taskExit();
+}
+
+static void isr_exception_handler(struct esp_context *r) {
+    if (r->int_no > 20)
+        kSerialPrintf("[INT] %s\n", exceptionList[15]);
+    else
+        kSerialPrintf("[INT] %s\n", exceptionList[r->int_no]);
+
+    kSerialPrintf("[INT] err code: %u eip: %X\n", r->err_code, r->eip);
+    kSerialPrintf("[INT] edi: %X esi: %X ebp: %X eax: %X ebx: %X ecx: %X edx: %X\n", r->edi, r->esi, r->ebp, r->eax,
+                  r->ebx, r->ecx, r->edx);
+    kSerialPrintf("[INT] cs: %x  ds: %x  es: %x  fs: %x  gs: %x  ss: %x\n", r->cs, r->ds, r->es, r->fs, r->gs, r->ss);
+    kSerialPrintf("[INT] eflags: %X  useresp: %X\n", r->eflags, r->useresp);
+
+    quitTask();
 }
 
 static void isq_normal_handler(struct esp_context *ctx) {
@@ -68,6 +87,7 @@ static void isq_normal_handler(struct esp_context *ctx) {
 
 u32 interrupt_handler(u32 esp) {
     struct esp_context *ctx = (struct esp_context *) esp;
+    // kSerialPrintf("interrupt: %u\n", ctx->int_no);
 
     if ((ctx->int_no == 32 && taskSwitching) || ctx->int_no == 126) {
         esp = schedulerSwitchTask(esp);
@@ -81,6 +101,8 @@ u32 interrupt_handler(u32 esp) {
         switch (ctx->int_no) {
             case 0x80:
                 syscall_handler(ctx);
+                break;
+            case 126:
                 break;
             default:
                 kSerialPrintf("Interrupt ISR handle: %d\n", ctx->int_no);

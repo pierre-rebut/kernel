@@ -33,8 +33,6 @@ static void newline() {
         scroll();
     else
         terminalRow++;
-    writeTerminalAt('>', terminalColor, terminalColumn, terminalRow);
-    terminalColumn++;
 }
 
 void updateTerminalCursor(){
@@ -89,8 +87,6 @@ void clearTerminal() {
 
     terminalColumn = 0;
     terminalRow = 0;
-    writeTerminalAt('>', terminalColor, terminalColumn, terminalRow);
-    terminalColumn++;
     updateTerminalCursor();
 }
 

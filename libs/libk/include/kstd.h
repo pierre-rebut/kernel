@@ -122,9 +122,13 @@ enum e_mouse_codes {
 #define SYSCALL_KILL		    15
 #define SYSCALL_GETPID  		16
 #define SYSCALL_EXECVE  		17
-#define SYSCALL_GETKEYMODE		18
-
-#define NR_SYSCALL			(SYSCALL_GETKEYMODE + 1)
+#define SYSCALL_STAT     		18
+#define SYSCALL_FSTAT     		19
+#define SYSCALL_CHDIR           20
+#define SYSCALL_GETKEYMODE		21
+#define SYSCALL_OPENDIR         22
+#define SYSCALL_CLOSEDIR        23
+#define SYSCALL_READDIR         24
 
 int exit(int value);
 void *sbrk(ssize_t increment);
@@ -146,5 +150,11 @@ int waitpid(u32 pid);
 u32 getpid();
 int sleep(u32 duration);
 u32 execve(const char *prg, const char **av, const char **env);
+int stat(const char *pathname, struct stat *data);
+int fstat(int fd, struct stat *data);
+int chdir(const char *path);
+int opendir(const char *name);
+int closedir(int repertoire);
+struct dirent* readdir(int repertoire);
 
 #endif

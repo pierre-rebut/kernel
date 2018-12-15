@@ -49,22 +49,19 @@ struct Task {
 
     struct PageDirectory *pageDirectory;
     struct FileDescriptor *lstFiles[MAX_NB_FILE];
-
-    struct Task *next;
-    struct Task *prev;
-
+    struct FolderDescriptor *lstFolder[MAX_NB_FOLDER];
+    char *currentDir;
 };
 
 extern char taskSwitching;
 extern struct Task *currentTask;
-extern struct Task *lstTasks;
-extern struct Task kernelTask;
+extern struct Task *kernelTask;
 
 void taskSaveState(u32 esp);
 u32 taskSwitch(struct Task *newTask);
 
 struct Task *createTask(struct PageDirectory *pageDirectory, u32 entryPoint, enum TaskPrivilege privilege,
-                        u32 ac, const char **av, const char **env);
+                        u32 ac, const char **av, const char **env, const char *dir);
 u32 createProcess(const char *cmdline, const char **av, const char **env);
 void initTasking();
 
@@ -76,5 +73,7 @@ u32 taskKillByPid(u32 pid);
 struct Task *getTaskByPid(u32 pid);
 
 u32 taskSetHeapInc(s32 size);
+
+int taskChangeDirectory(const char *directory);
 
 #endif //KERNEL_EPITA_USERLAND_H

@@ -24,7 +24,7 @@ set(K_FILES
         io/terminal.c io/terminal.h
         io/filesystem.c io/filesystem.h
         sheduler.c sheduler.h
-        )
+        utils/list.c include/list.h)
 
 set(K_LIBS
         utils/memcmp.c

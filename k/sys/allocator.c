@@ -53,6 +53,7 @@ void *heap_getCurrentEnd(void) {
 }
 
 static bool heap_grow(size_t size, u8 *heapEnd, bool continuous) {
+    (void)continuous;
     // We will have to append another region-object to our array if we can't merge with the last region - check whether there would be enough space to insert the region-object
     if ((regionCount > 0) && regions[regionCount - 1].reserved && (regionCount >= regionMaxCount)) {
         return (false);
