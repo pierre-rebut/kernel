@@ -8,8 +8,8 @@ set(FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/red.bmp
         ${CMAKE_CURRENT_SOURCE_DIR}/yaka.bmp)
 
-add_executable(yakanoid ${SOURCE} ${ENTRYFILE})
-target_link_libraries(yakanoid k c)
+add_executable(yakanoid ${SOURCE})
+target_link_libraries(yakanoid k c bin-entry)
 
 add_custom_command(TARGET yakanoid
         POST_BUILD

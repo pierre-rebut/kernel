@@ -13,7 +13,7 @@ struct FileDescriptor *createFileDescriptor(
         off_t (*seekFct)(void *, off_t, int),
         int (*closeFct)(void *)
 ) {
-    struct FileDescriptor *file = kmalloc(sizeof(struct FileDescriptor), 0);
+    struct FileDescriptor *file = kmalloc(sizeof(struct FileDescriptor), 0, "filedescriptor");
     if (!file)
         return NULL;
 
@@ -30,11 +30,11 @@ int open(const char *pathname, int flags) {
         return -1;
 
     int id;
-    for (id = 0; id < 255; id++)
-        if (currentTask->lstFiles[id])
+    for (id = 0; id < MAX_NB_FILE; id++)
+        if (currentTask->lstFiles[id] == NULL)
             break;
 
-    if (id >= 255)
+    if (id >= MAX_NB_FILE)
         return -1;
 
     struct FileDescriptor *file = kfsOpen(pathname, flags);
@@ -46,7 +46,7 @@ int open(const char *pathname, int flags) {
 }
 
 static struct FileDescriptor *getFileDescriptorById(int fd) {
-    if (fd >= 255)
+    if (fd >= MAX_NB_FILE)
         return NULL;
     return currentTask->lstFiles[fd];
 }

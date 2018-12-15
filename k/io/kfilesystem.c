@@ -90,7 +90,7 @@ struct FileDescriptor *kfsOpen(const char *pathname, int flags) {
     if (node == NULL)
         return NULL;
 
-    struct file_entry *file = kmalloc(sizeof(struct file_entry), 0);
+    struct file_entry *file = kmalloc(sizeof(struct file_entry), 0, "file entry");
     if (!file)
         return NULL;
 
@@ -108,7 +108,7 @@ struct FileDescriptor *kfsOpen(const char *pathname, int flags) {
     file->flags = flags;
     file->dataIndex = 0;
 
-    struct FileDescriptor *fd = kmalloc(sizeof(struct FileDescriptor), 0);
+    struct FileDescriptor *fd = kmalloc(sizeof(struct FileDescriptor), 0, "file descriptor 2");
     if (!fd) {
         kfree(file);
         return NULL;

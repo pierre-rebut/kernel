@@ -17,13 +17,13 @@ static void freePages(struct PageDirectory *pd, void *addr, u32 pages);
 
 void initPaging(u32 memSize) {
 
-    kernelPageDirectory = kmalloc(sizeof(struct PageDirectory), PAGESIZE);
+    kernelPageDirectory = kmalloc(sizeof(struct PageDirectory), PAGESIZE, "kernelPageDirectory");
     memset(kernelPageDirectory, 0, sizeof(struct PageDirectory) - 4);
     kernelPageDirectory->physAddr = (u32) kernelPageDirectory;
 
     u32 addr = 0;
     for (u8 i = 0; i < 3; i++) {
-        kernelPageDirectory->tablesInfo[i] = kmalloc(sizeof(struct TableDirectory), PAGESIZE);
+        kernelPageDirectory->tablesInfo[i] = kmalloc(sizeof(struct TableDirectory), PAGESIZE, "kernelTableDirectory");
         kernelPageDirectory->tablesAddr[i] = (u32) kernelPageDirectory->tablesInfo[i] | MEM_PRESENT | MEM_WRITE;
 
         for (u32 j = 0; j < NB_PAGE; j++) {
@@ -40,7 +40,7 @@ void initPaging(u32 memSize) {
 
     u32 kernelpts = MIN(NB_TABLE / 8, memSize / PAGESIZE / NB_PAGE);
 
-    struct TableDirectory *heap_pts = kmalloc(kernelpts * sizeof(struct TableDirectory), PAGESIZE);
+    struct TableDirectory *heap_pts = kmalloc(kernelpts * sizeof(struct TableDirectory), PAGESIZE, "kernelHeap");
     memset(heap_pts, 0, kernelpts * sizeof(struct TableDirectory));
 
     for (u32 i = 0; i < kernelpts; i++) {
@@ -72,7 +72,7 @@ u32 pagingGetPhysAddr(const void *vaddr) {
 }
 
 struct PageDirectory *pagingCreatePageDirectory() {
-    struct PageDirectory *pageDirectory = kmalloc(sizeof(struct PageDirectory), PAGESIZE);
+    struct PageDirectory *pageDirectory = kmalloc(sizeof(struct PageDirectory), PAGESIZE, "newPageDirectory");
     if (!pageDirectory)
         return NULL;
 
@@ -95,8 +95,11 @@ void pagingDestroyPageDirectory(struct PageDirectory *pageDirectory) {
     if (pageDirectory == currentPageDirectory)
         pagingSwitchPageDirectory(kernelPageDirectory);
 
+    kSerialPrintf("destroy paging directory\n");
+
     for (u32 i = 0; i < NB_TABLE; i++) {
         if (pageDirectory->tablesInfo[i] && checkPageAllowed(pageDirectory, i)) {
+            kSerialPrintf("destroy table directory: %d\n", i);
             for (u32 j = 0; j < NB_PAGE; j++) {
                 u32 physAddress = pageDirectory->tablesInfo[i]->pages[j] & 0xFFFFF000;
 
@@ -104,6 +107,7 @@ void pagingDestroyPageDirectory(struct PageDirectory *pageDirectory) {
                     freePhysicalMemory(physAddress);
             }
             kfree(pageDirectory->tablesInfo[i]);
+            kSerialPrintf("destroy table directory end: %d\n", i);
         }
     }
     kfree(pageDirectory);
@@ -124,7 +128,7 @@ static int allocPages(struct PageDirectory *pd, void *addr, u32 pages) {
 
         struct TableDirectory *pt = pd->tablesInfo[pageNumber / NB_TABLE];
         if (!pt) {
-            pt = kmalloc(sizeof(struct TableDirectory), PAGESIZE);
+            pt = kmalloc(sizeof(struct TableDirectory), PAGESIZE, "newTableDirectory");
             if (!pt) {
                 freePages(pd, addr, i * PAGESIZE);
                 return 0;

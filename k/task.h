@@ -12,7 +12,12 @@
 
 #include "io/filesystem.h"
 
-enum TaskEvent {
+enum TaskPrivilege {
+    TaskPrivilegeKernel,
+    TaskPrivilegeUser
+};
+
+enum TaskEventType {
     TaskEventNone,
     TaskEventKeyboard,
     TaskEventTimer,
@@ -25,24 +30,30 @@ struct Heap {
     u32 pos;
 };
 
+struct TaskEvent {
+    enum TaskEventType type;
+    unsigned long timer;
+    u32 arg;
+};
+
 struct Task {
     u32 pid;
+    enum TaskPrivilege privilege;
 
     u32 esp;
     u32 ss;
     void *kernelStack;
     struct Heap heap;
 
-    enum TaskEvent event;
-    u32 eventArg;
+    struct TaskEvent event;
 
     struct PageDirectory *pageDirectory;
-    struct FileDescriptor *lstFiles[255];
+    struct FileDescriptor *lstFiles[MAX_NB_FILE];
 
     struct Task *next;
     struct Task *prev;
 
-} __attribute__((packed));
+};
 
 extern char taskSwitching;
 extern struct Task *currentTask;
@@ -52,14 +63,17 @@ extern struct Task kernelTask;
 void taskSaveState(u32 esp);
 u32 taskSwitch(struct Task *newTask);
 
-int createProcess(const char *cmdline);
+struct Task *createTask(struct PageDirectory *pageDirectory, u32 entryPoint, enum TaskPrivilege privilege,
+                        u32 ac, const char **av, const char **env);
+u32 createProcess(const char *cmdline, const char **av, const char **env);
 void initTasking();
 
 int taskKill(struct Task *);
 int taskExit();
-void taskAddEvent(enum TaskEvent event, u32 arg);
+void taskAddEvent(enum TaskEventType event, u32 arg);
 u32 taskGetpid();
-int taskKillByPid(u32 pid);
+u32 taskKillByPid(u32 pid);
+struct Task *getTaskByPid(u32 pid);
 
 u32 taskSetHeapInc(s32 size);
 

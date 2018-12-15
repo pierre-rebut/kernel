@@ -164,6 +164,7 @@ void my_putnbr(unsigned long n, u32 pos) {
 }
 
 void k_main(unsigned long magic, multiboot_info_t *info) {
+    taskSwitching = 0;
 
     if (magic != MULTIBOOT_BOOTLOADER_MAGIC || info->mods_count != 1)
         goto error;
@@ -180,9 +181,16 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
 
     writeStringTerminal("\n[F1] Clear - [F2] Start bin - [F7] - Graphic mode test - [F8] Text mode\n", 73);
 
-    createProcess((char*)info->cmdline);
+    const char *av[2] = {
+            (char*)info->cmdline,
+            NULL
+    };
+    const char *env[1] = {NULL};
+
+    createProcess((char*)info->cmdline, av, env);
 
     kSerialPrintf("Kernel loop start\n");
+    taskSwitching = 1;
 
     while (1) {
         hlt();

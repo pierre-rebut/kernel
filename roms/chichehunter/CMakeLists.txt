@@ -13,7 +13,7 @@ set(FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/test)
 
 add_executable(hunter ${SOURCE})
-target_link_libraries(hunter k c)
+target_link_libraries(hunter k c bin-entry)
 
 add_custom_command(TARGET hunter
         POST_BUILD

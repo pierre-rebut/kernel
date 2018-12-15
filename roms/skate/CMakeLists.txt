@@ -26,8 +26,8 @@ set(FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/slide1.bmp
         ${CMAKE_CURRENT_SOURCE_DIR}/slide2.bmp)
 
-add_executable(skate ${SOURCE} ${ENTRYFILE})
-target_link_libraries(skate k c)
+add_executable(skate ${SOURCE})
+target_link_libraries(skate k c bin-entry)
 
 add_custom_command(TARGET skate
         POST_BUILD

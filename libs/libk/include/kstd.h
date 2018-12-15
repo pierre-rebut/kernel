@@ -117,7 +117,12 @@ enum e_mouse_codes {
 #define SYSCALL_SWAP_FRONTBUFFER	10
 #define SYSCALL_PLAYSOUND		11
 #define SYSCALL_GETMOUSE		12 /* XXX: not implemented */
-#define SYSCALL_GETKEYMODE		13
+#define SYSCALL_USLEEP		    13
+#define SYSCALL_WAITPID	    	14
+#define SYSCALL_KILL		    15
+#define SYSCALL_GETPID  		16
+#define SYSCALL_EXECVE  		17
+#define SYSCALL_GETKEYMODE		18
 
 #define NR_SYSCALL			(SYSCALL_GETKEYMODE + 1)
 
@@ -135,5 +140,11 @@ void swap_frontbuffer(const void *buffer);
 int playsound(struct melody *melody, int repeat);
 int getmouse(int *x, int *y, int *buttons);
 int getkeymode(int mode);
+int uslepp(u32 duration);
+u32 kill(u32 pid);
+int waitpid(u32 pid);
+u32 getpid();
+int sleep(u32 duration);
+u32 execve(const char *prg, const char **av, const char **env);
 
 #endif

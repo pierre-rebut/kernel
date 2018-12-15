@@ -49,7 +49,7 @@ u32 initPhysicalMemory(const multiboot_info_t *info) {
     u32 memSize = getMemorySize(memEntry, memEnd);
     physicalMemSize = memSize / PAGESIZE / 32;
 
-    physicalMemTable = kmalloc(physicalMemSize * 4, 0);
+    physicalMemTable = kmalloc(physicalMemSize * 4, 0, "physicalMemTable");
     memset(physicalMemTable, 0xFF, physicalMemSize * 4);
 
     while (memEntry < memEnd) {

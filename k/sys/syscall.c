@@ -26,11 +26,12 @@ static void sys_setVgaFrameBuffer(struct esp_context *ctx);
 static void sys_getMouse(struct esp_context *ctx);
 static void sys_playsound(struct esp_context *ctx);
 static void sys_getkeymode(struct esp_context *ctx);
-static void sys_sleep(struct esp_context *ctx);
+static void sys_usleep(struct esp_context *ctx);
 static void sys_waitPid(struct esp_context *ctx);
 static void sys_exit(struct esp_context *ctx);
 static void sys_kill(struct esp_context *ctx);
 static void sys_getPid(struct esp_context *ctx);
+static void sys_execve(struct esp_context *ctx);
 
 typedef void (*syscall_t)(struct esp_context *);
 
@@ -48,11 +49,12 @@ static syscall_t syscall[] = {
         sys_setVgaFrameBuffer,
         sys_playsound,
         sys_getMouse,
-        sys_getkeymode,
-        sys_sleep,
+        sys_usleep,
         sys_waitPid,
         sys_kill,
-        sys_getPid
+        sys_getPid,
+        sys_execve,
+        sys_getkeymode
 };
 
 void syscall_handler(struct esp_context *ctx) {
@@ -137,7 +139,7 @@ static void sys_getkeymode(struct esp_context *ctx) {
     ctx->eax = 0;
 }
 
-static void sys_sleep(struct esp_context *ctx) {
+static void sys_usleep(struct esp_context *ctx) {
     ctx->eax = 0;
     taskAddEvent(TaskEventTimer, ctx->ebx);
 }
@@ -148,10 +150,19 @@ static void sys_waitPid(struct esp_context *ctx) {
 }
 
 static void sys_kill(struct esp_context *ctx) {
-    ctx->eax = (u32) taskKillByPid(ctx->ebx);
+    ctx->eax = taskKillByPid(ctx->ebx);
 }
 
 static void sys_getPid(struct esp_context *ctx) {
     ctx->eax = taskGetpid();
+}
+
+static void sys_execve(struct esp_context *ctx) {
+    if (ctx->ebx == 0 || ctx->ecx == 0 || ctx->edx == 0) {
+        ctx->eax = 0;
+        return;
+    }
+
+    ctx->eax = createProcess((const char*)ctx->ebx, (const char**)ctx->ecx, (const char **)ctx->edx);
 }
 

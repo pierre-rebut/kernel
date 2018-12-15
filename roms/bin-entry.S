@@ -1,8 +1,6 @@
-extern main
-extern exit
-
-global entry
-.entry:
+.global entry
+entry:
+    push %edx
     push %ecx
     push %eax
 

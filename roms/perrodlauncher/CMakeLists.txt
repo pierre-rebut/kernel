@@ -15,8 +15,8 @@ set(FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/sol.bmp
         ${CMAKE_CURRENT_SOURCE_DIR}/yaka.bmp)
 
-add_executable(perrodlauncher ${SOURCE} ${ENTRYFILE})
-target_link_libraries(perrodlauncher k c)
+add_executable(perrodlauncher ${SOURCE})
+target_link_libraries(perrodlauncher k c bin-entry)
 
 add_custom_command(TARGET perrodlauncher
         POST_BUILD

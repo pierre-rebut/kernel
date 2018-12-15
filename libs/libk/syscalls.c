@@ -111,3 +111,27 @@ int getmouse(int *x, int *y, int *buttons) {
 int getkeymode(int mode) {
     return ((int) syscall1(SYSCALL_GETKEYMODE, mode));
 }
+
+int usleep(u32 duration) {
+    return ((int) syscall1(SYSCALL_USLEEP, duration));
+}
+
+u32 kill(u32 pid) {
+    return syscall1(SYSCALL_KILL, pid);
+}
+
+int waitpid(u32 pid) {
+    return ((int) syscall1(SYSCALL_WAITPID, pid));
+}
+
+u32 getpid() {
+    return syscall0(SYSCALL_GETPID);
+}
+
+int sleep(u32 duration) {
+    return usleep(duration * 1000);
+}
+
+u32 execve(const char *prg, const char **av, const char **env) {
+    return syscall3(SYSCALL_EXECVE, (u32)prg, (u32)av, (u32)env);
+}

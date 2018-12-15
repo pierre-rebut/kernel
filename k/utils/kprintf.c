@@ -301,7 +301,7 @@ int ksprintf(char *buf, const char *fmt, ...) {
 }
 
 int kprintf(const char *fmt, ...) {
-    char printf_buf[4096];
+    char printf_buf[1024];
     va_list args;
     int printed;
 
@@ -315,7 +315,7 @@ int kprintf(const char *fmt, ...) {
 }
 
 int kSerialPrintf(const char *fmt, ...) {
-    char printf_buf[4096];
+    char printf_buf[1024];
     va_list args;
     int printed;
 

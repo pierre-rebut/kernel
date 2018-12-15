@@ -10,8 +10,8 @@ set(FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/intro.csf
         ${CMAKE_CURRENT_SOURCE_DIR}/seine_w.bmp)
 
-add_executable(vaders ${SOURCE} ${ENTRYFILE})
-target_link_libraries(vaders k c)
+add_executable(vaders ${SOURCE})
+target_link_libraries(vaders k c bin-entry)
 
 add_custom_command(TARGET vaders
         POST_BUILD

@@ -1,12 +1,12 @@
 //
-// Created by rebut_p on 15/11/18.
+// Created by rebut_p on 15/12/18.
 //
 
-#ifndef KERNEL_EPITA_ALLOCATOR_H
-#define KERNEL_EPITA_ALLOCATOR_H
+#ifndef KERNEL_ALLOCATOR2_H
+#define KERNEL_ALLOCATOR2_H
 
 #include <k/types.h>
-#include "../include/multiboot.h"
+#include <multiboot.h>
 
 #define KERNEL_HEAP_START 0xE0000000
 #define PLACEMENT_BEGIN   0x600000
@@ -17,18 +17,14 @@
 #define HEAP_WITHIN_64K 1 << 25
 #define HEAP_CONTINUOUS 1 << 31
 
-#define USER_STACK        0x1500000
+#define USER_STACK          0x1500000
+#define USER_ARG_BUFFER     USER_STACK
+#define USER_ENV_BUFFER     (USER_STACK + 0x1000)
+#define USER_HEAP_START     (USER_STACK + 0x10000)
 #define KERNEL_STACK_SIZE 0x1000
 
-typedef struct
-{
-    u32 size;
-    u32 number;
-    char     reserved;
-} __attribute__((packed)) region_t;
-
 int initAllocator();
-void *kmalloc(u32 size, u32 allign);
+void *kmalloc(u32 size, u32 allign, const char *comment);
 void kfree(void *alloc);
 
-#endif //KERNEL_EPITA_ALLOCATOR_H
+#endif //KERNEL_ALLOCATOR2_H

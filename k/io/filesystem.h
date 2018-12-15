@@ -8,6 +8,8 @@
 #include <k/types.h>
 typedef s32 off_t;
 
+#define MAX_NB_FILE 255
+
 struct FileDescriptor {
     void *entryData;
 
@@ -15,7 +17,7 @@ struct FileDescriptor {
     s32 (*writeFct)(void *, void *buf, u32 size);
     off_t (*seekFct)(void *, off_t offset, int whence);
     int (*closeFct)(void*);
-} __attribute__((packed));
+};
 
 int open(const char *pathname, int flags);
 s32 read(int fd, void *buf, u32 size);

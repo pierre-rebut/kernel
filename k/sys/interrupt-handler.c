@@ -10,7 +10,6 @@
 #include "task.h"
 
 #include <stdio.h>
-#include <include/cpu.h>
 #include <sheduler.h>
 
 static char *exceptionList[] = {

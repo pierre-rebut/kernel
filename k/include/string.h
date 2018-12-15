@@ -28,6 +28,7 @@
 
 int memcmp(const void *s1, const void *s2, u32 n);
 void *memcpy(void *dest, const void *src, u32 n);
+void *memmove(void *dest, const void *src, register u32 n);
 void *memset(void *s, int c, u32 n);
 int strcmp(const char *s1, const char *s2);
 char *strcpy(char *dest, const char *src);
@@ -36,5 +37,6 @@ u32 strlen(const char *s);
 u32 strnlen(const char *s, u32 maxlen);
 char *strncpy(char *dest, const char *src, u32 n);
 int strncmp(const char *s1, const char *s2, u32 n);
+char *strdup(const char *str);
 
 #endif				/* !STRING_H_ */
