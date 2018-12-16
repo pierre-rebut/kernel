@@ -9,6 +9,9 @@
 #include "paging.h"
 #include "physical-memory.h"
 
+//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+#define LOG(x, ...)
+
 typedef char bool;
 #define false 0
 #define true 1

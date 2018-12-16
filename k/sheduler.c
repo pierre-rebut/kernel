@@ -9,6 +9,10 @@
 #include <io/keyboard.h>
 #include <include/list.h>
 #include "sheduler.h"
+#include "console.h"
+
+//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+#define LOG(x, ...)
 
 struct List taskLists = CREATE_LIST();
 
@@ -26,8 +30,10 @@ void schedulerDoNothing() {
 }
 
 static char checkTaskEvent(struct Task *task) {
-    //kSerialPrintf("putain de merde: %X\n", task);
+    //LOG("Check task event for: %X\n", task);
     switch (task->event.type) {
+        case TaskEventNone:
+            return 1;
         case TaskEventTimer:
             if (gettick() - task->event.timer >= task->event.arg) {
                 task->event.type = TaskEventNone;
@@ -35,21 +41,20 @@ static char checkTaskEvent(struct Task *task) {
             }
             return 0;
         case TaskEventWaitPid: {
-            struct Task *waiting = getTaskByPid(task->event.arg);
-            if (waiting == NULL) {
+            if (getTaskByPid(task->event.arg) == NULL) {
                 task->event.type = TaskEventNone;
                 return 1;
             }
             return 0;
         }
         case TaskEventKeyboard:
-            if (isKeyboardReady() == 1) {
+            if (isConsoleReadReady(task->console) == 1) {
                 task->event.type = TaskEventNone;
                 return 1;
             }
             return 0;
         default:
-            return 1;
+            return 0;
     }
 }
 
@@ -62,7 +67,7 @@ static struct Task *schedulerGetNextTask() {
             return newTask;
     }
 
-    return kernelTask;
+    return freeTimeTask;
 }
 
 u32 schedulerSwitchTask(u32 esp) {
@@ -71,15 +76,13 @@ u32 schedulerSwitchTask(u32 esp) {
     struct Task *oldTask = currentTask;
     struct Task *newTask = schedulerGetNextTask();
 
-    // kSerialPrintf("oldTask: %p / newTask: %p - pid %d %u %u\n", oldTask, newTask, newTask->pid, esp, newTask->esp);
-
     if (oldTask == newTask)
         return esp;
-
+    LOG("Task switch: oldTask: %p / newTask: %p - pid %d %u %u\n", oldTask, newTask, newTask->pid, esp, newTask->esp);
     return taskSwitch(newTask);
 }
 
 void schedulerForceSwitchTask() {
-    // kSerialPrintf("Scheduler: force switch task\n");
+    LOG("Scheduler: force switch task\n");
     asm volatile("int $126");
 }

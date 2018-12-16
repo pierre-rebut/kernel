@@ -54,10 +54,10 @@ static void initProtectedMode() {
 
 static void setDataSegment() {
 
-    // set ds, fs, gs, ss
+    // set ds, Fs, gs, ss
     asm volatile("movw %w0, %%ds\n"
             "movw %w0, %%es\n"
-            "movw %w0, %%fs\n"
+            "movw %w0, %%Fs\n"
             "movw %w0, %%gs\n"
             "movw %w0, %%ss\n"
     :

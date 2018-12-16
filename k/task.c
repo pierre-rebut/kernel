@@ -8,6 +8,7 @@
 #include "sys/paging.h"
 #include "elf.h"
 #include "sheduler.h"
+#include "console.h"
 
 #include <stdio.h>
 #include <sys/physical-memory.h>
@@ -20,19 +21,40 @@
 #include <io/keyboard.h>
 #include <include/list.h>
 
+//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+#define LOG(x, ...)
+
 static u32 nextPid = 0;
 
 char taskSwitching = 0;
 struct Task *currentTask = NULL;
-struct Task *kernelTask = NULL;
+struct Task *freeTimeTask = NULL;
+static struct Task kernelTask = {0};
 
 void initTasking() {
-    kernelTask = createTask(kernelPageDirectory, (u32)&schedulerDoNothing, TaskPrivilegeKernel, 0, NULL, NULL, "/");
-    currentTask = kernelTask;
+    kernelTask.pid = 0;
+    kernelTask.ss = 0x10;
+    kernelTask.event.type = TaskEventNone;
+    kernelTask.pageDirectory = kernelPageDirectory;
+    kernelTask.privilege = TaskPrivilegeKernel;
+    kernelTask.console = kernelConsole;
+    kernelConsole->task = &kernelTask;
+
+    kernelTask.currentDir = strdup("/");
+
+    for (int i = 0; i < MAX_NB_FILE; i++)
+        kernelTask.lstFiles[i] = NULL;
+
+    freeTimeTask = createTask(kernelPageDirectory, (u32)&schedulerDoNothing, TaskPrivilegeKernel, 0,
+                              NULL, NULL, kernelTask.currentDir, kernelConsole);
+    currentTask = &kernelTask;
+    schedulerAddTask(&kernelTask);
+
+    taskSwitching = 1;
 }
 
 struct Task *createTask(struct PageDirectory *pageDirectory, u32 entryPoint, enum TaskPrivilege privilege,
-                        u32 ac, const char **av, const char **env, const char *dir) {
+                        u32 ac, const char **av, const char **env, struct fs_dirent *dir, struct Console *console) {
     struct Task *task = kmalloc(sizeof(struct Task), 0, "task");
     u32 *stack = kmalloc(KERNEL_STACK_SIZE, 0, "stack");
     if (!task || !stack)
@@ -46,18 +68,12 @@ struct Task *createTask(struct PageDirectory *pageDirectory, u32 entryPoint, enu
     task->event.type = TaskEventNone;
     task->heap.start = USER_HEAP_START;
     task->heap.pos = task->heap.nbPage = 0;
+    task->console = console;
 
-    task->lstFiles[0] = createFileDescriptor(&readFromKeyboard, NULL, NULL, NULL, NULL);
-    task->lstFiles[1] = createFileDescriptor(NULL, &writeTerminalFromFD, NULL, NULL, NULL);
-    task->lstFiles[2] = createFileDescriptor(NULL, &writeSerialFromFD, NULL, NULL, NULL);
+    task->currentDir = dir;
 
-    task->currentDir = strdup(dir);
-
-    for (int i = 3; i < MAX_NB_FILE; i++)
+    for (int i = 0; i < MAX_NB_FILE; i++)
         task->lstFiles[i] = NULL;
-
-    for (int i = 0; i < MAX_NB_FOLDER; i++)
-        task->lstFolder[i] = NULL;
 
     if (privilege == TaskPrivilegeUser)
         pagingAlloc(pageDirectory, (void *) (USER_STACK - 10 * PAGESIZE), 10 * PAGESIZE, MEM_USER | MEM_WRITE);
@@ -135,14 +151,14 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
         return 0;
     }
 
-    kSerialPrintf("task: openfile\n");
+    LOG("task: openfile\n");
     int fd = open(cmdline, O_RDONLY);
     if (fd < 0) {
         kSerialPrintf("Can not open file: %s\n", cmdline);
         return 0;
     }
 
-    kSerialPrintf("task: kmalloc\n");
+    LOG("task: kmalloc\n");
     char *data = kmalloc(sizeof(char) * fileSize, 0, "data bin file");
     if (data == NULL) {
         close(fd);
@@ -150,7 +166,7 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
         return 0;
     }
 
-    kSerialPrintf("task: read\n");
+    LOG("task: read\n");
     if (read(fd, data, (u32) fileSize) != (s32) fileSize) {
         kfree(data);
         close(fd);
@@ -159,7 +175,7 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
     }
 
     close(fd);
-    kSerialPrintf("task: alloc pagedirec\n");
+    LOG("task: alloc pagedirec\n");
     struct PageDirectory *pageDirectory = pagingCreatePageDirectory();
     if (pageDirectory == NULL) {
         kfree(data);
@@ -167,7 +183,7 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
         return 0;
     }
 
-    kSerialPrintf("task: loadbin\n");
+    LOG("task: loadbin\n");
     u32 entryPrg = loadBinary(pageDirectory, data, (u32) fileSize);
     kfree(data);
 
@@ -185,21 +201,32 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
     const char **newAv = copyArgEnvToUserland(pageDirectory, USER_ARG_BUFFER, ac, av);
     const char **newEnv = copyArgEnvToUserland(pageDirectory, USER_ENV_BUFFER, envc, env);
 
-    kSerialPrintf("task: add task\n");
-    struct Task *task = createTask(pageDirectory, entryPrg, TaskPrivilegeUser, ac, newAv, newEnv, currentTask->currentDir);
+    LOG("task: create new console\n");
+    struct Console *console = createConsole();
+
+    LOG("task: add task\n");
+    struct Task *task = createTask(pageDirectory, entryPrg, TaskPrivilegeUser, ac, newAv, newEnv, currentTask->currentDir, console);
     if (!task)
         return 0;
 
+    console->task = task;
+
+    task->lstFiles[0] = createFileDescriptor(console, &readKeyboardFromConsole, NULL, NULL, NULL, NULL);
+    task->lstFiles[1] = createFileDescriptor(NULL, NULL, &writeTerminalFromFD, NULL, NULL, NULL);
+    task->lstFiles[2] = createFileDescriptor(NULL, NULL, &writeSerialFromFD, NULL, NULL, NULL);
+
     schedulerAddTask(task);
 
-    kSerialPrintf("task: end\n");
+    setActiveConsole(console);
+
+    LOG("task: end\n");
     return task->pid;
 }
 
 int taskKill(struct Task *task) {
-    kSerialPrintf("Killing task: %u\n", task->pid);
+    LOG("Killing task: %u\n", task->pid);
 
-    if (task == kernelTask) {
+    if (task->pid == 0) {
         kSerialPrintf("can not kill kernel task !!\n");
         return -1;
     }
@@ -232,13 +259,14 @@ int taskKill(struct Task *task) {
 
     pagingDestroyPageDirectory(task->pageDirectory);
 
+    destroyConsole(task->console);
     schedulerRemoveTask(task);
 
     kfree(task);
     taskSwitching = tmpTaskSwitching;
 
     if (currentTask == task) {
-        schedulerForceSwitchTask();
+        hlt();
     }
 
     return 0;
@@ -261,7 +289,7 @@ int taskExit() {
     return taskKill(currentTask);
 }
 
-void taskAddEvent(enum TaskEventType event, u32 arg) {
+void taskWaitEvent(enum TaskEventType event, u32 arg) {
     currentTask->event.type = event;
     currentTask->event.timer = gettick();
     currentTask->event.arg = arg;
@@ -285,7 +313,7 @@ u32 taskSwitch(struct Task *newTask) {
 }
 
 u32 taskSetHeapInc(s32 inc) {
-    if (currentTask == kernelTask)
+    if (currentTask->pid == 0)
         return 0;
 
     struct Heap *heap = &currentTask->heap;

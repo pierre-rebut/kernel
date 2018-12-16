@@ -9,24 +9,8 @@
 
 #include <k/kfs.h>
 #include <k/kstd.h>
-#include "filesystem.h"
 
 void initKFileSystem(module_t *module);
-
-struct FileDescriptor *kfsOpen(const char *pathname, int flags);
-int kfsStat(const char *pathname, struct stat *data);
-
-s32 kfsRead(void *entryData, void *buf, u32 size);
-off_t kfsSeek(void *entryData, off_t offset, int whence);
-int kfsClose(void *entryData);
-int kfsFStat(void *, struct stat *data);
-
-u32 kfsLengthOfFile(const char *pathname);
-
-void kfsListFiles();
-
-struct FolderDescriptor *kfsOpendir(const char *);
-struct dirent *kfsReaddir(void *, struct dirent *);
 
 struct file_entry {
     u32 dataIndex;

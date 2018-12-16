@@ -13,6 +13,9 @@
 
 #include <stdio.h>
 
+//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+#define LOG(x, ...)
+
 #define NB_SYSCALL 25
 
 static void sys_write(struct esp_context *ctx);
@@ -71,7 +74,13 @@ static syscall_t syscall[] = {
         sys_readdir
 };
 
-void syscall_handler(struct esp_context *ctx) {
+static void syscall_handler(struct esp_context *ctx);
+
+void initSyscall() {
+    interruptRegister(128, &syscall_handler);
+}
+
+static void syscall_handler(struct esp_context *ctx) {
     if (ctx->eax >= NB_SYSCALL)
         return;
 
@@ -96,7 +105,7 @@ static void sys_sbrk(struct esp_context *ctx) {
 }
 
 static void sys_getkey(struct esp_context *ctx) {
-    int tmp = getkey();
+    int tmp = consoleGetkey(currentTask->console);
     ctx->eax = (u32) tmp;
 }
 
@@ -107,7 +116,7 @@ static void sys_gettick(struct esp_context *ctx) {
 
 static void sys_open(struct esp_context *ctx) {
     int tmp = open((const char *)ctx->ebx, ctx->ecx);
-    kSerialPrintf("open: %s (%d)\n", (char*)ctx->ebx, tmp);
+    LOG("open: %s (%d)\n", (char*)ctx->ebx, tmp);
     ctx->eax = (u32) tmp;
 }
 
@@ -127,6 +136,7 @@ static void sys_seek(struct esp_context *ctx) {
 }
 
 static void sys_close(struct esp_context *ctx) {
+    LOG("close: %d\n", ctx->ebx);
     int tmp = close(ctx->ebx);
     ctx->eax = (u32) tmp;
 }
@@ -155,12 +165,12 @@ static void sys_getkeymode(struct esp_context *ctx) {
 
 static void sys_usleep(struct esp_context *ctx) {
     ctx->eax = 0;
-    taskAddEvent(TaskEventTimer, ctx->ebx);
+    taskWaitEvent(TaskEventTimer, ctx->ebx);
 }
 
 static void sys_waitPid(struct esp_context *ctx) {
     ctx->eax = 0;
-    taskAddEvent(TaskEventWaitPid, ctx->ebx);
+    taskWaitEvent(TaskEventWaitPid, ctx->ebx);
 }
 
 static void sys_kill(struct esp_context *ctx) {
@@ -172,18 +182,19 @@ static void sys_getPid(struct esp_context *ctx) {
 }
 
 static void sys_execve(struct esp_context *ctx) {
-    kSerialPrintf("here i am\n");
 
     if (ctx->ebx == 0 || ctx->ecx == 0 || ctx->edx == 0) {
         ctx->eax = 0;
         return;
     }
 
+    LOG("execve: %s\n", (char*)ctx->ebx);
     ctx->eax = createProcess((const char*)ctx->ebx, (const char**)ctx->ecx, (const char **)ctx->edx);
 }
 
 static void sys_stat(struct esp_context *ctx) {
     s32 tmp = stat((void*)ctx->ebx, (void *)ctx->ecx);
+    LOG("stat: %s (%d)\n", (char*)ctx->ebx, tmp);
     ctx->eax = (u32) tmp;
 }
 
@@ -199,7 +210,7 @@ static void sys_chdir(struct esp_context *ctx) {
 
 static void sys_opendir(struct esp_context *ctx) {
     int tmp = opendir((const char *)ctx->ebx);
-    kSerialPrintf("opendir: %s (%d)\n", (char*)ctx->ebx, tmp);
+    LOG("opendir: %s (%d)\n", (char*)ctx->ebx, tmp);
     ctx->eax = (u32) tmp;
 }
 
@@ -208,7 +219,7 @@ static void sys_readdir(struct esp_context *ctx) {
 }
 
 static void sys_closedir(struct esp_context *ctx) {
-    kSerialPrintf("closedir: %d\n", ctx->ebx);
+    LOG("closedir: %d\n", ctx->ebx);
     int tmp = closedir(ctx->ebx);
     ctx->eax = (u32) tmp;
 }

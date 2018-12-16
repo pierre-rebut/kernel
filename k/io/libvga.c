@@ -22,9 +22,11 @@
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <k/kstd.h>
-#include "../include/compiler.h"
+#include <compiler.h>
 #include "libvga.h"
 #include "io.h"
+
+enum ConsoleMode currentVideoMode = ConsoleModeText;
 
 /*
 ** Use to save the VGA plane 2, which contains the text font,
@@ -247,52 +249,28 @@ static void libvga_switch_mode3h(void) {
     libvga_write_regs(libvga_regs_80x25xtext);
 }
 
-static int currentMode = VIDEO_TEXT;
-
-int switchVgaMode(int mode) {
-    if (mode == currentMode)
+int switchVgaMode(enum ConsoleMode mode) {
+    if (mode == currentVideoMode)
         return 0;
 
     switch (mode) {
-        case VIDEO_TEXT:
+        case ConsoleModeText:
             libvga_switch_mode3h();
             break;
-        case VIDEO_GRAPHIC:
+        case ConsoleModeVideo:
             libvga_switch_mode13h();
             break;
         default:
             return -1;
     }
 
-    currentMode = mode;
+    currentVideoMode = mode;
+    activeConsole->mode = mode;
     return 0;
-}
-
-int getVideoMode() {
-    return currentMode;
 }
 
 void setVgaFrameBuffer(const void *buffer) {
     char *vram = libvga_get_framebuffer();
     for (u32 i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++)
         vram[i] = ((char*)buffer)[i];
-}
-
-static u32 posX = 0;
-
-void moveBlock() {
-    if (currentMode != VIDEO_GRAPHIC)
-        return;
-
-    char *vram = libvga_get_framebuffer();
-    for (u32 i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++)
-        vram[i] = 0;
-
-    for (u32 y = 150; y < 160; y++) {
-        for (u32 x = posX; x < posX + 10; x++) {
-            vram[y * VGA_WIDTH + x] = 0x8;
-        }
-    }
-
-    posX ++;
 }

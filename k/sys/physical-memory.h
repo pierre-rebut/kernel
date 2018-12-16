@@ -8,9 +8,6 @@
 #include <k/types.h>
 #include <multiboot.h>
 
-#define MAX(a, b) ((a) > (b) ? (a): (b))
-#define MIN(a, b) ((a) < (b) ? (a): (b))
-
 #define MAX_MEMORY 0x100000000ull
 #define PAGESIZE 4096
 

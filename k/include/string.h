@@ -26,6 +26,9 @@
 
 #include <k/types.h>
 
+#define MAX(a, b) ((a) > (b) ? (a): (b))
+#define MIN(a, b) ((a) < (b) ? (a): (b))
+
 int memcmp(const void *s1, const void *s2, u32 n);
 void *memcpy(void *dest, const void *src, u32 n);
 void *memmove(void *dest, const void *src, register u32 n);
@@ -38,5 +41,8 @@ u32 strnlen(const char *s, u32 maxlen);
 char *strncpy(char *dest, const char *src, u32 n);
 int strncmp(const char *s1, const char *s2, u32 n);
 char *strdup(const char *str);
+char *strchr(const char *p, int ch);
+char *strtok(char *s, const char *delim);
+u32 strcspn(const char *s1, register const char *s2);
 
 #endif				/* !STRING_H_ */

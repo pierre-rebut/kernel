@@ -22,21 +22,17 @@ set(K_FILES
         sys/syscall.c sys/syscall.h
         task.c task.h
         io/terminal.c io/terminal.h
-        io/filesystem.c io/filesystem.h
+        io/filesystem.c io/filesystem2.h
         sheduler.c sheduler.h
-        utils/list.c include/list.h)
+        utils/list.c include/list.h
+        io/ata.c io/ata.h
+        console.c console.h
+        )
 
 set(K_LIBS
-        utils/memcmp.c
-        utils/memcpy.c
-        utils/memset.c
         utils/kprintf.c
         utils/kputs.c
-        utils/strcmp.c
-        utils/strcpy.c
-        utils/strlen.c
-        utils/strncmp.c
-        utils/strnlen.c utils/strncpy.c utils/memmove.c utils/strdup.c)
+        utils/memmove.c utils/string.c utils/mem.c utils/stringn.c)
 
 set_property(SOURCE crt0.S PROPERTY LANGUAGE C)
 set_property(SOURCE sys/interrupt-entry.S PROPERTY LANGUAGE C)

@@ -8,10 +8,21 @@
 #include "io/pit.h"
 #include "sys/syscall.h"
 #include "task.h"
+#include "allocator.h"
 
 #include <stdio.h>
 #include <sheduler.h>
 #include <include/cpu.h>
+
+struct InterruptList {
+    u32 id;
+
+    void (*fct)(struct esp_context *);
+
+    struct InterruptList *next;
+};
+
+static struct InterruptList *intList = NULL;
 
 static char *exceptionList[] = {
         "Division by zero",
@@ -37,12 +48,11 @@ static char *exceptionList[] = {
         "Virtualization Exception"
 };
 
-static void quitTask(void)
-{
+static void quitTask(void) {
     if (currentTask == NULL)
         return;
 
-    if (currentTask == kernelTask) {
+    if (currentTask->pid == 0) {
         kSerialPrintf("<KERNEL PANIC> !!!!!!!\n\n");
         cli();
         hlt();
@@ -61,33 +71,44 @@ static void isr_exception_handler(struct esp_context *r) {
     kSerialPrintf("[INT] err code: %u eip: %X\n", r->err_code, r->eip);
     kSerialPrintf("[INT] edi: %X esi: %X ebp: %X eax: %X ebx: %X ecx: %X edx: %X\n", r->edi, r->esi, r->ebp, r->eax,
                   r->ebx, r->ecx, r->edx);
-    kSerialPrintf("[INT] cs: %x  ds: %x  es: %x  fs: %x  gs: %x  ss: %x\n", r->cs, r->ds, r->es, r->fs, r->gs, r->ss);
+    kSerialPrintf("[INT] cs: %x  ds: %x  es: %x  Fs: %x  gs: %x  ss: %x\n", r->cs, r->ds, r->es, r->fs, r->gs, r->ss);
     kSerialPrintf("[INT] eflags: %X  useresp: %X\n", r->eflags, r->useresp);
 
     quitTask();
 }
 
-static void isq_normal_handler(struct esp_context *ctx) {
+int interruptRegister(u32 int_no, void (*fct)(struct esp_context *)) {
+    struct InterruptList *newElem = kmalloc(sizeof(struct InterruptList), 0, "InterruptList");
+    if (newElem == NULL)
+        return -1;
 
-    switch (ctx->int_no) {
-        case 33:
-            keyboard_handler();
-            break;
-        case 32:
-            pit_handler();
-            break;
-        default:
-            kSerialPrintf("Interrupt ISQ handle: %d\n", ctx->int_no);
+    newElem->id = int_no;
+    newElem->fct = fct;
+    newElem->next = intList;
+    intList = newElem;
+    return 0;
+}
+
+static void executeInterruptFromLis(struct esp_context *ctx) {
+    struct InterruptList *elem = intList;
+    while (elem != NULL) {
+        if (elem->id == ctx->int_no) {
+            elem->fct(ctx);
+            return;
+        }
+        elem = elem->next;
     }
-
-    if (ctx->int_no >= 40)
-        pic_eoi_slave(ctx->int_no);
-    pic_eoi_master(ctx->int_no);
+    kSerialPrintf("Interrupt not found: %d\n", ctx->int_no);
 }
 
 u32 interrupt_handler(u32 esp) {
     struct esp_context *ctx = (struct esp_context *) esp;
-    // kSerialPrintf("interrupt: %u\n", ctx->int_no);
+
+    if (ctx->int_no < 48) {
+        if (ctx->int_no >= 40)
+            pic_eoi_slave(ctx->int_no);
+        pic_eoi_master(ctx->int_no);
+    }
 
     if ((ctx->int_no == 32 && taskSwitching) || ctx->int_no == 126) {
         esp = schedulerSwitchTask(esp);
@@ -95,18 +116,9 @@ u32 interrupt_handler(u32 esp) {
 
     if (ctx->int_no < 32)
         isr_exception_handler(ctx);
-    else if (ctx->int_no < 48)
-        isq_normal_handler(ctx);
-    else {
-        switch (ctx->int_no) {
-            case 0x80:
-                syscall_handler(ctx);
-                break;
-            case 126:
-                break;
-            default:
-                kSerialPrintf("Interrupt ISR handle: %d\n", ctx->int_no);
-        }
+    else if (ctx->int_no != 126) {
+        executeInterruptFromLis(ctx);
     }
+
     return esp;
 }

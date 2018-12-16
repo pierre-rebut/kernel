@@ -8,8 +8,6 @@
 #include <k/types.h>
 #include <compiler.h>
 
-void initInterrupt();
-
 struct idt_entry {
     u16 offset;
     u16 segmentSelector;
@@ -26,5 +24,8 @@ struct esp_context {
     u32 int_no, err_code;
     u32 eip, cs, eflags, useresp, ss;
 };
+
+void initInterrupt();
+int interruptRegister(u32 int_no, void (*fct)(struct esp_context *));
 
 #endif //KERNEL_EPITA_INTERRUPT_H

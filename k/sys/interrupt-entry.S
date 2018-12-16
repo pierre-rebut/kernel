@@ -9,13 +9,13 @@ isr_handle:
 
     pushl %ds
     pushl %es
-    pushl %fs
+    pushl %Fs
     pushl %gs
 
     mov $0x10, %ax
     mov %ax, %ds
     mov %ax, %es
-    mov %ax, %fs
+    mov %ax, %Fs
     mov %ax, %gs
 
     pushl %esp
@@ -23,7 +23,7 @@ isr_handle:
     movl %eax, %esp
 
     popl %gs
-    popl %fs
+    popl %Fs
     popl %es
     popl %ds
 

@@ -9,6 +9,9 @@
 #include "allocator.h"
 #include "physical-memory.h"
 
+//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+#define LOG(x, ...)
+
 struct PageDirectory *kernelPageDirectory = NULL;
 static struct PageDirectory *currentPageDirectory = NULL;
 
@@ -58,6 +61,7 @@ void initPaging(u32 memSize) {
 }
 
 static inline void invlpg(void *p) {
+    LOG("invalide page\n");
     asm volatile("invlpg (%0)"::"r" (p) : "memory");
 }
 
@@ -67,7 +71,7 @@ u32 pagingGetPhysAddr(const void *vaddr) {
     if (!pt)
         return 0;
 
-    // kSerialPrintf("GetPhysAddr: virt-->phys: pageNb: %u, pt: %Xh\n", pageNumber, (u32) pt);
+    LOG("GetPhysAddr: virt-->phys: pageNb: %u, pt: %Xh\n", pageNumber, (u32) pt);
     return ((pt->pages[pageNumber % NB_PAGE] & 0xFFFFF000) + ((u32) vaddr & 0x00000FFF));
 }
 
@@ -92,6 +96,8 @@ void pagingDestroyPageDirectory(struct PageDirectory *pageDirectory) {
         return;
     }
 
+    LOG("Destroy page directory\n");
+
     if (pageDirectory == currentPageDirectory)
         pagingSwitchPageDirectory(kernelPageDirectory);
 
@@ -113,7 +119,7 @@ void pagingSwitchPageDirectory(struct PageDirectory *pageDirectory) {
     if (pageDirectory == currentPageDirectory)
         return;
 
-    // kSerialPrintf("Switching page directory\n");
+    LOG("Switching page directory\n");
     currentPageDirectory = pageDirectory;
     asm volatile("mov %0, %%cr3" : : "r" (pageDirectory->physAddr));
 }
@@ -217,7 +223,7 @@ static int pagingAllocRec(struct PageDirectory *pd, u32 index, u32 pages, void *
 }
 
 int pagingAlloc(struct PageDirectory *pd, void *addr, u32 size, enum MEMFLAGS flags) {
-    kSerialPrintf("pagingAlloc: %p - %u\n", addr, size);
+    LOG("pagingAlloc: %p - %u\n", addr, size);
 
     if (((u32) addr) % PAGESIZE != 0) {
         kSerialPrintf("addr not page aligned\n");
@@ -245,6 +251,7 @@ int pagingAlloc(struct PageDirectory *pd, void *addr, u32 size, enum MEMFLAGS fl
 }
 
 void pagingFree(struct PageDirectory *pd, void *virtAddress, u32 size) {
+    LOG("pagingFree: %p - %u\n", addr, size);
 
     if (((u32) virtAddress) % PAGESIZE != 0) {
         kSerialPrintf("addr not page aligned\n");

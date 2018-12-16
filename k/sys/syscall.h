@@ -7,6 +7,6 @@
 
 #include "idt.h"
 
-void syscall_handler(struct esp_context *ctx);
+void initSyscall();
 
 #endif //KERNEL_EPITA_SYSCALL_H

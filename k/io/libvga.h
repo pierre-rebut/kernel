@@ -25,12 +25,13 @@
 #define LIBVGA_H
 
 #include <k/types.h>
+#include <console.h>
 
-int switchVgaMode(int mode);
-int getVideoMode();
+extern enum ConsoleMode currentVideoMode;
+
+int switchVgaMode(enum ConsoleMode mode);
 void setVgaFrameBuffer(const void *buffer);
 
-void moveBlock();
 
 
 #define VGA_HEIGHT 200

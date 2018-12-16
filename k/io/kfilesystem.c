@@ -3,13 +3,16 @@
 //
 
 #include "kfilesystem.h"
-#include "filesystem.h"
+#include "filesystem2.h"
 
 #include <stdio.h>
 #include <sys/allocator.h>
 #include <string.h>
 
 static struct kfs_superblock *kfs = NULL;
+static struct Fs fs_kfs = {
+        .name = "kfs"
+};
 
 void initKFileSystem(module_t *module) {
     struct kfs_superblock *tmp = (struct kfs_superblock *) module->mod_start;
@@ -25,6 +28,7 @@ void initKFileSystem(module_t *module) {
     }
 
     kfs = tmp;
+    fs_register(&fs_kfs);
 }
 
 static char checkBlockChecksum(struct kfs_block *block) {
@@ -67,7 +71,7 @@ static struct kfs_inode *getFileINode(const char *pathname) {
     return node;
 }
 
-struct FileDescriptor *kfsOpen(const char *pathname, int flags) {
+void *kfsOpen(const char *pathname, int flags) {
     if (kfs == NULL || pathname == NULL || flags != O_RDONLY)
         return NULL;
 
@@ -102,7 +106,7 @@ struct FileDescriptor *kfsOpen(const char *pathname, int flags) {
         return NULL;
     }
 
-    fd->entryData = file;
+    fd->privateData = file;
     fd->writeFct = NULL;
     fd->readFct = &kfsRead;
     fd->seekFct = &kfsSeek;
@@ -130,11 +134,11 @@ static char changeIBlock(struct file_entry *file, struct kfs_inode *node) {
     return 0;
 }
 
-s32 kfsRead(void *entryData, void *buf, u32 size) {
-    if (entryData == NULL || kfs == NULL)
+s32 kfsRead(void *privateData, void *buf, u32 size) {
+    if (privateData == NULL || kfs == NULL)
         return -1;
 
-    struct file_entry *file = (struct file_entry *) entryData;
+    struct file_entry *file = (struct file_entry *) privateData;
     struct kfs_inode *node = file->node;
     u8 *buffer = (u8 *) buf;
 
@@ -197,11 +201,11 @@ off_t getOffset(struct file_entry *file) {
     return res;
 }
 
-off_t kfsSeek(void *entryData, off_t offset, int whence) {
-    if (!entryData || !kfs)
+off_t kfsSeek(void *privateData, off_t offset, int whence) {
+    if (!privateData || !kfs)
         return -1;
 
-    struct file_entry *file = (struct file_entry *) entryData;
+    struct file_entry *file = (struct file_entry *) privateData;
     if (offset >= (off_t) file->node->file_sz)
         return -1;
 
@@ -225,14 +229,14 @@ off_t kfsSeek(void *entryData, off_t offset, int whence) {
         return -1;
 
     offset = (currentOffset + offset) % file->node->file_sz;
-    return kfsSeek(entryData, offset, offset < 0 ? SEEK_END : SEEK_SET);
+    return kfsSeek(privateData, offset, offset < 0 ? SEEK_END : SEEK_SET);
 }
 
-int kfsClose(void *entryData) {
-    if (!entryData)
+int kfsClose(void *privateData) {
+    if (!privateData)
         return -1;
 
-    kfree(entryData);
+    kfree(privateData);
     return 0;
 }
 
@@ -288,11 +292,11 @@ int kfsStat(const char *pathname, struct stat *data) {
     return 0;
 }
 
-int kfsFStat(void *entryData, struct stat *data) {
-    if (!entryData || !kfs)
+int kfsFStat(void *privateData, struct stat *data) {
+    if (!privateData || !kfs)
         return -1;
 
-    struct file_entry *file = (struct file_entry *) entryData;
+    struct file_entry *file = (struct file_entry *) privateData;
     getStatInfo(file->node, data);
 
     return 0;
@@ -316,7 +320,7 @@ struct FolderDescriptor *kfsOpendir(const char *pathname) {
         return NULL;
     }
 
-    fd->entryData = node;
+    fd->privateData = node;
     fd->readFct = &kfsReaddir;
     fd->closeFct = &kfsClose;
     return fd;
@@ -327,7 +331,7 @@ struct dirent *kfsReaddir(void *entry, struct dirent *data) {
         return NULL;
 
     struct kfs_inode *node = (struct kfs_inode*)entry;
-    if (node->idx >= kfs->inode_cnt)
+    if (node->idx > kfs->inode_cnt)
         return NULL;
 
     strcpy(data->d_name, node->filename);

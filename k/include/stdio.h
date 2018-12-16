@@ -31,5 +31,6 @@ int kprintf(const char *format, ...);
 int kSerialPrintf(const char *format, ...);
 int ksprintf(char *buf, const char *format, ...);
 int kvsprintf(char *buf, const char *format, va_list args);
+int klog(const char *fmt, ...);
 
 #endif				/* !STDLIB_H_ */

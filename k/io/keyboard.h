@@ -7,10 +7,6 @@
 
 #define ISQ_KEYBOARD_VALUE 1
 
-char isKeyboardReady();
-int getkey();
-void keyboard_handler();
-
-s32 readFromKeyboard(void *, void *buf, u32 size);
+void initKeyboard();
 
 #endif // KERNEL_EPITA_KEYBOARD_H

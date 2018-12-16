@@ -7,9 +7,10 @@
 
 #define ISQ_PIT_VALUE 0
 
+typedef unsigned long clock_t;
+
 void initPit();
 
 unsigned long gettick();
-void pit_handler();
 
 #endif //KERNEL_EPITA_PIT_H

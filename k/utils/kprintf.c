@@ -309,7 +309,8 @@ int kprintf(const char *fmt, ...) {
     printed = kvsprintf(printf_buf, fmt, args);
     va_end(args);
 
-    kputs(printf_buf);
+    if (printed > 0)
+        kputs(printf_buf);
 
     return printed;
 }
@@ -328,3 +329,4 @@ int kSerialPrintf(const char *fmt, ...) {
 
     return printed;
 }
+

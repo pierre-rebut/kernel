@@ -17,7 +17,7 @@ TODO
 ----
 
 * rework syscall apis
-* change fs (iso? something else?)
+* change Fs (iso? something else?)
 * propagation of all changes in courses
 * maybe rename libc/libk
 * rework/rewrite *all* roms

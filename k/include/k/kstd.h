@@ -118,8 +118,6 @@ enum e_mouse_codes {
 #define SEEK_SET	0
 #define SEEK_CUR	1
 #define SEEK_END	2
-#define VIDEO_GRAPHIC	0
-#define VIDEO_TEXT	1
 
 /*
 ** syscalls
