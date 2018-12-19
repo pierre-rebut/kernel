@@ -67,7 +67,7 @@ int my_other_commande(const char **av, const char **env) {
         pid = execve(av[0], av, env);
     }
 
-    printf("execute: %d\n", pid);
+    printf("execute: %path\n", pid);
 
     if (pid == 0)
         puts("Error: no such file or directory\n");

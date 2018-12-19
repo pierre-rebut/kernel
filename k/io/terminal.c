@@ -120,8 +120,3 @@ int writeStringTerminal(const char *data, u32 size) {
     updateTerminalCursor();
     return (int)i;
 }
-
-int writeTerminalFromFD(void *tmp, void *data, u32 size) {
-    (void)tmp;
-    return writeStringTerminal(data, size);
-}

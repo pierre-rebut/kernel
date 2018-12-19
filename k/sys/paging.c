@@ -208,7 +208,7 @@ static int pagingAllocRec(struct PageDirectory *pd, u32 index, u32 pages, void *
     if (!mapPagesToFrames(pd, addr + index * PAGESIZE, frame, flags)) {
         kSerialPrintf("mapPagesToFrames(%X, %X, %X, %X) failed.\n", (u32) pd, (u32) (addr + index * PAGESIZE),
                       frame, flags);
-        kSerialPrintf("info: %d - %d\n", index, pages);
+        kSerialPrintf("info: %path - %path\n", index, pages);
         freePhysicalMemory(frame);
         return -1;
     }

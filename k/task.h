@@ -1,16 +1,14 @@
 //
 // Created by rebut_p on 28/09/18.
 //
-
-#include "include/multiboot.h"
-
 #ifndef KERNEL_EPITA_USERLAND_H
 #define KERNEL_EPITA_USERLAND_H
 
 #include <k/types.h>
 #include <k/kstd.h>
 
-#include "io/filesystem2.h"
+#include "sys/filesystem.h"
+#include "sys/kobject.h"
 
 struct Console;
 
@@ -52,9 +50,9 @@ struct Task {
     struct TaskEvent event;
 
     struct PageDirectory *pageDirectory;
-    struct FileDescriptor *lstFiles[MAX_NB_FILE];
+    struct Kobject *lstFiles[MAX_NB_FILE];
 
-    struct fs_dirent *currentDir;
+    struct FsPath *currentDir;
 };
 
 extern char taskSwitching;
@@ -65,9 +63,9 @@ void taskSaveState(u32 esp);
 u32 taskSwitch(struct Task *newTask);
 
 struct Task *createTask(struct PageDirectory *pageDirectory, u32 entryPoint, enum TaskPrivilege privilege,
-                        u32 ac, const char **av, const char **env, const char *dir, struct Console *console);
+                        u32 ac, const char **av, const char **env, struct FsPath *dir, struct Console *console);
 u32 createProcess(const char *cmdline, const char **av, const char **env);
-void initTasking();
+void initTasking(struct FsPath *rootDirectory);
 
 int taskKill(struct Task *);
 int taskExit();
@@ -79,5 +77,7 @@ struct Task *getTaskByPid(u32 pid);
 u32 taskSetHeapInc(s32 size);
 
 int taskChangeDirectory(const char *directory);
+
+int taskGetAvailableFd(struct Task *task);
 
 #endif //KERNEL_EPITA_USERLAND_H

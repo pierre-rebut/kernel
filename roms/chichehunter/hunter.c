@@ -298,7 +298,7 @@ static void game_loop(struct image *img) {
  */
 
 int main(int ac, char **av, char **env) {
-    printf("ac = %d - av = %s\n", ac, av[0]);
+    printf("ac = %path - av = %s\n", ac, av[0]);
     switch_graphic();
 
     while (1) {

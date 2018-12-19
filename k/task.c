@@ -8,7 +8,7 @@
 #include "sys/paging.h"
 #include "elf.h"
 #include "sheduler.h"
-#include "console.h"
+#include "sys/console.h"
 
 #include <stdio.h>
 #include <sys/physical-memory.h>
@@ -21,8 +21,8 @@
 #include <io/keyboard.h>
 #include <include/list.h>
 
-//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
-#define LOG(x, ...)
+#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+//#define LOG(x, ...)
 
 static u32 nextPid = 0;
 
@@ -31,7 +31,7 @@ struct Task *currentTask = NULL;
 struct Task *freeTimeTask = NULL;
 static struct Task kernelTask = {0};
 
-void initTasking() {
+void initTasking(struct FsPath *rootDirectory) {
     kernelTask.pid = 0;
     kernelTask.ss = 0x10;
     kernelTask.event.type = TaskEventNone;
@@ -40,7 +40,7 @@ void initTasking() {
     kernelTask.console = kernelConsole;
     kernelConsole->task = &kernelTask;
 
-    kernelTask.currentDir = strdup("/");
+    kernelTask.currentDir = rootDirectory;
 
     for (int i = 0; i < MAX_NB_FILE; i++)
         kernelTask.lstFiles[i] = NULL;
@@ -54,7 +54,7 @@ void initTasking() {
 }
 
 struct Task *createTask(struct PageDirectory *pageDirectory, u32 entryPoint, enum TaskPrivilege privilege,
-                        u32 ac, const char **av, const char **env, struct fs_dirent *dir, struct Console *console) {
+                        u32 ac, const char **av, const char **env, struct FsPath *dir, struct Console *console) {
     struct Task *task = kmalloc(sizeof(struct Task), 0, "task");
     u32 *stack = kmalloc(KERNEL_STACK_SIZE, 0, "stack");
     if (!task || !stack)
@@ -71,6 +71,7 @@ struct Task *createTask(struct PageDirectory *pageDirectory, u32 entryPoint, enu
     task->console = console;
 
     task->currentDir = dir;
+    dir->refcount++;
 
     for (int i = 0; i < MAX_NB_FILE; i++)
         task->lstFiles[i] = NULL;
@@ -145,41 +146,44 @@ static const char **copyArgEnvToUserland(struct PageDirectory *pd, u32 position,
 }
 
 u32 createProcess(const char *cmdline, const char **av, const char **env) {
-    s32 fileSize = kfsLengthOfFile(cmdline);
-    if (fileSize == 0) {
-        kSerialPrintf("Can not get file info: %s\n", cmdline);
-        return 0;
-    }
-
     LOG("task: openfile\n");
-    int fd = open(cmdline, O_RDONLY);
-    if (fd < 0) {
-        kSerialPrintf("Can not open file: %s\n", cmdline);
+    struct FsPath *file = fsResolvePath(cmdline);
+    if (!file) {
+        kSerialPrintf("[TASK] Can not open file: %s\n", cmdline);
         return 0;
     }
 
-    LOG("task: kmalloc\n");
+    struct stat fileStat;
+    if (fsStat(file, &fileStat) == -1) {
+        kSerialPrintf("[TASK] Can not get file info: %s\n", cmdline);
+        return 0;
+    }
+
+    s32 fileSize = fileStat.file_sz;
+
+    LOG("task: kmalloc of size %d\n", fileSize);
     char *data = kmalloc(sizeof(char) * fileSize, 0, "data bin file");
     if (data == NULL) {
-        close(fd);
-        kSerialPrintf("Can not alloc memory\n");
+        fsPathDestroy(file);
+        kSerialPrintf("[TASK] Can not alloc memory\n");
         return 0;
     }
 
     LOG("task: read\n");
-    if (read(fd, data, (u32) fileSize) != (s32) fileSize) {
+    s32 readSize = fsReadFile(file, data, (u32) fileSize, 0);
+    fsPathDestroy(file);
+
+    if (readSize != (s32) fileSize) {
         kfree(data);
-        close(fd);
-        kSerialPrintf("Can not read bin data\n");
+        kSerialPrintf("[TASK] Can not read bin data: %d\n", readSize);
         return 0;
     }
 
-    close(fd);
     LOG("task: alloc pagedirec\n");
     struct PageDirectory *pageDirectory = pagingCreatePageDirectory();
     if (pageDirectory == NULL) {
         kfree(data);
-        kSerialPrintf("Can not alloc new page directory\n");
+        kSerialPrintf("[TASK] Can not alloc new page directory\n");
         return 0;
     }
 
@@ -188,7 +192,7 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
     kfree(data);
 
     if (entryPrg == 0) {
-        kSerialPrintf("Can not load binary: %s\n", cmdline);
+        kSerialPrintf("[TASK] Can not load binary: %s\n", cmdline);
         return 0;
     }
 
@@ -211,9 +215,9 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
 
     console->task = task;
 
-    task->lstFiles[0] = createFileDescriptor(console, &readKeyboardFromConsole, NULL, NULL, NULL, NULL);
-    task->lstFiles[1] = createFileDescriptor(NULL, NULL, &writeTerminalFromFD, NULL, NULL, NULL);
-    task->lstFiles[2] = createFileDescriptor(NULL, NULL, &writeSerialFromFD, NULL, NULL, NULL);
+    task->lstFiles[0] = koCreate(Ko_CONS, console, O_RDONLY);
+    task->lstFiles[1] = koCreate(Ko_CONS, console, O_WRONLY);
+    task->lstFiles[2] = koCreate(Ko_CONS, console, O_WRONLY);
 
     schedulerAddTask(task);
 
@@ -235,23 +239,9 @@ int taskKill(struct Task *task) {
     taskSwitching = 0;
 
     for (int fd = 0; fd < MAX_NB_FILE; fd++) {
-        struct FileDescriptor *file = task->lstFiles[fd];
-        if (file) {
-            if (file->closeFct) {
-                file->closeFct(file->entryData);
-            }
-            kfree(file);
-        }
-    }
-
-    for (int fd = 0; fd < MAX_NB_FOLDER; fd++) {
-        struct FolderDescriptor *folder = task->lstFolder[fd];
-        if (folder) {
-            if (folder->closeFct) {
-                folder->closeFct(folder->entryData);
-            }
-            kfree(folder);
-        }
+        struct Kobject *file = task->lstFiles[fd];
+        if (file)
+            koDestroy(file);
     }
 
     kfree(task->kernelStack - KERNEL_STACK_SIZE);
@@ -308,7 +298,7 @@ u32 taskSwitch(struct Task *newTask) {
     pagingSwitchPageDirectory(newTask->pageDirectory);
 
     taskSwitching = 1;
-    // kSerialPrintf("Task switch to pid %d\n", newTask->pid);
+    // kSerialPrintf("Task switch to pid %path\n", newTask->pid);
     return newTask->esp;
 }
 
@@ -360,7 +350,23 @@ struct Task *getTaskByPid(u32 pid) {
 }
 
 int taskChangeDirectory(const char *directory) {
-    kfree(currentTask->currentDir);
-    currentTask->currentDir = strdup(directory);
+    struct FsPath *newPath = fsResolvePath(directory);
+    if (!newPath)
+        return -1;
+
+    fsPathDestroy(currentTask->currentDir);
+    currentTask->currentDir = newPath;
     return 0;
+}
+
+int taskGetAvailableFd(struct Task *task) {
+    int id;
+    for (id = 0; id < MAX_NB_FILE; id++)
+        if (task->lstFiles[id] == NULL)
+            break;
+
+    if (id >= MAX_NB_FILE)
+        return -1;
+
+    return id;
 }

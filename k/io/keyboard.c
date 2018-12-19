@@ -5,7 +5,7 @@
 #include <task.h>
 #include <include/stdio.h>
 #include <sys/idt.h>
-#include <console.h>
+#include <sys/console.h>
 #include "io.h"
 #include "terminal.h"
 

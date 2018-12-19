@@ -3,6 +3,7 @@
 #include <multiboot.h>
 #include <io/ata.h>
 #include <sys/syscall.h>
+#include <include/multiboot.h>
 
 #include "io/serial.h"
 #include "sys/gdt.h"
@@ -17,7 +18,7 @@
 #include "sys/physical-memory.h"
 #include "sys/paging.h"
 #include "sheduler.h"
-#include "console.h"
+#include "sys/console.h"
 
 static int k_init(const multiboot_info_t *info) {
     initSerial(38400);
@@ -50,21 +51,27 @@ static int k_init(const multiboot_info_t *info) {
     kprintf("Init Console\n");
     initConsole();
 
+    kprintf("Init KFileSystem\n");
+    initKFileSystem();
+
+    kprintf("Mount kfs on A\n");
+    struct Fs *fs = fsGetFileSystemByName("kfs");
+    struct FsVolume *volume = fsVolumeOpen('A', fs, (void*) ((module_t*)(info->mods_addr))->mod_start);
+    if (!volume)
+        return -1;
+
     kprintf("Init Tasking\n");
-    initTasking();
+    initTasking(fsVolumeRoot(volume));
 
     kprintf("Allow KEYBOARD & PIT interrupt\n");
     allowIrq(ISQ_KEYBOARD_VALUE);
     allowIrq(ISQ_PIT_VALUE);
 
-    kprintf("Init KFileSystem\n");
-    initKFileSystem((module_t *) info->mods_addr);
-
     kprintf("Start listening interruption\n");
     sti();
 
-    kprintf("Init ATAPI\n");
-    ata_init();
+    //kprintf("Init ATAPI\n");
+   // ata_init();
     return 0;
 }
 

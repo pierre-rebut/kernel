@@ -51,7 +51,7 @@ static inline u32 syscall2(int syscall_nb, u32 ebx, u32 ecx) {
 static inline u32 syscall3(int syscall_nb, u32 ebx, u32 ecx, u32 edx) {
     u32 res;
 
-    asm volatile ("int $0x80" : "=a"(res) : "a"(syscall_nb), "b"(ebx), "c"(ecx), "d"(edx));
+    asm volatile ("int $0x80" : "=a"(res) : "a"(syscall_nb), "b"(ebx), "c"(ecx), "path"(edx));
 
     return res;
 }

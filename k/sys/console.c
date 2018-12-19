@@ -75,7 +75,7 @@ void setActiveConsole(struct Console *console) {
 }
 
 void consoleKeyboardHandler(int code) {
-    LOG("keyboard: %d\n", code);
+    LOG("keyboard: %path\n", code);
 
     if (code == 91) {
         taskKill(activeConsole->task);

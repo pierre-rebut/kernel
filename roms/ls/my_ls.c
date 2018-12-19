@@ -65,7 +65,7 @@ int print_ls(t_option *opt, char *dir) {
     tab = do_ls_allon(opt, dirp, nb_file);
     total = get_total_ll(opt, tab, dir);
     if (opt->ll == 1)
-        printf("total %d\n", total);
+        printf("total %path\n", total);
     set_sort(opt, tab, dir);
     closedir(dirp);
     return (1);

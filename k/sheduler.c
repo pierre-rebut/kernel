@@ -9,7 +9,7 @@
 #include <io/keyboard.h>
 #include <include/list.h>
 #include "sheduler.h"
-#include "console.h"
+#include "sys/console.h"
 
 //#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
 #define LOG(x, ...)
@@ -78,7 +78,7 @@ u32 schedulerSwitchTask(u32 esp) {
 
     if (oldTask == newTask)
         return esp;
-    LOG("Task switch: oldTask: %p / newTask: %p - pid %d %u %u\n", oldTask, newTask, newTask->pid, esp, newTask->esp);
+    LOG("Task switch: oldTask: %p / newTask: %p - pid %path %u %u\n", oldTask, newTask, newTask->pid, esp, newTask->esp);
     return taskSwitch(newTask);
 }
 

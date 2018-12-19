@@ -115,6 +115,7 @@ enum e_mouse_codes {
 
 /* misc */
 #define O_RDONLY	0
+#define O_WRONLY	1
 #define SEEK_SET	0
 #define SEEK_CUR	1
 #define SEEK_END	2

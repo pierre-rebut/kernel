@@ -215,7 +215,7 @@ kfs_write_files(int romfd, char **files, size_t nb_files, size_t blkoff) {
 static inline void usage(void) {
     extern const char *__progname;
 
-    fprintf(stderr, "usage: %s [-v] [-n name] -o rom_file files...\n",
+    fprintf(stderr, "usage: %s [-volume] [-n name] -o rom_file files...\n",
             __progname);
 
     exit(1);
@@ -226,7 +226,7 @@ int main(int argc, char **argv) {
     char *rom_name = NULL;
     int opt;
 
-    while ((opt = getopt(argc, argv, "n:o:v")) != -1) {
+    while ((opt = getopt(argc, argv, "n:o:volume")) != -1) {
         switch (opt) {
             case 'n':
                 rom_name = optarg;

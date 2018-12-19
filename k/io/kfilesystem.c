@@ -3,33 +3,16 @@
 //
 
 #include "kfilesystem.h"
-#include "filesystem2.h"
+#include "sys/filesystem.h"
 
+#include <k/kfs.h>
+#include <k/kstd.h>
 #include <stdio.h>
 #include <sys/allocator.h>
 #include <string.h>
 
-static struct kfs_superblock *kfs = NULL;
-static struct Fs fs_kfs = {
-        .name = "kfs"
-};
-
-void initKFileSystem(module_t *module) {
-    struct kfs_superblock *tmp = (struct kfs_superblock *) module->mod_start;
-
-    if (tmp->magic != KFS_MAGIC) {
-        kSerialPrintf("KFS - Bad magic number\n");
-        return;
-    }
-
-    if (kfs_checksum(tmp, sizeof(struct kfs_superblock) - 4) != tmp->cksum) {
-        kSerialPrintf("KFS - Bad checksum\n");
-        return;
-    }
-
-    kfs = tmp;
-    fs_register(&fs_kfs);
-}
+#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+//#define LOG(x, ...)
 
 static char checkBlockChecksum(struct kfs_block *block) {
     u32 cksum = block->cksum;
@@ -40,19 +23,7 @@ static char checkBlockChecksum(struct kfs_block *block) {
     return tmp == cksum;
 }
 
-static char changeBlock(struct file_entry *file) {
-    file->block = ((void *) kfs) + (file->d_blks[file->blockIndex] * KFS_BLK_SZ);
-
-    if (checkBlockChecksum(file->block) == 0) {
-        kSerialPrintf("KFS read - Bad checksum\n");
-        return -1;
-    }
-
-    file->blockIndex++;
-    return 0;
-}
-
-static struct kfs_inode *getFileINode(const char *pathname) {
+static struct kfs_inode *getFileINode(struct kfs_superblock *kfs, const char *pathname) {
     struct kfs_inode *node = (struct kfs_inode *) ((void *) kfs + (kfs->inode_idx * KFS_BLK_SZ));
 
     u32 i;
@@ -71,274 +42,133 @@ static struct kfs_inode *getFileINode(const char *pathname) {
     return node;
 }
 
-void *kfsOpen(const char *pathname, int flags) {
-    if (kfs == NULL || pathname == NULL || flags != O_RDONLY)
+static struct FsPath *kfsRoot(struct FsVolume *volume) {
+    struct FsPath *rootPath = kmalloc(sizeof(struct FsPath), 0, "kfsRoot");
+    if (!rootPath)
+        return NULL;
+    rootPath->privateData = volume->privateData;
+    return rootPath;
+}
+
+static struct FsVolume *kfsMount(void *data) {
+    struct kfs_superblock *tmp = (struct kfs_superblock *) data;
+
+    if (tmp->magic != KFS_MAGIC) {
+        kSerialPrintf("KFS - Bad magic number\n");
+        return NULL;
+    }
+
+    if (kfs_checksum(tmp, sizeof(struct kfs_superblock) - 4) != tmp->cksum) {
+        kSerialPrintf("KFS - Bad checksum\n");
+        return NULL;
+    }
+
+    struct FsVolume *kfsVolume = kmalloc(sizeof(struct FsVolume), 0, "newKfsVolume");
+    if (kfsVolume == NULL)
         return NULL;
 
-    if (pathname[0] == '/')
-        pathname++;
+    kfsVolume->blockSize = KFS_BLK_SZ;
+    kfsVolume->privateData = tmp;
+    return kfsVolume;
+}
 
-    struct kfs_inode *node = getFileINode(pathname);
+static int kfsUmount(struct FsVolume *volume) {
+    kfree(volume);
+    return 0;
+}
+
+static int kfsClose(struct FsPath *path) {
+    kfree(path);
+    return 0;
+}
+
+static int kfsStat(struct FsPath *path, struct stat *result) {
+    struct kfs_inode *inode = path->privateData;
+
+    result->inumber = inode->inumber;
+    result->file_sz = inode->file_sz;
+    result->i_blk_cnt = inode->i_blk_cnt;
+    result->d_blk_cnt = inode->d_blk_cnt;
+    result->blk_cnt = inode->blk_cnt;
+    result->idx = inode->idx;
+    result->cksum = inode->cksum;
+    return 0;
+}
+
+static struct FsPath *kfsLookup(struct FsPath *path, const char *name) {
+    struct kfs_superblock *kfs = path->volume->privateData;
+    struct kfs_inode *node = getFileINode(kfs, name);
     if (node == NULL)
         return NULL;
 
-    struct file_entry *file = kmalloc(sizeof(struct file_entry), 0, "file entry");
+    struct FsPath *file = kmalloc(sizeof(struct FsPath), 0, "FsPath");
     if (!file)
         return NULL;
 
-    file->blockIndex = 0;
-    file->d_blks = node->d_blks;
-
-    if (changeBlock(file) == -1) {
-        kfree(file);
-        return NULL;
-    }
-
-    file->node = node;
-    file->iblock = NULL;
-    file->iblockIndex = 0;
-    file->flags = flags;
-    file->dataIndex = 0;
-
-    struct FileDescriptor *fd = kmalloc(sizeof(struct FileDescriptor), 0, "file descriptor 2");
-    if (!fd) {
-        kfree(file);
-        return NULL;
-    }
-
-    fd->privateData = file;
-    fd->writeFct = NULL;
-    fd->readFct = &kfsRead;
-    fd->seekFct = &kfsSeek;
-    fd->closeFct = &kfsClose;
-    fd->statFct = &kfsFStat;
-    return fd;
+    file->privateData = node;
+    file->size = node->file_sz;
+    return file;
 }
 
-static char changeIBlock(struct file_entry *file, struct kfs_inode *node) {
-    if (file->iblockIndex >= node->i_blk_cnt) {
-        kSerialPrintf("KFS end of file\n");
-        return -1;
-    }
-
-    file->iblock = ((void *) kfs) + (node->i_blks[file->iblockIndex] * KFS_BLK_SZ);
-    if (kfs_checksum(file->iblock, sizeof(struct kfs_iblock) - 4) != file->iblock->cksum) {
-        kSerialPrintf("KFS iblock - Bad checksum\n");
-        return -1;
-    }
-
-    file->d_blks = file->iblock->blks;
-    file->blockIndex = 0;
-    file->iblockIndex++;
-
-    return 0;
-}
-
-s32 kfsRead(void *privateData, void *buf, u32 size) {
-    if (privateData == NULL || kfs == NULL)
-        return -1;
-
-    struct file_entry *file = (struct file_entry *) privateData;
-    struct kfs_inode *node = file->node;
-    u8 *buffer = (u8 *) buf;
-
-    for (u32 i = 0; i < size; i++) {
-        if (file->dataIndex >= file->block->usage) {
-            if ((file->iblock == NULL && file->blockIndex >= node->d_blk_cnt) ||
-                (file->iblock != NULL && file->blockIndex >= file->iblock->blk_cnt)) {
-                char res = changeIBlock(file, node);
-                if (res == -1)
-                    return i > 0 ? (s32) i : -1;
-            }
-            if (changeBlock(file) == -1)
-                return i > 0 ? (s32) i : -1;
-            file->dataIndex = 0;
-        }
-
-        buffer[i] = file->block->data[file->dataIndex];
-        file->dataIndex++;
-    }
-
-    return (s32) size;
-}
-
-static char seekSet(struct file_entry *file, off_t offset) {
-    u32 blockId = (u32) offset / KFS_BLK_DATA_SZ;
-    if (blockId < KFS_DIRECT_BLK) {
-        file->iblock = NULL;
-        file->iblockIndex = 0;
-        file->blockIndex = (u32) blockId;
-        file->d_blks = file->node->d_blks;
-        if (changeBlock(file) == -1)
-            return -1;
-    } else {
-        blockId -= KFS_DIRECT_BLK;
-        file->iblockIndex = blockId / KFS_INDIRECT_BLK_CNT;
-
-        if (changeIBlock(file, file->node) == -1)
-            return -1;
-
-        file->blockIndex = blockId % KFS_INDIRECT_BLK_CNT;
-        if (changeBlock(file) == -1)
-            return -1;
-    }
-
-    file->dataIndex = (u32) (offset % KFS_BLK_DATA_SZ);
-    return 0;
-}
-
-off_t getOffset(struct file_entry *file) {
-    off_t res = 0;
-
-    if (file->iblock != NULL) {
-        res += KFS_BLK_DATA_SZ * KFS_DIRECT_BLK;
-        res += (file->iblockIndex - 1) * KFS_INDIRECT_BLK_CNT * KFS_BLK_DATA_SZ;
-    }
-
-    res += (file->blockIndex - 1) * KFS_BLK_DATA_SZ;
-    res += file->dataIndex;
-
-    return res;
-}
-
-off_t kfsSeek(void *privateData, off_t offset, int whence) {
-    if (!privateData || !kfs)
-        return -1;
-
-    struct file_entry *file = (struct file_entry *) privateData;
-    if (offset >= (off_t) file->node->file_sz)
-        return -1;
-
-    if (whence != SEEK_CUR) {
-        if (offset < 0) {
-            offset = -offset;
-            whence = whence == SEEK_SET ? SEEK_END : SEEK_SET;
-        }
-
-        if (whence == SEEK_END)
-            offset = (off_t) file->node->file_sz - offset;
-
-        char res = seekSet(file, offset);
-        if (res == -1)
-            return -1;
-        return offset;
-    }
-
-    off_t currentOffset = getOffset(file);
-    if (currentOffset == -1)
-        return -1;
-
-    offset = (currentOffset + offset) % file->node->file_sz;
-    return kfsSeek(privateData, offset, offset < 0 ? SEEK_END : SEEK_SET);
-}
-
-int kfsClose(void *privateData) {
-    if (!privateData)
-        return -1;
-
-    kfree(privateData);
-    return 0;
-}
-
-void kfsListFiles() {
-    if (kfs == NULL)
-        return;
-
-    kSerialPrintf("KFS - Files: (%d)\n", kfs->inode_cnt);
-
-    struct kfs_inode *node = (struct kfs_inode *) ((void *) kfs + (kfs->inode_idx * KFS_BLK_SZ));
-    for (u32 i = 0; i < kfs->inode_cnt; i++) {
-        if (kfs_checksum(node, sizeof(struct kfs_inode) - 4) != node->cksum) {
-            kSerialPrintf("KFS node - Bad checksum\n");
-            kfs = NULL;
-            return;
-        }
-
-        kSerialPrintf("%d - file: %s, size: %d (cnt: %d, db_cnt: %d, ib_cnt: %d)\n", node->inumber, node->filename,
-                      node->file_sz, node->blk_cnt, node->d_blk_cnt, node->i_blk_cnt);
-        node = (struct kfs_inode *) ((void *) kfs + (node->next_inode * KFS_BLK_SZ));
-    }
-}
-
-u32 kfsLengthOfFile(const char *pathname) {
-    if (kfs == NULL || pathname == NULL)
-        return 0;
-
-    if (pathname[0] == '/')
-        pathname++;
-
-    struct kfs_inode *node = getFileINode(pathname);
-    if (node == NULL)
-        return 0;
-
-    return node->file_sz;
-}
-
-static void getStatInfo(struct kfs_inode *inode, struct stat *data) {
-    data->inumber = inode->inumber;
-    data->file_sz = inode->file_sz;
-    data->i_blk_cnt = inode->i_blk_cnt;
-    data->d_blk_cnt = inode->d_blk_cnt;
-    data->blk_cnt = inode->blk_cnt;
-    data->idx = inode->idx;
-    data->cksum = inode->cksum;
-}
-
-int kfsStat(const char *pathname, struct stat *data) {
-    struct kfs_inode *node = getFileINode(pathname);
-    if (node == NULL)
-        return -1;
-    getStatInfo(node, data);
-    return 0;
-}
-
-int kfsFStat(void *privateData, struct stat *data) {
-    if (!privateData || !kfs)
-        return -1;
-
-    struct file_entry *file = (struct file_entry *) privateData;
-    getStatInfo(file->node, data);
-
-    return 0;
-}
-
-struct FolderDescriptor *kfsOpendir(const char *pathname) {
-    if (kfs == NULL)
-        return NULL;
-
-    (void)pathname;
-
-    struct kfs_inode *node = kmalloc(sizeof(struct kfs_inode), 0, "folder inode");
-    if (!node)
-        return NULL;
-
-    memcpy(node, ((void *) kfs + (kfs->inode_idx * KFS_BLK_SZ)), sizeof(struct kfs_inode));
-
-    struct FolderDescriptor *fd = kmalloc(sizeof(struct FolderDescriptor), 0, "folderDescriptor");
-    if (!fd) {
-        kfree(node);
-        return NULL;
-    }
-
-    fd->privateData = node;
-    fd->readFct = &kfsReaddir;
-    fd->closeFct = &kfsClose;
-    return fd;
-}
-
-struct dirent *kfsReaddir(void *entry, struct dirent *data) {
-    if (entry == NULL || kfs == NULL)
-        return NULL;
-
-    struct kfs_inode *node = (struct kfs_inode*)entry;
+static struct dirent *kfsReaddir(struct FsPath *path, struct dirent *result) {
+    struct kfs_inode *node = (struct kfs_inode*)path->privateData;
+    struct kfs_superblock *kfs = path->volume->privateData;
     if (node->idx > kfs->inode_cnt)
         return NULL;
 
-    strcpy(data->d_name, node->filename);
-    data->d_ino = node->idx;
+    strcpy(result->d_name, node->filename);
+    result->d_ino = node->idx;
+    result->d_type = FT_FILE;
 
-    node = (struct kfs_inode *) ((void *) kfs + (node->next_inode * KFS_BLK_SZ));
-    memcpy(entry, node, sizeof(struct kfs_inode));
+    path->privateData = (struct kfs_inode *) (path->volume->privateData + (node->next_inode * KFS_BLK_SZ));
+    return result;
+}
 
-    return data;
+static int kfsReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
+    struct kfs_inode *node = (struct kfs_inode*)path->privateData;
+    struct kfs_superblock *kfs = path->volume->privateData;
+
+    u32 *blockIndex = node->d_blks;
+
+    if (blocknum >= KFS_DIRECT_BLK) {
+        u32 iblockIndex = (blocknum - KFS_DIRECT_BLK) / KFS_INDIRECT_BLK;
+        if (iblockIndex >= node->i_blk_cnt) {
+            kSerialPrintf("[KFS] bad inode index: %d (max %d)", iblockIndex, node->i_blk_cnt);
+            return -1;
+        }
+
+        struct kfs_iblock *iblock = ((void *) kfs) + (node->i_blks[iblockIndex] * KFS_BLK_SZ);
+        if (kfs_checksum(iblock, sizeof(struct kfs_iblock) - 4) != iblock->cksum) {
+            kSerialPrintf("[KFS] iblock - Bad checksum\n");
+            return -1;
+        }
+
+        blockIndex = iblock->blks;
+        blocknum = (blocknum - KFS_DIRECT_BLK) % KFS_INDIRECT_BLK;
+    }
+
+    struct kfs_block *block = ((void *) kfs) + (blockIndex[blocknum] * KFS_BLK_SZ);
+    if (checkBlockChecksum(block) == 0) {
+        kSerialPrintf("[KFS] block - Bad checksum\n");
+        return -1;
+    }
+    memcpy(buffer, block->data, block->usage);
+    memset(buffer + block->usage, 0, KFS_BLK_SZ - block->usage);
+    return KFS_BLK_SZ;
+}
+
+static struct Fs fs_kfs = {
+        .name = "kfs",
+        .mount = &kfsMount,
+        .umount = &kfsUmount,
+        .root = &kfsRoot,
+        .lookup = &kfsLookup,
+        .readdir = &kfsReaddir,
+        .readBlock = &kfsReadBlock,
+        .stat = &kfsStat,
+        .close = &kfsClose
+};
+
+void initKFileSystem() {
+    fsRegister(&fs_kfs);
 }

@@ -22,12 +22,12 @@ set(K_FILES
         sys/syscall.c sys/syscall.h
         task.c task.h
         io/terminal.c io/terminal.h
-        io/filesystem.c io/filesystem2.h
+        sys/filesystem.c sys/filesystem.h
         sheduler.c sheduler.h
         utils/list.c include/list.h
         io/ata.c io/ata.h
-        console.c console.h
-        )
+        sys/console.c sys/console.h
+        sys/kobject.c sys/kobject.h)
 
 set(K_LIBS
         utils/kprintf.c

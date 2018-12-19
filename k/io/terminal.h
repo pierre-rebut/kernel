@@ -14,6 +14,4 @@ void writeTerminal(char c);
 void writeTerminalAt(char c, u8 color, u16 x, u16 y);
 int writeStringTerminal(const char *data, u32 size);
 
-int writeTerminalFromFD(void *tmp, void *data, u32 size);
-
 #endif //KERNEL_EPITA_TERMINAL_H
