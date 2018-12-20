@@ -50,7 +50,7 @@ struct Task {
     struct TaskEvent event;
 
     struct PageDirectory *pageDirectory;
-    struct Kobject *lstFiles[MAX_NB_FILE];
+    struct Kobject *objectList[MAX_NB_FILE];
 
     struct FsPath *currentDir;
 };

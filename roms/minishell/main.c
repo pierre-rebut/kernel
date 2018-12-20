@@ -33,9 +33,8 @@ int do_mysh(const char **parse_tab, char ***env, char *my_commande) {
     return (0);
 }
 
-int main(int ac, char **av, char **envo) {
+int main(int ac, char **av, const char **envo) {
     char **env;
-    char **parse_tab;
     char *my_commande;
 
     env = copie_environemnt(envo, ac);
@@ -44,9 +43,9 @@ int main(int ac, char **av, char **envo) {
         puts("MySh $> ");
         my_commande = get_next_line(0);
         if (my_commande == NULL)
-            do_oth_exit(my_commande);
-        if (my_commande != NULL && my_commande[0] != '\0') {
-            parse_tab = my_wordtab(my_commande, 0, ' ');
+            return do_oth_exit(my_commande);
+        if (my_commande[0] != '\0') {
+            const char **parse_tab = (const char**) my_wordtab(my_commande, 0, ' ');
             if (parse_tab != NULL)
                 do_mysh(parse_tab, &env, my_commande);
             else
@@ -55,5 +54,4 @@ int main(int ac, char **av, char **envo) {
         }
         free(my_commande);
     }
-    return (0);
 }

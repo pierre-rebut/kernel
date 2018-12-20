@@ -21,8 +21,8 @@
 #include <io/keyboard.h>
 #include <include/list.h>
 
-#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
-//#define LOG(x, ...)
+//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+#define LOG(x, ...)
 
 static u32 nextPid = 0;
 
@@ -43,7 +43,7 @@ void initTasking(struct FsPath *rootDirectory) {
     kernelTask.currentDir = rootDirectory;
 
     for (int i = 0; i < MAX_NB_FILE; i++)
-        kernelTask.lstFiles[i] = NULL;
+        kernelTask.objectList[i] = NULL;
 
     freeTimeTask = createTask(kernelPageDirectory, (u32)&schedulerDoNothing, TaskPrivilegeKernel, 0,
                               NULL, NULL, kernelTask.currentDir, kernelConsole);
@@ -74,7 +74,7 @@ struct Task *createTask(struct PageDirectory *pageDirectory, u32 entryPoint, enu
     dir->refcount++;
 
     for (int i = 0; i < MAX_NB_FILE; i++)
-        task->lstFiles[i] = NULL;
+        task->objectList[i] = NULL;
 
     if (privilege == TaskPrivilegeUser)
         pagingAlloc(pageDirectory, (void *) (USER_STACK - 10 * PAGESIZE), 10 * PAGESIZE, MEM_USER | MEM_WRITE);
@@ -117,7 +117,7 @@ struct Task *createTask(struct PageDirectory *pageDirectory, u32 entryPoint, enu
     return task;
 }
 
-static const char **copyArgEnvToUserland(struct PageDirectory *pd, u32 position, u32 ac, const char **av) {
+static const char **copyArrayIntoUserland(struct PageDirectory *pd, u32 position, u32 ac, const char **av) {
     char **nnArgv = 0;
     char *nArgv[ac];
 
@@ -154,7 +154,6 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
     }
 
     LOG("task: get file stat\n");
-
     struct stat fileStat;
     if (fsStat(file, &fileStat) == -1) {
         kSerialPrintf("[TASK] Can not get file info: %s\n", cmdline);
@@ -204,22 +203,24 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
     for (envc = 0; env[envc] != NULL; envc++);
 
     pagingAlloc(pageDirectory, (void *) USER_STACK, (u32) USER_HEAP_START - (u32) USER_STACK, MEM_USER | MEM_WRITE);
-    const char **newAv = copyArgEnvToUserland(pageDirectory, USER_ARG_BUFFER, ac, av);
-    const char **newEnv = copyArgEnvToUserland(pageDirectory, USER_ENV_BUFFER, envc, env);
+    const char **newAv = copyArrayIntoUserland(pageDirectory, USER_ARG_BUFFER, ac, av);
+    const char **newEnv = copyArrayIntoUserland(pageDirectory, USER_ENV_BUFFER, envc, env);
 
     LOG("task: create new console\n");
     struct Console *console = createConsole();
+    if (!console)
+        return 0;
 
-    LOG("task: add task\n");
+    LOG("task: add task (entry: %X)\n", entryPrg);
     struct Task *task = createTask(pageDirectory, entryPrg, TaskPrivilegeUser, ac, newAv, newEnv, currentTask->currentDir, console);
     if (!task)
         return 0;
 
     console->task = task;
 
-    task->lstFiles[0] = koCreate(Ko_CONS, console, O_RDONLY);
-    task->lstFiles[1] = koCreate(Ko_CONS, console, O_WRONLY);
-    task->lstFiles[2] = koCreate(Ko_CONS, console, O_WRONLY);
+    task->objectList[0] = koCreate(Ko_CONS, console, O_RDONLY);
+    task->objectList[1] = koCreate(Ko_CONS, console, O_WRONLY);
+    task->objectList[2] = koCreate(Ko_CONS, console, O_WRONLY);
 
     schedulerAddTask(task);
 
@@ -241,12 +242,14 @@ int taskKill(struct Task *task) {
     taskSwitching = 0;
 
     for (int fd = 0; fd < MAX_NB_FILE; fd++) {
-        struct Kobject *file = task->lstFiles[fd];
-        if (file)
-            koDestroy(file);
+        struct Kobject *obj = task->objectList[fd];
+        if (obj)
+            koDestroy(obj);
     }
 
     kfree(task->kernelStack - KERNEL_STACK_SIZE);
+
+    LOG("[TASK] destroy path curDir\n");
     fsPathDestroy(task->currentDir);
 
     pagingDestroyPageDirectory(task->pageDirectory);
@@ -300,7 +303,7 @@ u32 taskSwitch(struct Task *newTask) {
     pagingSwitchPageDirectory(newTask->pageDirectory);
 
     taskSwitching = 1;
-    // kSerialPrintf("Task switch to pid %path\n", newTask->pid);
+    // kSerialPrintf("Task switch to pid %u\n", newTask->pid);
     return newTask->esp;
 }
 
@@ -364,7 +367,7 @@ int taskChangeDirectory(const char *directory) {
 int taskGetAvailableFd(struct Task *task) {
     int id;
     for (id = 0; id < MAX_NB_FILE; id++)
-        if (task->lstFiles[id] == NULL)
+        if (task->objectList[id] == NULL)
             break;
 
     if (id >= MAX_NB_FILE)

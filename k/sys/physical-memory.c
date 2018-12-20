@@ -9,6 +9,9 @@
 #include "physical-memory.h"
 #include "allocator.h"
 
+#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+//#define LOG(x, ...)
+
 static u32 *physicalMemTable = NULL;
 static u32 physicalMemSize;
 
@@ -46,12 +49,17 @@ u32 initPhysicalMemory(const multiboot_info_t *info) {
     memory_map_t *memEntry = (memory_map_t*)info->mmap_addr;
     memory_map_t *memEnd = ((void *) memEntry + info->mmap_length);
 
+    LOG("[PHYMEM] get memory size\n");
     u32 memSize = getMemorySize(memEntry, memEnd);
     physicalMemSize = memSize / PAGESIZE / 32;
 
+    LOG("[PHYMEM] kmalloc size : %u\n", physicalMemSize * 4);
     physicalMemTable = kmalloc(physicalMemSize * 4, 0, "physicalMemTable");
+
+    LOG("[PHYMEM] set zero into memory\n");
     memset(physicalMemTable, 0xFF, physicalMemSize * 4);
 
+    LOG("[PHYMEM] set used memory region\n");
     while (memEntry < memEnd) {
         if (memEntry->type == 1 && memEntry->regionAddr < MAX_MEMORY) {
             memorySetRegion((u32) memEntry->regionAddr, (u32) (memEntry->regionAddr + memEntry->regionSize), 0);

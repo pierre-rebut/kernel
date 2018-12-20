@@ -35,7 +35,7 @@ int define_term(const char **env, const char *type, int cpt, int i);
 
 int builtin_env(const char **parse_tab, char **env);
 
-int do_free_path(char **path, char *tmp);
+int do_free_path(char **path, const char *tmp);
 
 char **builtin_setenv(const char **tab, char **env, int cpt);
 

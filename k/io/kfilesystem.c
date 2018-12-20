@@ -4,6 +4,7 @@
 
 #include "kfilesystem.h"
 #include "sys/filesystem.h"
+#include "serial.h"
 
 #include <k/kfs.h>
 #include <k/kstd.h>
@@ -11,8 +12,8 @@
 #include <sys/allocator.h>
 #include <string.h>
 
-#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
-//#define LOG(x, ...)
+//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+#define LOG(x, ...)
 
 static char checkBlockChecksum(struct kfs_block *block) {
     u32 cksum = block->cksum;
@@ -46,11 +47,14 @@ static struct FsPath *kfsRoot(struct FsVolume *volume) {
     struct FsPath *rootPath = kmalloc(sizeof(struct FsPath), 0, "kfsRoot");
     if (!rootPath)
         return NULL;
-    rootPath->privateData = volume->privateData;
+
+    struct kfs_superblock *kfs = volume->privateData;
+    rootPath->privateData = volume->privateData + (kfs->inode_idx * KFS_BLK_SZ);
     return rootPath;
 }
 
 static struct FsVolume *kfsMount(void *data) {
+    LOG("kfs mount: %p\n", data);
     struct kfs_superblock *tmp = (struct kfs_superblock *) data;
 
     if (tmp->magic != KFS_MAGIC) {
@@ -67,7 +71,7 @@ static struct FsVolume *kfsMount(void *data) {
     if (kfsVolume == NULL)
         return NULL;
 
-    kfsVolume->blockSize = KFS_BLK_SZ;
+    kfsVolume->blockSize = KFS_BLK_DATA_SZ;
     kfsVolume->privateData = tmp;
     return kfsVolume;
 }
@@ -96,8 +100,16 @@ static int kfsStat(struct FsPath *path, struct stat *result) {
 }
 
 static struct FsPath *kfsLookup(struct FsPath *path, const char *name) {
+    LOG("[KFS] lookup fct\n");
+    struct kfs_inode *node;
     struct kfs_superblock *kfs = path->volume->privateData;
-    struct kfs_inode *node = getFileINode(kfs, name);
+
+    if (strcmp(name, ".") == 0)
+        node = path->privateData;
+    else
+        node =  getFileINode(kfs, name);
+
+    LOG("[KFS] lookup enter\n");
     if (node == NULL)
         return NULL;
 
@@ -113,6 +125,8 @@ static struct FsPath *kfsLookup(struct FsPath *path, const char *name) {
 static struct dirent *kfsReaddir(struct FsPath *path, struct dirent *result) {
     struct kfs_inode *node = (struct kfs_inode*)path->privateData;
     struct kfs_superblock *kfs = path->volume->privateData;
+
+    LOG("[KFS] readdir: %s\n", node->filename);
     if (node->idx > kfs->inode_cnt)
         return NULL;
 
@@ -145,6 +159,9 @@ static int kfsReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
 
         blockIndex = iblock->blks;
         blocknum = (blocknum - KFS_DIRECT_BLK) % KFS_INDIRECT_BLK;
+        LOG("iblockIndex: %u (max %d) %d / blocknum = %u\n", iblockIndex, node->i_blk_cnt, iblock->blk_cnt, blocknum);
+    } else {
+        LOG("blocknum %u\n", blocknum);
     }
 
     struct kfs_block *block = ((void *) kfs) + (blockIndex[blocknum] * KFS_BLK_SZ);
@@ -153,8 +170,8 @@ static int kfsReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
         return -1;
     }
     memcpy(buffer, block->data, block->usage);
-    memset(buffer + block->usage, 0, KFS_BLK_SZ - block->usage);
-    return KFS_BLK_SZ;
+    memset(buffer + block->usage, 0, KFS_BLK_DATA_SZ - block->usage);
+    return KFS_BLK_DATA_SZ;
 }
 
 static struct Fs fs_kfs = {

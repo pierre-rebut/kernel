@@ -87,7 +87,7 @@ int do_ls(t_option *opt, char **av) {
                 printf("%s:\n", av[i]);
             if (set_opt_dd(opt, av[i]) == 1);
             else if (print_ls(opt, av[i]) == 0)
-                puts("Error: no file or directory\n");
+                puts("Error2: no file or directory\n");
             nb--;
             if (nb > 0)
                 puts("\n");
@@ -107,7 +107,7 @@ int main(int ac, char **av) {
         verife_option(&opt, av);
     else {
         if ((dirp = opendir(".")) == -1)
-            puts("Error: no file or directory\n");
+            puts("Error1: no file or directory\n");
         else {
             tab = do_ls_allon(&opt, dirp, compte_nbfile("."));
             i = -1;

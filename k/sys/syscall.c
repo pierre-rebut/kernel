@@ -13,8 +13,8 @@
 
 #include <stdio.h>
 
-//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
-#define LOG(x, ...)
+#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+//#define LOG(x, ...)
 
 #define NB_SYSCALL 25
 
@@ -110,7 +110,7 @@ static void syscall_handler(struct esp_context *ctx) {
 
     syscall_t fct = syscall[ctx->eax];
     if (fct == NULL) {
-        kSerialPrintf("unhandled syscall %path\n", ctx->eax);
+        kSerialPrintf("unhandled syscall %d\n", ctx->eax);
         ctx->eax = 0;
         return;
     }
@@ -145,19 +145,19 @@ static void sys_open(struct esp_context *ctx) {
         return;
     }
 
+    LOG("open: %s\n", (char *) ctx->ebx);
     struct FsPath *path = fsResolvePath((char *) ctx->ebx);
     if(!path) {
         ctx->eax = (u32) -1;
         return;
     }
 
-    currentTask->lstFiles[fd] = koCreate(KO_FS, path, ctx->ecx);
-    LOG("open: %s (%d)\n", (char *) ctx->ebx, fd);
+    currentTask->objectList[fd] = koCreate(KO_FS, path, ctx->ecx);
     ctx->eax = (u32)fd;
 }
 
 static void sys_read(struct esp_context *ctx) {
-    struct Kobject *obj = currentTask->lstFiles[ctx->ebx];
+    struct Kobject *obj = currentTask->objectList[ctx->ebx];
 
     if (!obj) {
         ctx->eax = (u32)-1;
@@ -167,7 +167,7 @@ static void sys_read(struct esp_context *ctx) {
 }
 
 static void sys_write(struct esp_context *ctx) {
-    struct Kobject *obj = currentTask->lstFiles[ctx->ebx];
+    struct Kobject *obj = currentTask->objectList[ctx->ebx];
 
     if (!obj) {
         ctx->eax = (u32)-1;
@@ -177,7 +177,7 @@ static void sys_write(struct esp_context *ctx) {
 }
 
 static void sys_seek(struct esp_context *ctx) {
-    struct Kobject *obj = currentTask->lstFiles[ctx->ebx];
+    struct Kobject *obj = currentTask->objectList[ctx->ebx];
 
     if (!obj) {
         ctx->eax = (u32)-1;
@@ -187,13 +187,14 @@ static void sys_seek(struct esp_context *ctx) {
 }
 
 static void sys_close(struct esp_context *ctx) {
-    struct Kobject *obj = currentTask->lstFiles[ctx->ebx];
+    struct Kobject *obj = currentTask->objectList[ctx->ebx];
 
     if (!obj) {
         ctx->eax = (u32)-1;
         return;
     }
     ctx->eax = (u32) koDestroy(obj);
+    currentTask->objectList[ctx->ebx] = NULL;
 }
 
 static void sys_setvideo(struct esp_context *ctx) {
@@ -258,7 +259,7 @@ static void sys_stat(struct esp_context *ctx) {
 }
 
 static void sys_fstat(struct esp_context *ctx) {
-    struct Kobject *obj = currentTask->lstFiles[ctx->ebx];
+    struct Kobject *obj = currentTask->objectList[ctx->ebx];
 
     if (!obj) {
         ctx->eax = (u32)-1;
@@ -284,16 +285,16 @@ static void sys_opendir(struct esp_context *ctx) {
         return;
     }
 
-    currentTask->lstFiles[fd] = koCreate(Ko_FS_FOLDER, path, 0);
-    LOG("opendir: %s (%d)\n", (char *) ctx->ebx, fd);
+    currentTask->objectList[fd] = koCreate(Ko_FS_FOLDER, path, 0);
+    LOG("opendir: %s (%d) refcount: %u\n", (char *) ctx->ebx, fd, path->refcount);
     ctx->eax = (u32)fd;
 }
 
 static void sys_readdir(struct esp_context *ctx) {
-    struct Kobject *obj = currentTask->lstFiles[ctx->ebx];
-
+    LOG("readdir: %d\n", ctx->ebx);
+    struct Kobject *obj = currentTask->objectList[ctx->ebx];
     if (!obj) {
-        ctx->eax = (u32)-1;
+        ctx->eax = 0;
         return;
     }
 
@@ -301,13 +302,15 @@ static void sys_readdir(struct esp_context *ctx) {
 }
 
 static void sys_closedir(struct esp_context *ctx) {
-    LOG("closedir: %path\n", ctx->ebx);
-    struct Kobject *obj = currentTask->lstFiles[ctx->ebx];
+    struct Kobject *obj = currentTask->objectList[ctx->ebx];
 
     if (!obj) {
         ctx->eax = (u32)-1;
         return;
     }
+
+    LOG("closedir: %d\n", ctx->ebx);
     ctx->eax = (u32) koDestroy(obj);
+    currentTask->objectList[ctx->ebx] = NULL;
 }
 

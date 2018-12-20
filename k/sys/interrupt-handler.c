@@ -98,7 +98,7 @@ static void executeInterruptFromLis(struct esp_context *ctx) {
         }
         elem = elem->next;
     }
-    kSerialPrintf("Interrupt not found: %path\n", ctx->int_no);
+    kSerialPrintf("Interrupt not found: %u\n", ctx->int_no);
 }
 
 u32 interrupt_handler(u32 esp) {

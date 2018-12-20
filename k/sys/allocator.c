@@ -88,6 +88,8 @@ static bool heap_grow(size_t size, u8 *heapEnd, bool continuous) {
 }
 
 static void *placementMalloc(size_t size, u32 alignment) {
+    LOG("placement malloc\n");
+
     static void *nextPlacement = (void *) PLACEMENT_BEGIN;
 
     // Avoid odd addresses
@@ -101,10 +103,7 @@ static void *placementMalloc(size_t size, u32 alignment) {
         return (0);
 
     // Do simple placement allocation
-    cli();
     nextPlacement = currPlacement + size;
-    sti();
-
     return (currPlacement);
 }
 

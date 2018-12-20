@@ -34,11 +34,9 @@ char *my_search_file_path(char **path, const char **av) {
     int i;
 
     i = -1;
-    if (path == NULL) {
-        str = my_malloc(sizeof(char) * 2);
-        str[0] = '\0';
-        return (str);
-    }
+    if (path == NULL)
+        return NULL;
+
     while (path[++i]) {
         tmp = strcat(path[i], "/");
         str = strcat(tmp, av[0]);
@@ -47,30 +45,26 @@ char *my_search_file_path(char **path, const char **av) {
             return (str);
         free(str);
     }
-    str = my_malloc(sizeof(char) * 2);
-    str[0] = '\0';
-    return (str);
+
+    return NULL;
 }
 
 int my_other_commande(const char **av, const char **env) {
     char **prg_path;
-    char *tmp;
-    u32 pid;
 
     if ((prg_path = my_found_path(env)) == NULL)
         puts("ERROR : PATH not set\n");
-    tmp = my_search_file_path(prg_path, av);
 
-    if (tmp[0] != '\0') {
-        pid = execve(tmp, av, env);
-    } else {
-        pid = execve(av[0], av, env);
-    }
+    const char *tmp = my_search_file_path(prg_path, av);
+    if (tmp == NULL)
+        tmp = strdup(av[0]);
 
-    printf("execute: %path\n", pid);
+    printf("try execute: %s\n", tmp);
+    u32 pid = execve(tmp, av, env);
+    printf("execute: %u\n", pid);
 
     if (pid == 0)
-        puts("Error: no such file or directory\n");
+        printf("Error %s: no such file or directory\n", tmp);
     else
         waitpid(pid);
 

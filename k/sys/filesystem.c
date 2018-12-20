@@ -12,8 +12,8 @@
 static struct Fs *fsList = NULL;
 static struct FsVolume *fsVolumeList = NULL;
 
-#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
-//#define LOG(x, ...)
+//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+#define LOG(x, ...)
 
 struct FsPath *fsResolvePath(const char *path) {
     if (path[0] == '/') {
@@ -57,6 +57,7 @@ struct Fs *fsGetFileSystemByName(const char *name) {
     }
     return NULL;
 }
+
 struct FsVolume *fsVolumeOpen(char id, struct Fs *fs, void *data) {
     LOG("[FS] check if %c is used\n", id);
     if (fsGetVolumeById(id) || !fs || !fs->mount)
@@ -113,6 +114,7 @@ struct FsPath *fsVolumeRoot(struct FsVolume *volume) {
 struct dirent *fsPathReaddir(struct FsPath *path, struct dirent *result) {
     if (!path || !path->volume->fs->readdir)
         return NULL;
+    LOG("readdir\n");
     return path->volume->fs->readdir(path, result);
 }
 
@@ -120,7 +122,13 @@ static struct FsPath *fsPathLookup(struct FsPath *path, const char *name) {
     if (!path || !path->volume->fs->lookup)
         return NULL;
 
+    LOG("[FS] lookup fct\n");
     struct FsPath *newPath = path->volume->fs->lookup(path, name);
+    if (!newPath)
+        return NULL;
+
+    LOG("[FS] lookup path not null\n");
+
     newPath->volume = path->volume;
     newPath->volume->refcount++;
     newPath->refcount = 1;
@@ -132,24 +140,30 @@ struct FsPath *fsGetPathByName(struct FsPath *d, const char *path) {
     if (!d || !path)
         return NULL;
 
+    LOG("[FS] kmalloc %s\n", path);
     char *lpath = kmalloc(strlen(path) + 1, 0, "tmpPath");
     strcpy(lpath, path);
 
     d->refcount++;
+    LOG("[FS] ref count: %u\n", d->refcount);
     struct FsPath *new = d;
     struct FsPath *new2 = NULL;
 
     char *part = strtok(lpath, "/");
+    LOG("[FS] strtok\n");
     while (part) {
+        LOG("[FS] lookup\n");
         new2 = fsPathLookup(new, part);
+        LOG("[FS] destroy old\n");
         fsPathDestroy(new);
-
+        LOG("[FS] check\n");
         if (!new2)
             break;
 
         part = strtok(0, "/");
         new = new2;
     }
+    LOG("[FS] end\n");
     kfree(lpath);
     return new2;
 }
@@ -169,7 +183,7 @@ int fsPathDestroy(struct FsPath *path) {
 
 int fsReadFile(struct FsPath *file, char *buffer, u32 length, u32 offset) {
     int total = 0;
-    int bs = file->volume->blockSize;
+    u32 bs = file->volume->blockSize;
 
     if (!file->volume->fs->readBlock)
         return -1;
@@ -191,22 +205,22 @@ int fsReadFile(struct FsPath *file, char *buffer, u32 length, u32 offset) {
 
         if (offset % bs) {
             actual = file->volume->fs->readBlock(file, temp, blocknum);
-            if (actual != bs) {
-                LOG("failure 1: %d\n", actual);
+            if (actual != (int) bs) {
+                LOG("[FS] readFile failure 1: %d\n", actual);
                 goto failure;
             }
             actual = MIN(bs - offset % bs, length);
             memcpy(buffer, &temp[offset % bs], (u32) actual);
         } else if (length >= bs) {
             actual = file->volume->fs->readBlock(file, buffer, blocknum);
-            if (actual != bs) {
-                LOG("failure 2: %d - %d\n", actual, blocknum);
+            if (actual != (int) bs) {
+                LOG("[FS] readFile failure 2: %d - %d\n", actual, blocknum);
                 goto failure;
             }
         } else {
             actual = file->volume->fs->readBlock(file, temp, blocknum);
-            if (actual != bs) {
-                LOG("failure 3: %d\n", actual);
+            if (actual != (int) bs) {
+                LOG("[FS] readFile failure 3: %d\n", actual);
                 goto failure;
             }
             actual = length;
@@ -223,7 +237,6 @@ int fsReadFile(struct FsPath *file, char *buffer, u32 length, u32 offset) {
     return total;
 
     failure:
-    LOG("[FS] read faillure\n");
     kfree(temp);
     if (total == 0)
         return -1;
@@ -250,7 +263,7 @@ int fsRmdir(struct FsPath *path, const char *name) {
 
 int fsWriteFile(struct FsPath *file, const char *buffer, u32 length, u32 offset) {
     int total = 0;
-    int bs = file->volume->blockSize;
+    u32 bs = file->volume->blockSize;
 
     if (!file->volume->fs->writeBlock || !file->volume->fs->readBlock)
         return -1;
@@ -264,30 +277,30 @@ int fsWriteFile(struct FsPath *file, const char *buffer, u32 length, u32 offset)
 
         if (offset % bs) {
             actual = file->volume->fs->readBlock(file, temp, blocknum);
-            if (actual != bs)
+            if (actual != (int) bs)
                 goto failure;
 
             actual = MIN(bs - offset % bs, length);
-            memcpy(&temp[offset % bs], buffer, (u32)actual);
+            memcpy(&temp[offset % bs], buffer, (u32) actual);
 
             int wactual = file->volume->fs->writeBlock(file, temp, blocknum);
-            if (wactual != bs)
+            if (wactual != (int) bs)
                 goto failure;
 
         } else if (length >= bs) {
             actual = file->volume->fs->writeBlock(file, buffer, blocknum);
-            if (actual != bs)
+            if (actual != (int) bs)
                 goto failure;
         } else {
             actual = file->volume->fs->readBlock(file, temp, blocknum);
-            if (actual != bs)
+            if (actual != (int) bs)
                 goto failure;
 
             actual = length;
             memcpy(temp, buffer, (u32) actual);
 
             int wactual = file->volume->fs->writeBlock(file, temp, blocknum);
-            if (wactual != bs)
+            if (wactual != (int) bs)
                 goto failure;
         }
 

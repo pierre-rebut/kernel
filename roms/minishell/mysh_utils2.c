@@ -48,7 +48,7 @@ char **copie_environemnt(const char **environ, int ac) {
     return (env);
 }
 
-int do_free_path(char **path, char *tmp) {
+int do_free_path(char **path, const char *tmp) {
     int i;
 
     i = 0;

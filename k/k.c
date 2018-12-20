@@ -20,6 +20,8 @@
 #include "sheduler.h"
 #include "sys/console.h"
 
+#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+
 static int k_init(const multiboot_info_t *info) {
     initSerial(38400);
     kSerialPrintf("Init Serial\n");
@@ -27,20 +29,25 @@ static int k_init(const multiboot_info_t *info) {
     kSerialPrintf("Init Terminal\n");
     initTerminal();
 
+    LOG("Init memory\n");
     kprintf("Init Memory\n");
     initMemory();
 
+    LOG("Init Physical Memory\n");
     kprintf("Init Physical Memory\n");
     u32 memSize = initPhysicalMemory(info);
     kprintf("Total memory size: %u\n", memSize);
 
+    LOG("Init paging\n");
     kprintf("Init Paging\n");
     initPaging(memSize);
 
+    LOG("Init allocator\n");
     kprintf("Init Allocator\n");
     if (initAllocator())
         return -1;
 
+    LOG("Init interrupt\n");
     kprintf("Init Interrupt\n");
     initInterrupt();
     initPic();
@@ -48,6 +55,7 @@ static int k_init(const multiboot_info_t *info) {
     initKeyboard();
     initSyscall();
 
+    LOG("Init console\n");
     kprintf("Init Console\n");
     initConsole();
 
@@ -75,6 +83,42 @@ static int k_init(const multiboot_info_t *info) {
     return 0;
 }
 
+void printfile(const char *pathname) {
+    char *data = NULL;
+
+    struct FsPath *file = fsResolvePath(pathname);
+    if (!file)
+        return;
+
+    kSerialPrintf("File found\n");
+
+    struct stat fileStat;
+    if (fsStat(file, &fileStat) == -1)
+        goto failure;
+
+    kSerialPrintf("Stat found: %d\n", fileStat.file_sz);
+    s32 fileSize = fileStat.file_sz;
+
+    data = kmalloc(sizeof(char) * fileSize, 0, "datale");
+    if (data == NULL)
+        goto failure;
+
+    kSerialPrintf("alloc ok\n");
+
+    s32 readSize = fsReadFile(file, data, (u32) fileSize, 0);
+    if (readSize != fileSize)
+        goto failure;
+
+    kSerialPrintf("read ok\n");
+
+    writeSerial(data, (u32)readSize);
+
+    failure:
+    kSerialPrintf("end\n");
+    fsPathDestroy(file);
+    kfree(data);
+}
+
 void k_main(unsigned long magic, multiboot_info_t *info) {
     taskSwitching = 0;
 
@@ -84,6 +128,9 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
     if (k_init(info))
         goto error;
 
+    kSerialPrintf("Read test file\n");
+    printfile("/test");
+
     kSerialPrintf("\n### Trying init binary [%s] ###\n\n", (char *) info->cmdline);
 
     const char *av[] = {
@@ -91,7 +138,7 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
             NULL
     };
     const char *env[] = {
-            "PATH=/",
+            "HOME=/",
             "PWD=/",
             NULL
     };
