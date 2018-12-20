@@ -22,7 +22,7 @@ u32 loadBinary(struct PageDirectory *pd, const void *data, u32 size) {
         return 0;
     }
 
-    LOG("elf: %path - %path - %path\n", binHeader->e_ehsize, binHeader->e_phentsize, binHeader->e_entry);
+    LOG("elf: %d - %d - %d\n", binHeader->e_ehsize, binHeader->e_phentsize, binHeader->e_entry);
     const Elf32_Phdr *prgHeader = (Elf32_Phdr*)(data + binHeader->e_phoff);
     for (u32 i = 0; i < binHeader->e_phnum; i++) {
         if ((const void*)(prgHeader + i) >= data + size)

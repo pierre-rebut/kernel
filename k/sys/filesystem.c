@@ -17,12 +17,15 @@ static struct FsVolume *fsVolumeList = NULL;
 
 struct FsPath *fsResolvePath(const char *path) {
     if (path[0] == '/') {
+        LOG("[FS] resolve path 1\n");
         return fsGetPathByName(freeTimeTask->currentDir, &path[1]);
     }
     if (strlen(path) <= 3 || path[1] != ':') {
+        LOG("[FS] resolve path 2\n");
         return fsGetPathByName(currentTask->currentDir, path);
     }
 
+    LOG("[FS] resolve path 3\n");
     struct FsVolume *volume = fsGetVolumeById(path[0]);
     if (volume == NULL)
         return NULL;
@@ -127,7 +130,7 @@ static struct FsPath *fsPathLookup(struct FsPath *path, const char *name) {
 // todo fix bug
 struct FsPath *fsGetPathByName(struct FsPath *d, const char *path) {
     if (!d || !path)
-        return 0;
+        return NULL;
 
     char *lpath = kmalloc(strlen(path) + 1, 0, "tmpPath");
     strcpy(lpath, path);
@@ -156,7 +159,7 @@ int fsPathDestroy(struct FsPath *path) {
         return -1;
 
     path->refcount--;
-    if (path->refcount != 0)
+    if (path->refcount > 0)
         return 0;
 
     path->volume->fs->close(path);

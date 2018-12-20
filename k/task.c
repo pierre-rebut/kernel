@@ -153,6 +153,8 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
         return 0;
     }
 
+    LOG("task: get file stat\n");
+
     struct stat fileStat;
     if (fsStat(file, &fileStat) == -1) {
         kSerialPrintf("[TASK] Can not get file info: %s\n", cmdline);
@@ -245,7 +247,7 @@ int taskKill(struct Task *task) {
     }
 
     kfree(task->kernelStack - KERNEL_STACK_SIZE);
-    kfree(task->currentDir);
+    fsPathDestroy(task->currentDir);
 
     pagingDestroyPageDirectory(task->pageDirectory);
 
