@@ -43,7 +43,7 @@ static struct FsPath *procRoot(struct FsVolume *volume) {
 }
 
 static struct FsVolume *procMount(void *data) {
-    LOG("proc mount:\n");
+    LOG("proc utils:\n");
     (void) data;
 
     struct FsVolume *procVolume = kmalloc(sizeof(struct FsVolume), 0, "newProcVolume");
@@ -150,10 +150,10 @@ static struct dirent *procReaddir(struct FsPath *path, struct dirent *result) {
 static int procReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
     struct ProcPath *procPath = (struct ProcPath *) path->privateData;
     LOG("[proc] readblock: %u\n", blocknum);
-    if (!procPath || procPath->type != PP_FILE)
+    if (!procPath || procPath->type != PP_FILE || blocknum > 0)
         return -1;
 
-    struct Task *task = getTaskByPid(procPath->data);
+    struct Task *task = getTaskByPid((u32)procPath->data);
     if (!task)
         return -1;
 
@@ -163,8 +163,7 @@ static int procReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
                         task->event.type, task->event.timer, task->event.arg
     );
 
-    memset(buffer + read, 0, PROC_BLK_DATA_SZ - read);
-    return PROC_BLK_DATA_SZ;
+    return read;
 }
 
 static struct Fs fs_procfs = {

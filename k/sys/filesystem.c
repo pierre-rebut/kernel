@@ -64,7 +64,7 @@ struct FsVolume *fsVolumeOpen(char id, struct Fs *fs, void *data) {
     if (!fs || !fs->mount)
         return NULL;
 
-    LOG("[FS] mount with fs fct\n");
+    LOG("[FS] utils with fs fct\n");
     struct FsVolume *volume = fs->mount(data);
     if (volume == NULL)
         return NULL;
@@ -193,48 +193,50 @@ int fsReadFile(struct FsPath *file, char *buffer, u32 length, u32 offset) {
     if (!file->volume->fs->readBlock)
         return -1;
 
-    if (offset > file->size)
-        return 0;
-
-    if (offset + length > file->size)
-        length = file->size - offset;
-
     char *temp = kmalloc(bs, 0, "fsFileRead");
     if (!temp)
         return -1;
 
-    while (length > 0) {
+    int blocknum = offset / bs;
 
-        int blocknum = offset / bs;
+    while (length > 0) {
         int actual = 0;
 
         if (offset % bs) {
+            LOG("here i am 1\n");
             actual = file->volume->fs->readBlock(file, temp, blocknum);
-            if (actual != (int) bs) {
+            if (actual <= 0) {
                 LOG("[FS] readFile failure 1: %d\n", actual);
                 goto failure;
             }
-            actual = MIN(bs - offset % bs, length);
+            actual = MIN(bs - offset % bs,(u32) actual);
+            actual = MIN(actual, (int) length);
             memcpy(buffer, &temp[offset % bs], (u32) actual);
+            LOG("here i am 1: %d\n", actual);
         } else if (length >= bs) {
+            LOG("here i am 2\n");
             actual = file->volume->fs->readBlock(file, buffer, blocknum);
-            if (actual != (int) bs) {
+            if (actual <= 0) {
                 LOG("[FS] readFile failure 2: %d - %d\n", actual, blocknum);
                 goto failure;
             }
+            LOG("here i am 2: %d\n", actual);
         } else {
+            LOG("here i am 3\n");
             actual = file->volume->fs->readBlock(file, temp, blocknum);
-            if (actual != (int) bs) {
+            if (actual <= 0) {
                 LOG("[FS] readFile failure 3: %d\n", actual);
                 goto failure;
             }
-            actual = length;
+            actual = MIN(actual, (int) length);
             memcpy(buffer, temp, (u32) actual);
+            LOG("here i am 3: %d\n", actual);
         }
 
         buffer += actual;
         length -= actual;
         offset += actual;
+        blocknum++;
         total += actual;
     }
 

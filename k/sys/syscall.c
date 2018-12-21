@@ -152,7 +152,6 @@ static void sys_open(struct esp_context *ctx) {
         return;
     }
 
-    LOG("open: %s\n", (char *) ctx->ebx);
     struct FsPath *path = fsResolvePath((char *) ctx->ebx);
     if (!path) {
         ctx->eax = (u32) -1;
@@ -161,6 +160,7 @@ static void sys_open(struct esp_context *ctx) {
 
     currentTask->objectList[fd] = koCreate(KO_FS, path, ctx->ecx);
     ctx->eax = (u32) fd;
+    LOG("open: %s\n", (char *) ctx->ebx);
 }
 
 static void sys_read(struct esp_context *ctx) {
@@ -322,7 +322,7 @@ static void sys_closedir(struct esp_context *ctx) {
 }
 
 static void sys_mount(struct esp_context *ctx) {
-    LOG("mount: %s -> %c (%s)\n", (char *) ctx->edx, ctx->ebx, (char *) ctx->ecx);
+    LOG("utils: %s -> %c (%s)\n", (char *) ctx->edx, ctx->ebx, (char *) ctx->ecx);
 
     char *data = NULL;
     struct FsPath *file = NULL;
@@ -330,37 +330,37 @@ static void sys_mount(struct esp_context *ctx) {
     if (fsGetVolumeById((char)ctx->ebx))
         goto failure;
 
-    LOG("mount: get fs by name\n");
+    LOG("utils: get fs by name\n");
     struct Fs *fs = fsGetFileSystemByName((const char *) ctx->ecx);
     if (!fs)
         goto failure;
 
-    LOG("mount: resolve path\n");
+    LOG("utils: resolve path\n");
     file = fsResolvePath((const char *)ctx->edx);
     if (!file)
         goto failure;
 
-    LOG("mount: alloc memory %u\n", file->size);
+    LOG("utils: alloc memory %u\n", file->size);
     data = kmalloc(sizeof(char) * file->size, 0, "mountAlloc");
     if (!data)
         goto failure;
 
-    LOG("mount: read file\n");
+    LOG("utils: read file\n");
     if (fsReadFile(file, data, file->size, 0) != (s32) file->size)
         goto failure;
 
-    LOG("mount: create new volume\n");
+    LOG("utils: create new volume\n");
     struct FsVolume *volume = fsVolumeOpen((char)ctx->ebx, fs, data);
     if (!volume)
         goto failure;
 
     fsPathDestroy(file);
     ctx->eax = 0;
-    LOG("mount: end\n");
+    LOG("utils: end\n");
     return;
 
     failure:
-    kSerialPrintf("mount: failure\n");
+    kSerialPrintf("utils: failure\n");
     fsPathDestroy(file);
     kfree(data);
     ctx->eax = (u32) -1;

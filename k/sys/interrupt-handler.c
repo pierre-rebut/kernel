@@ -74,6 +74,7 @@ static void isr_exception_handler(struct esp_context *r) {
     kSerialPrintf("[INT] cs: %x  ds: %x  es: %x  Fs: %x  gs: %x  ss: %x\n", r->cs, r->ds, r->es, r->fs, r->gs, r->ss);
     kSerialPrintf("[INT] eflags: %X  useresp: %X\n", r->eflags, r->useresp);
 
+    kprintf("Task %u: %s\n", currentTask->pid, r->int_no > 20 ? exceptionList[15] : exceptionList[r->int_no]);
     quitTask();
 }
 

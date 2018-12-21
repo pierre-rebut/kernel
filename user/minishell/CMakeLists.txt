@@ -16,8 +16,9 @@ set(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/mysh
         ${CMAKE_CURRENT_BINARY_DIR}/../roms/chichehunter/hunter.rom
         ${CMAKE_CURRENT_BINARY_DIR}/../ls/ls
-        ${CMAKE_CURRENT_BINARY_DIR}/../mount/mount
-        ${CMAKE_CURRENT_BINARY_DIR}/../mount/umount
+        ${CMAKE_CURRENT_BINARY_DIR}/../utils/mount
+        ${CMAKE_CURRENT_BINARY_DIR}/../utils/umount
+        ${CMAKE_CURRENT_BINARY_DIR}/../utils/cat
         mysh.c
         main.c
         get_next_line.c)
@@ -27,7 +28,7 @@ target_link_libraries(mysh k c bin-entry)
 
 add_custom_command(TARGET mysh
         POST_BUILD
-        DEPENDS mkkfs hunter ls mount umount
+        DEPENDS mkkfs hunter ls mount umount cat
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "Creating mysh rom"
         COMMAND ${CMAKE_BINARY_DIR}/tools/mkkfs/mkkfs -o ${CMAKE_CURRENT_BINARY_DIR}/mysh.rom -n mysh ${FILES})

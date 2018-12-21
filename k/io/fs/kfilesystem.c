@@ -12,8 +12,8 @@
 #include <sys/allocator.h>
 #include <string.h>
 
-//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
-#define LOG(x, ...)
+#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+//#define LOG(x, ...)
 
 static char checkBlockChecksum(struct kfs_block *block) {
     u32 cksum = block->cksum;
@@ -54,7 +54,7 @@ static struct FsPath *kfsRoot(struct FsVolume *volume) {
 }
 
 static struct FsVolume *kfsMount(void *data) {
-    LOG("kfs mount: %p\n", data);
+    LOG("kfs utils: %p\n", data);
     struct kfs_superblock *tmp = (struct kfs_superblock *) data;
 
     if (tmp->magic != KFS_MAGIC) {
@@ -146,10 +146,8 @@ static int kfsReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
 
     if (blocknum >= KFS_DIRECT_BLK) {
         u32 iblockIndex = (blocknum - KFS_DIRECT_BLK) / KFS_INDIRECT_BLK;
-        if (iblockIndex >= node->i_blk_cnt) {
-            kSerialPrintf("[KFS] bad inode index: %d (max %d)", iblockIndex, node->i_blk_cnt);
+        if (iblockIndex >= node->i_blk_cnt)
             return -1;
-        }
 
         struct kfs_iblock *iblock = ((void *) kfs) + (node->i_blks[iblockIndex] * KFS_BLK_SZ);
         if (kfs_checksum(iblock, sizeof(struct kfs_iblock) - 4) != iblock->cksum) {
@@ -161,6 +159,8 @@ static int kfsReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
         blocknum = (blocknum - KFS_DIRECT_BLK) % KFS_INDIRECT_BLK;
         LOG("iblockIndex: %u (max %d) %d / blocknum = %u\n", iblockIndex, node->i_blk_cnt, iblock->blk_cnt, blocknum);
     } else {
+        if (blocknum >= node->d_blk_cnt)
+            return -1;
         LOG("blocknum %u\n", blocknum);
     }
 
@@ -170,8 +170,7 @@ static int kfsReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
         return -1;
     }
     memcpy(buffer, block->data, block->usage);
-    memset(buffer + block->usage, 0, KFS_BLK_DATA_SZ - block->usage);
-    return KFS_BLK_DATA_SZ;
+    return block->usage;
 }
 
 static struct Fs fs_kfs = {
