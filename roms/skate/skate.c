@@ -121,20 +121,20 @@ void draw_score(void) {
     draw_trick();
 
     //  draw_text("Time: ", 10, 10, PURPLE, BG_COLOR);
-    sprintf(buf, "%path", jiffies / 50);
+    sprintf(buf, "%lu", jiffies / 50);
     draw_text(buf, 10, 10, PURPLE, BG_COLOR);
 
     draw_text("Trick: ", GRAPHIC_WIDTH / 2 - 45, 10, BLUE, BG_COLOR);
-    sprintf(buf, "%path", score_tmp);
+    sprintf(buf, "%d", score_tmp);
     draw_text(buf, GRAPHIC_WIDTH / 2 + 5, 10, BLUE, BG_COLOR);
     if (skater.combo > 1) {
         draw_text("Combo x", GRAPHIC_WIDTH / 2 - 45, 20, RED, BG_COLOR);
-        sprintf(buf, "%path", skater.combo);
+        sprintf(buf, "%d", skater.combo);
         draw_text(buf, GRAPHIC_WIDTH / 2 + 15, 20, RED, BG_COLOR);
     }
 
     draw_text("Score: ", GRAPHIC_WIDTH - 90, 10, GREEN, BG_COLOR);
-    sprintf(buf, "%path", score);
+    sprintf(buf, "%d", score);
     draw_text(buf, GRAPHIC_WIDTH - 40, 10, GREEN, BG_COLOR);
 }
 

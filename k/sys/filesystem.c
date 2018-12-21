@@ -60,7 +60,7 @@ struct Fs *fsGetFileSystemByName(const char *name) {
 
 struct FsVolume *fsVolumeOpen(char id, struct Fs *fs, void *data) {
     LOG("[FS] check if %c is used\n", id);
-    if (fsGetVolumeById(id) || !fs || !fs->mount)
+    if (!fs || !fs->mount)
         return NULL;
 
     LOG("[FS] mount with fs fct\n");

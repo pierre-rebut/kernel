@@ -23,6 +23,7 @@
 */
 #include <kstd.h>
 #include <stddef.h>
+#include <stdio.h>
 
 static inline u32 syscall0(int syscall_nb) {
     u32 res;
@@ -133,30 +134,38 @@ int sleep(u32 duration) {
 }
 
 u32 execve(const char *prg, const char **av, const char **env) {
-    return syscall3(SYSCALL_EXECVE, (u32)prg, (u32)av, (u32)env);
+    return syscall3(SYSCALL_EXECVE, (u32) prg, (u32) av, (u32) env);
 }
 
 int stat(const char *pathname, struct stat *data) {
-    return syscall2(SYSCALL_STAT, (u32)pathname, (u32)data);
+    return syscall2(SYSCALL_STAT, (u32) pathname, (u32) data);
 }
 
 int fstat(int fd, struct stat *data) {
-    return syscall2(SYSCALL_FSTAT, (u32)fd, (u32)data);
+    return syscall2(SYSCALL_FSTAT, (u32) fd, (u32) data);
 }
 
 int chdir(const char *path) {
-    return syscall1(SYSCALL_CHDIR, (u32)path);
+    return syscall1(SYSCALL_CHDIR, (u32) path);
 }
 
 int opendir(const char *name) {
-    return syscall1(SYSCALL_OPENDIR, (u32)name);
+    return syscall1(SYSCALL_OPENDIR, (u32) name);
 }
 
 int closedir(int repertoire) {
-    return syscall1(SYSCALL_CLOSEDIR, (u32)repertoire);
+    return syscall1(SYSCALL_CLOSEDIR, (u32) repertoire);
 }
 
-struct dirent* readdir(int repertoire) {
+struct dirent *readdir(int repertoire) {
     static struct dirent data = {0};
-    return (struct dirent *)syscall2(SYSCALL_READDIR, (u32)repertoire, (u32)&data);
+    return  (struct dirent *) syscall2(SYSCALL_READDIR, (u32) repertoire, (u32) &data);
+}
+
+int mount(char id, const char *fstype, const char *file) {
+    return syscall3(SYSCALL_MOUNT, (u32) id, (u32) fstype, (u32) file);
+}
+
+int umount(char id) {
+    return syscall1(SYSCALL_UMOUNT, (u32) id);
 }

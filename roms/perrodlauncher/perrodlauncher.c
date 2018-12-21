@@ -241,12 +241,12 @@ static void game_loop(void) {
         draw_image_alpha(pic[p / 2], x - 8 - fx, 170 - y + fy, 250);
 
         draw_text("Gravity: ", 0, 0, 162, -1);
-        sprintf(buf, "%path", gravity);
+        sprintf(buf, "%u", gravity);
         draw_text(buf, 70, 0, 162, -1);
 
         if ((fire == 0) && (score != 0)) {
             draw_text("Score: ", 100, 60, 12, -1);
-            sprintf(buf, "%path", score);
+            sprintf(buf, "%d", score);
             draw_text(buf, 170, 60, 12, -1);
         }
 

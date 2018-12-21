@@ -119,11 +119,11 @@ static void game_loop(void)
 		draw_image(bar, pos - 25, 190);
 
 		draw_text("score:", 240, 40, 20, 0);
-		sprintf(buf, "%path", score);
+		sprintf(buf, "%d", score);
 		draw_text(buf, 240, 50, 20, 0);
 
 		draw_text("lives:", 240, 150, 20, 0);
-		sprintf(buf, "%path", lives);
+		sprintf(buf, "%d", lives);
 		draw_text(buf, 240, 160, 20, 0);
 
 		if (y + 5 < 6 * 12) {

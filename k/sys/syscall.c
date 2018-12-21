@@ -10,13 +10,14 @@
 #include "syscall.h"
 #include "io/libvga.h"
 #include "task.h"
+#include "allocator.h"
 
 #include <stdio.h>
 
-#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
-//#define LOG(x, ...)
+//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+#define LOG(x, ...)
 
-#define NB_SYSCALL 25
+#define NB_SYSCALL 27
 
 static void sys_write(struct esp_context *ctx);
 
@@ -68,6 +69,10 @@ static void sys_closedir(struct esp_context *ctx);
 
 static void sys_readdir(struct esp_context *ctx);
 
+static void sys_mount(struct esp_context *ctx);
+
+static void sys_umount(struct esp_context *ctx);
+
 typedef void (*syscall_t)(struct esp_context *);
 
 static syscall_t syscall[] = {
@@ -95,7 +100,9 @@ static syscall_t syscall[] = {
         sys_getkeymode,
         sys_opendir,
         sys_closedir,
-        sys_readdir
+        sys_readdir,
+        sys_mount,
+        sys_umount
 };
 
 static void syscall_handler(struct esp_context *ctx);
@@ -147,40 +154,40 @@ static void sys_open(struct esp_context *ctx) {
 
     LOG("open: %s\n", (char *) ctx->ebx);
     struct FsPath *path = fsResolvePath((char *) ctx->ebx);
-    if(!path) {
+    if (!path) {
         ctx->eax = (u32) -1;
         return;
     }
 
     currentTask->objectList[fd] = koCreate(KO_FS, path, ctx->ecx);
-    ctx->eax = (u32)fd;
+    ctx->eax = (u32) fd;
 }
 
 static void sys_read(struct esp_context *ctx) {
     struct Kobject *obj = currentTask->objectList[ctx->ebx];
 
     if (!obj) {
-        ctx->eax = (u32)-1;
+        ctx->eax = (u32) -1;
         return;
     }
-    ctx->eax = (u32) koRead(obj, (void*) ctx->ecx, ctx->edx);
+    ctx->eax = (u32) koRead(obj, (void *) ctx->ecx, ctx->edx);
 }
 
 static void sys_write(struct esp_context *ctx) {
     struct Kobject *obj = currentTask->objectList[ctx->ebx];
 
     if (!obj) {
-        ctx->eax = (u32)-1;
+        ctx->eax = (u32) -1;
         return;
     }
-    ctx->eax = (u32) koWrite(obj, (void*) ctx->ecx, ctx->edx);
+    ctx->eax = (u32) koWrite(obj, (void *) ctx->ecx, ctx->edx);
 }
 
 static void sys_seek(struct esp_context *ctx) {
     struct Kobject *obj = currentTask->objectList[ctx->ebx];
 
     if (!obj) {
-        ctx->eax = (u32)-1;
+        ctx->eax = (u32) -1;
         return;
     }
     ctx->eax = 0;
@@ -190,7 +197,7 @@ static void sys_close(struct esp_context *ctx) {
     struct Kobject *obj = currentTask->objectList[ctx->ebx];
 
     if (!obj) {
-        ctx->eax = (u32)-1;
+        ctx->eax = (u32) -1;
         return;
     }
     ctx->eax = (u32) koDestroy(obj);
@@ -249,12 +256,12 @@ static void sys_execve(struct esp_context *ctx) {
 
 static void sys_stat(struct esp_context *ctx) {
     struct FsPath *path = fsResolvePath((char *) ctx->ebx);
-    if(!path) {
+    if (!path) {
         ctx->eax = (u32) -1;
         return;
     }
 
-    ctx->eax = (u32) fsStat(path, (void*) ctx->ecx);
+    ctx->eax = (u32) fsStat(path, (void *) ctx->ecx);
     fsPathDestroy(path);
 }
 
@@ -262,14 +269,14 @@ static void sys_fstat(struct esp_context *ctx) {
     struct Kobject *obj = currentTask->objectList[ctx->ebx];
 
     if (!obj) {
-        ctx->eax = (u32)-1;
+        ctx->eax = (u32) -1;
         return;
     }
-    ctx->eax = (u32) fsStat(obj->data, (void*) ctx->ecx);
+    ctx->eax = (u32) fsStat(obj->data, (void *) ctx->ecx);
 }
 
 static void sys_chdir(struct esp_context *ctx) {
-    ctx->eax = (u32) taskChangeDirectory((void*)ctx->ebx);
+    ctx->eax = (u32) taskChangeDirectory((void *) ctx->ebx);
 }
 
 static void sys_opendir(struct esp_context *ctx) {
@@ -280,14 +287,14 @@ static void sys_opendir(struct esp_context *ctx) {
     }
 
     struct FsPath *path = fsResolvePath((char *) ctx->ebx);
-    if(!path) {
+    if (!path) {
         ctx->eax = (u32) -1;
         return;
     }
 
     currentTask->objectList[fd] = koCreate(Ko_FS_FOLDER, path, 0);
     LOG("opendir: %s (%d) refcount: %u\n", (char *) ctx->ebx, fd, path->refcount);
-    ctx->eax = (u32)fd;
+    ctx->eax = (u32) fd;
 }
 
 static void sys_readdir(struct esp_context *ctx) {
@@ -298,19 +305,85 @@ static void sys_readdir(struct esp_context *ctx) {
         return;
     }
 
-    ctx->eax = (u32)fsPathReaddir(obj->data, (void*)ctx->ecx);
+    ctx->eax = (u32) fsPathReaddir(obj->data, (void *) ctx->ecx);
 }
 
 static void sys_closedir(struct esp_context *ctx) {
     struct Kobject *obj = currentTask->objectList[ctx->ebx];
 
     if (!obj) {
-        ctx->eax = (u32)-1;
+        ctx->eax = (u32) -1;
         return;
     }
 
     LOG("closedir: %d\n", ctx->ebx);
     ctx->eax = (u32) koDestroy(obj);
     currentTask->objectList[ctx->ebx] = NULL;
+}
+
+static void sys_mount(struct esp_context *ctx) {
+    LOG("mount: %c -> %s (%s)\n", ctx->ebx, (char *) ctx->edx, (char *) ctx->ecx);
+
+    char *data = NULL;
+    struct FsPath *file = NULL;
+
+    if (fsGetVolumeById((char)ctx->ebx))
+        goto failure;
+
+    LOG("mount: get fs by name\n");
+    struct Fs *fs = fsGetFileSystemByName((const char *) ctx->ecx);
+    if (!fs)
+        goto failure;
+
+    LOG("mount: resolve path\n");
+    file = fsResolvePath((const char *)ctx->edx);
+    if (!file)
+        goto failure;
+
+    LOG("mount: alloc memory %u\n", file->size);
+    data = kmalloc(sizeof(char) * file->size, 0, "mountAlloc");
+    if (!data)
+        goto failure;
+
+    LOG("mount: read file\n");
+    if (fsReadFile(file, data, file->size, 0) != (s32) file->size)
+        goto failure;
+
+    LOG("mount: create new volume\n");
+    struct FsVolume *volume = fsVolumeOpen((char)ctx->ebx, fs, data);
+    if (!volume)
+        goto failure;
+
+    fsPathDestroy(file);
+    ctx->eax = 0;
+    LOG("mount: end\n");
+    return;
+
+    failure:
+    kSerialPrintf("mount: failure\n");
+    fsPathDestroy(file);
+    kfree(data);
+    ctx->eax = (u32) -1;
+}
+
+static void sys_umount(struct esp_context *ctx) {
+    LOG("umount: %c\n", ctx->ebx);
+
+    struct FsVolume *volume = fsGetVolumeById((char)ctx->ebx);
+    if (!volume)
+        goto failure;
+
+    LOG("umount: destroy volume\n");
+
+    if (fsVolumeClose(volume) == -1)
+        goto failure;
+
+    LOG("umount end\n");
+    ctx->eax = 0;
+    return;
+
+    failure:
+    kSerialPrintf("umount: failed\n");
+    ctx->eax = (u32) -1;
 }
 

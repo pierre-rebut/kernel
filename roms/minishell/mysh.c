@@ -53,16 +53,13 @@ int my_other_commande(const char **av, const char **env) {
     char **prg_path;
 
     if ((prg_path = my_found_path(env)) == NULL)
-        puts("ERROR : PATH not set\n");
+        puts("WARNING : PATH not set\n");
 
     const char *tmp = my_search_file_path(prg_path, av);
     if (tmp == NULL)
         tmp = strdup(av[0]);
 
-    printf("try execute: %s\n", tmp);
     u32 pid = execve(tmp, av, env);
-    printf("execute: %u\n", pid);
-
     if (pid == 0)
         printf("Error %s: no such file or directory\n", tmp);
     else
