@@ -12,15 +12,15 @@
 static struct Fs *fsList = NULL;
 static struct FsVolume *fsVolumeList = NULL;
 
-//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
-#define LOG(x, ...)
+#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+//#define LOG(x, ...)
 
 struct FsPath *fsResolvePath(const char *path) {
     if (path[0] == '/') {
         LOG("[FS] resolve path 1\n");
         return fsGetPathByName(freeTimeTask->currentDir, &path[1]);
     }
-    if (strlen(path) <= 3 || path[1] != ':') {
+    if (strlen(path) < 3 || path[1] != ':') {
         LOG("[FS] resolve path 2\n");
         return fsGetPathByName(currentTask->currentDir, path);
     }
@@ -29,6 +29,7 @@ struct FsPath *fsResolvePath(const char *path) {
     struct FsVolume *volume = fsGetVolumeById(path[0]);
     if (volume == NULL)
         return NULL;
+    LOG("[FS] volume found: %c\n", volume->id);
     return fsGetPathByName(volume->root, &path[3]);
 }
 
@@ -139,6 +140,10 @@ static struct FsPath *fsPathLookup(struct FsPath *path, const char *name) {
 struct FsPath *fsGetPathByName(struct FsPath *d, const char *path) {
     if (!d || !path)
         return NULL;
+
+    if (*path == 0) {
+        return fsPathLookup(d, path);
+    }
 
     LOG("[FS] kmalloc %s\n", path);
     char *lpath = kmalloc(strlen(path) + 1, 0, "tmpPath");

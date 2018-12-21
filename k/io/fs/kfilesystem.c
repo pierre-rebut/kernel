@@ -4,7 +4,7 @@
 
 #include "kfilesystem.h"
 #include "sys/filesystem.h"
-#include "serial.h"
+#include "io/serial.h"
 
 #include <k/kfs.h>
 #include <k/kstd.h>
@@ -104,7 +104,7 @@ static struct FsPath *kfsLookup(struct FsPath *path, const char *name) {
     struct kfs_inode *node;
     struct kfs_superblock *kfs = path->volume->privateData;
 
-    if (strcmp(name, ".") == 0)
+    if (*name == 0 || strcmp(name, ".") == 0)
         node = path->privateData;
     else
         node =  getFileINode(kfs, name);

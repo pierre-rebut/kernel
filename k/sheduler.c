@@ -86,3 +86,7 @@ void schedulerForceSwitchTask() {
     LOG("Scheduler: force switch task\n");
     asm volatile("int $126");
 }
+
+struct Task *schedulerGetTaskByIndex(u32 index) {
+    return listGetElemByIndex(&taskLists, index);
+}

@@ -22,4 +22,6 @@ void listDeleteElem(struct List *lst, void *data);
 void *listGetNextElem(struct List *lst);
 u32 listCountElem(struct List *lst);
 
+void *listGetElemByIndex(struct List *lst, u32 index);
+
 #endif //KERNEL_LIST_H

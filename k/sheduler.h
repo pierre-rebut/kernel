@@ -16,6 +16,8 @@ void schedulerForceSwitchTask();
 void schedulerAddTask(struct Task *task);
 void schedulerRemoveTask(struct Task *task);
 
+struct Task *schedulerGetTaskByIndex(u32 index);
+
 extern struct List taskLists;
 
 #endif //KERNEL_SHEDULER_H

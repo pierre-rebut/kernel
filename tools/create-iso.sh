@@ -9,10 +9,9 @@ mkdir -p $base_dir/boot/grub/
 
 cp k/$2 $base_dir/
 
-find roms -name "*.rom" -exec cp {} $base_dir/roms/ \;
-
-for rom in $(find $base_dir/roms -name "*.rom") ; do
-	name=$(basename $rom .rom)
+for rom in $(find user -name "*.rom"); do
+    name=$(basename $rom .rom)
+    cp $rom $base_dir/roms/$name.rom
 	cat <<EOF
 menuentry "k - $name" {
 	multiboot /$2 /$name

@@ -44,5 +44,6 @@ char *strdup(const char *str);
 char *strchr(const char *p, int ch);
 char *strtok(char *s, const char *delim);
 u32 strcspn(const char *s1, register const char *s2);
+char isspace(char c);
 
 #endif				/* !STRING_H_ */

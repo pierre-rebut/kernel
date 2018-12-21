@@ -14,7 +14,7 @@ add_subdirectory(libs/libk)
 add_subdirectory(tools/mkkfs)
 add_subdirectory(tools/mkksf)
 
-add_subdirectory(roms)
+add_subdirectory(user)
 
 add_custom_target(k.iso ALL
         COMMAND ${CMAKE_SOURCE_DIR}/tools/create-iso.sh k.iso kernel_epita .

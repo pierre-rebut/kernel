@@ -4,6 +4,7 @@
 #include <io/ata.h>
 #include <sys/syscall.h>
 #include <include/multiboot.h>
+#include <io/fs/procfilesystem.h>
 
 #include "io/serial.h"
 #include "sys/gdt.h"
@@ -11,7 +12,7 @@
 #include "io/pic.h"
 #include "io/keyboard.h"
 #include "io/pit.h"
-#include "io/kfilesystem.h"
+#include "io/fs/kfilesystem.h"
 #include "io/terminal.h"
 #include "task.h"
 #include "sys/allocator.h"
@@ -62,14 +63,23 @@ static int k_init(const multiboot_info_t *info) {
     kprintf("Init KFileSystem\n");
     initKFileSystem();
 
+    kprintf("Init ProcFileSystem\n");
+    initProcFileSystem();
+
     kprintf("Mount kfs on A\n");
-    struct Fs *fs = fsGetFileSystemByName("kfs");
-    struct FsVolume *volume = fsVolumeOpen('A', fs, (void*) ((module_t*)(info->mods_addr))->mod_start);
-    if (!volume)
+    struct Fs *kfs = fsGetFileSystemByName("kfs");
+    struct FsVolume *kvolume = fsVolumeOpen('A', kfs, (void*) ((module_t*)(info->mods_addr))->mod_start);
+    if (!kvolume)
+        return -1;
+
+    kprintf("Mount procfs on B\n");
+    struct Fs *procfs = fsGetFileSystemByName("proc");
+    struct FsVolume *pvolume = fsVolumeOpen('B', procfs, NULL);
+    if (!pvolume)
         return -1;
 
     kprintf("Init Tasking\n");
-    initTasking(fsVolumeRoot(volume));
+    initTasking(fsVolumeRoot(kvolume));
 
     kprintf("Allow KEYBOARD & PIT interrupt\n");
     allowIrq(ISQ_KEYBOARD_VALUE);
@@ -138,6 +148,7 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
             NULL
     };
     const char *env[] = {
+            "PATH=A:/",
             "HOME=/",
             "PWD=/",
             NULL

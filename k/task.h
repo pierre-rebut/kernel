@@ -21,8 +21,7 @@ enum TaskEventType {
     TaskEventNone,
     TaskEventKeyboard,
     TaskEventTimer,
-    TaskEventWaitPid,
-    TaskEventKernel
+    TaskEventWaitPid
 };
 
 struct Heap {
@@ -37,8 +36,23 @@ struct TaskEvent {
     u32 arg;
 };
 
+struct TaskCreator {
+    struct PageDirectory *pageDirectory;
+    u32 entryPoint;
+    enum TaskPrivilege privilege;
+    const char *cmdline;
+
+    u32 ac;
+    const char **av;
+    const char **env;
+    struct FsPath *dir;
+    struct Console *console;
+};
+
 struct Task {
     u32 pid;
+
+    const char *cmdline;
     enum TaskPrivilege privilege;
 
     u32 esp;
@@ -58,12 +72,12 @@ struct Task {
 extern char taskSwitching;
 extern struct Task *currentTask;
 extern struct Task *freeTimeTask;
+extern struct Task kernelTask;
 
 void taskSaveState(u32 esp);
 u32 taskSwitch(struct Task *newTask);
 
-struct Task *createTask(struct PageDirectory *pageDirectory, u32 entryPoint, enum TaskPrivilege privilege,
-                        u32 ac, const char **av, const char **env, struct FsPath *dir, struct Console *console);
+struct Task *createTask(struct TaskCreator *info);
 u32 createProcess(const char *cmdline, const char **av, const char **env);
 void initTasking(struct FsPath *rootDirectory);
 

@@ -22,7 +22,7 @@ char **my_found_path(const char **env) {
     search_path = my_getenv(env, "PATH");
     if (search_path == NULL)
         return (NULL);
-    my_path = my_wordtab(search_path, 0, ':');
+    my_path = my_wordtab(search_path, 0, ',');
     free(search_path);
     return (my_path);
 }

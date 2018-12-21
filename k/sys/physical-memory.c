@@ -81,12 +81,15 @@ u32 allocPhysicalMemory() {
         asm volatile ("bsfl %1, %0\n\t" : "=r"(freeBite) : "r"(~physicalMemTable[i]));
 
         physicalMemTable[i] |= 1 << freeBite;
+        LOG("[PHYMEM] allocate %u\n", i * 32 + freeBite);
         return (i * 32 + freeBite) * PAGESIZE;
     }
+    LOG("[PHYMEM] can not alloc physical memory\n");
     return 0;
 }
 
 void freePhysicalMemory(u32 allocAddr) {
     u32 i = allocAddr / PAGESIZE;
+    LOG("[PHYMEM] free physical memory: %X\n", i);
     physicalMemTable[i] &= ~(1 << i / 32);
 }

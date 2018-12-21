@@ -12,7 +12,7 @@
 
 #include <stdio.h>
 #include <sys/physical-memory.h>
-#include <io/kfilesystem.h>
+#include <io/fs/kfilesystem.h>
 #include <cpu.h>
 #include <string.h>
 #include <io/terminal.h>
@@ -21,15 +21,15 @@
 #include <io/keyboard.h>
 #include <include/list.h>
 
-//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
-#define LOG(x, ...)
+#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+//#define LOG(x, ...)
 
 static u32 nextPid = 0;
 
 char taskSwitching = 0;
 struct Task *currentTask = NULL;
 struct Task *freeTimeTask = NULL;
-static struct Task kernelTask = {0};
+struct Task kernelTask = {0};
 
 void initTasking(struct FsPath *rootDirectory) {
     kernelTask.pid = 0;
@@ -38,6 +38,7 @@ void initTasking(struct FsPath *rootDirectory) {
     kernelTask.pageDirectory = kernelPageDirectory;
     kernelTask.privilege = TaskPrivilegeKernel;
     kernelTask.console = kernelConsole;
+    kernelTask.cmdline = strdup("kernelTask");
     kernelConsole->task = &kernelTask;
 
     kernelTask.currentDir = rootDirectory;
@@ -45,44 +46,56 @@ void initTasking(struct FsPath *rootDirectory) {
     for (int i = 0; i < MAX_NB_FILE; i++)
         kernelTask.objectList[i] = NULL;
 
-    freeTimeTask = createTask(kernelPageDirectory, (u32)&schedulerDoNothing, TaskPrivilegeKernel, 0,
-                              NULL, NULL, kernelTask.currentDir, kernelConsole);
+    struct TaskCreator taskInfo = {
+            .pageDirectory = kernelPageDirectory,
+            .entryPoint = (u32)&schedulerDoNothing,
+            .privilege = TaskPrivilegeKernel,
+            .ac = 0,
+            .av = NULL,
+            .env = NULL,
+            .dir = kernelTask.currentDir,
+            .console = kernelConsole,
+            .cmdline = "kernelTask"
+    };
+
+    freeTimeTask = createTask(&taskInfo);
     currentTask = &kernelTask;
     schedulerAddTask(&kernelTask);
 
     taskSwitching = 1;
 }
 
-struct Task *createTask(struct PageDirectory *pageDirectory, u32 entryPoint, enum TaskPrivilege privilege,
-                        u32 ac, const char **av, const char **env, struct FsPath *dir, struct Console *console) {
+struct Task *createTask(struct TaskCreator *info) {
     struct Task *task = kmalloc(sizeof(struct Task), 0, "task");
     u32 *stack = kmalloc(KERNEL_STACK_SIZE, 0, "stack");
     if (!task || !stack)
         return NULL;
 
     task->pid = nextPid++;
-    task->privilege = privilege;
-    task->pageDirectory = pageDirectory;
+    task->privilege = info->privilege;
+    task->pageDirectory = info->pageDirectory;
     stack = (void *) ((u32) stack + KERNEL_STACK_SIZE);
     task->kernelStack = stack;
     task->event.type = TaskEventNone;
     task->heap.start = USER_HEAP_START;
     task->heap.pos = task->heap.nbPage = 0;
-    task->console = console;
+    task->console = info->console;
 
-    task->currentDir = dir;
-    dir->refcount++;
+    task->cmdline = strdup(info->cmdline);
+
+    task->currentDir = info->dir;
+    info->dir->refcount++;
 
     for (int i = 0; i < MAX_NB_FILE; i++)
         task->objectList[i] = NULL;
 
-    if (privilege == TaskPrivilegeUser)
-        pagingAlloc(pageDirectory, (void *) (USER_STACK - 10 * PAGESIZE), 10 * PAGESIZE, MEM_USER | MEM_WRITE);
+    if (info->privilege == TaskPrivilegeUser)
+        pagingAlloc(info->pageDirectory, (void *) (USER_STACK - 10 * PAGESIZE), 10 * PAGESIZE, MEM_USER | MEM_WRITE);
 
     u8 codeSegment = 0x8;
     u8 dataSegment = 0x10;
 
-    if (privilege == TaskPrivilegeUser) {
+    if (info->privilege == TaskPrivilegeUser) {
         *(--stack) = 0x23;
         *(--stack) = USER_STACK;
         codeSegment = 0x18 | 0x3;
@@ -91,16 +104,15 @@ struct Task *createTask(struct PageDirectory *pageDirectory, u32 entryPoint, enu
 
     *(--stack) = 0x0202;
 
-    *(--stack) = codeSegment; // cs
-    *(--stack) = entryPoint; // eip
+    *(--stack) = codeSegment;       // cs
+    *(--stack) = info->entryPoint;  // eip
 
-    *(--stack) = 0;               // error code
-    *(--stack) = 0;               // Interrupt nummer
+    *(--stack) = 0;                 // error code
+    *(--stack) = 0;                 // Interrupt nummer
 
-    // General purpose registers w/o esp
-    *(--stack) = ac;            // eax. Used to give argc to user programs.
-    *(--stack) = (u32) av; // ecx. Used to give argv to user programs.
-    *(--stack) = (u32) env;
+    *(--stack) = info->ac;                // eax. Used to give argc to user programs.
+    *(--stack) = (u32) info->av;    // ecx. Used to give argv to user programs.
+    *(--stack) = (u32) info->env;
     *(--stack) = 0;
     *(--stack) = 0;
     *(--stack) = 0;
@@ -121,8 +133,9 @@ static const char **copyArrayIntoUserland(struct PageDirectory *pd, u32 position
     char **nnArgv = 0;
     char *nArgv[ac];
 
-    for (u32 i = 0; i < ac; i++)
+    for (u32 i = 0; i < ac; i++) {
         nArgv[i] = strdup(av[i]);
+    }
 
     cli();
     pagingSwitchPageDirectory(pd);
@@ -133,7 +146,8 @@ static const char **copyArrayIntoUserland(struct PageDirectory *pd, u32 position
         size_t argsize = strlen(nArgv[i]) + 1;
         nnArgv[i] = addr;
         memcpy(nnArgv[i], nArgv[i], argsize);
-        addr += argsize;
+        nnArgv[i][argsize] = '\0';
+        addr += argsize + 1;
     }
 
     pagingSwitchPageDirectory(currentTask->pageDirectory);
@@ -212,7 +226,19 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
         return 0;
 
     LOG("task: add task (entry: %X)\n", entryPrg);
-    struct Task *task = createTask(pageDirectory, entryPrg, TaskPrivilegeUser, ac, newAv, newEnv, currentTask->currentDir, console);
+    struct TaskCreator taskInfo = {
+            .pageDirectory = pageDirectory,
+            .entryPoint = entryPrg,
+            .privilege = TaskPrivilegeUser,
+            .ac = ac,
+            .av = newAv,
+            .env = newEnv,
+            .dir = currentTask->currentDir,
+            .console = console,
+            .cmdline = av[0]
+    };
+
+    struct Task *task = createTask(&taskInfo);
     if (!task)
         return 0;
 
@@ -247,6 +273,7 @@ int taskKill(struct Task *task) {
             koDestroy(obj);
     }
 
+    kfree((void*)task->cmdline);
     kfree(task->kernelStack - KERNEL_STACK_SIZE);
 
     LOG("[TASK] destroy path curDir\n");

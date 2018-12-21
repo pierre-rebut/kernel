@@ -5,7 +5,7 @@
 #include "io/serial.h"
 #include "io/keyboard.h"
 #include "io/pit.h"
-#include "io/kfilesystem.h"
+#include "io/fs/kfilesystem.h"
 #include "io/terminal.h"
 #include "syscall.h"
 #include "io/libvga.h"
@@ -14,8 +14,8 @@
 
 #include <stdio.h>
 
-//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
-#define LOG(x, ...)
+#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+//#define LOG(x, ...)
 
 #define NB_SYSCALL 27
 
@@ -322,7 +322,7 @@ static void sys_closedir(struct esp_context *ctx) {
 }
 
 static void sys_mount(struct esp_context *ctx) {
-    LOG("mount: %c -> %s (%s)\n", ctx->ebx, (char *) ctx->edx, (char *) ctx->ecx);
+    LOG("mount: %s -> %c (%s)\n", (char *) ctx->edx, ctx->ebx, (char *) ctx->ecx);
 
     char *data = NULL;
     struct FsPath *file = NULL;

@@ -6,11 +6,7 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-T${CMAKE_CURRENT_SOUR
 set_property(SOURCE bin-entry.S PROPERTY LANGUAGE C)
 add_library(bin-entry bin-entry.S)
 
-add_subdirectory(chichehunter)
-add_subdirectory(chichepong)
-add_subdirectory(chichevaders)
-add_subdirectory(perrodlauncher)
-add_subdirectory(skate)
-add_subdirectory(yakanoid)
+add_subdirectory(roms)
 add_subdirectory(minishell)
 add_subdirectory(ls)
+add_subdirectory(mount)

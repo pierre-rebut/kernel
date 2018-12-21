@@ -172,7 +172,7 @@ kfs_write_files(int romfd, char **files, size_t nb_files, size_t blkoff) {
     for (size_t i = 0; i < nb_files; ++i, inode_off++) {
         int fd = open(files[i], O_RDONLY);
 
-        if (!fd)
+        if (fd == -1)
             err(1, "unable to open \"%s\"", files[i]);
 
         struct stat st;

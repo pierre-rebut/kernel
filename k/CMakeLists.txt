@@ -12,7 +12,7 @@ set(K_FILES
         sys/interrupt-handler.c
         k.c
         io/keyboard.c io/keyboard.h
-        io/kfilesystem.c io/kfilesystem.h
+        io/fs/kfilesystem.c io/fs/kfilesystem.h
         io/libvga.c io/libvga.h
         sys/paging.c sys/paging.h
         sys/physical-memory.c sys/physical-memory.h
@@ -27,12 +27,12 @@ set(K_FILES
         utils/list.c include/list.h
         io/ata.c io/ata.h
         sys/console.c sys/console.h
-        sys/kobject.c sys/kobject.h)
+        sys/kobject.c sys/kobject.h io/fs/procfilesystem.c io/fs/procfilesystem.h)
 
 set(K_LIBS
         utils/kprintf.c
         utils/kputs.c
-        utils/memmove.c utils/string.c utils/mem.c utils/stringn.c)
+        utils/memmove.c utils/string.c utils/mem.c utils/stringn.c utils/stdlib.c include/stdlib.h)
 
 set_property(SOURCE crt0.S PROPERTY LANGUAGE C)
 set_property(SOURCE sys/interrupt-entry.S PROPERTY LANGUAGE C)

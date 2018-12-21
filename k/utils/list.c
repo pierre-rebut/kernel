@@ -65,7 +65,7 @@ u32 listCountElem(struct List *lst) {
 }
 
 void *listGetNextElem(struct List *lst) {
-    if (lst->begin == NULL)
+    if (!lst || lst->begin == NULL)
         return NULL;
 
     if (lst->cur->next == NULL)
@@ -74,4 +74,21 @@ void *listGetNextElem(struct List *lst) {
         lst->cur = lst->cur->next;
 
     return lst->cur->data;
+}
+
+void *listGetElemByIndex(struct List *lst, u32 index) {
+    if (!lst)
+        return NULL;
+
+    u32 i = 0;
+    struct ListElem *elem = lst->begin;
+
+    while (elem) {
+        if (i == index)
+            return elem->data;
+
+        elem = elem->next;
+        i++;
+    }
+    return NULL;
 }

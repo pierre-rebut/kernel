@@ -5,20 +5,23 @@
 #include <string.h>
 #include <sys/allocator.h>
 
-char *strdup(const char *str) {
-    if (!str)
+char *strdup(const char *s) {
+    if (!s)
         return NULL;
 
-    u32 size = strlen(str);
-    char *newStr = kmalloc(sizeof(char) * size, 0, "strdup");
-    if (!newStr)
+    char *r = NULL;
+    char *p = NULL;
+
+    r = kmalloc(strlen(s) + 1, 0, "strdup");
+    if (!r)
         return NULL;
 
-    u32 i;
-    for (i = 0; i < size; i++)
-        newStr[i] = str[i];
-    newStr[i] = '\0';
-    return newStr;
+    for (p = r; *s != '\0'; s++, p++)
+        *p = *s;
+
+    *p = '\0';
+
+    return (r);
 }
 
 int strcmp(const char *s1, const char *s2) {
@@ -87,4 +90,16 @@ char *strtok(char *s, const char *delim) {
     if (*lasts != 0)
         *lasts++ = 0;
     return s;
+}
+
+char isspace(char c) {
+    if (c == ' '
+        || c == '\f'
+        || c == '\n'
+        || c == '\r'
+        || c == '\t'
+        || c == '\v')
+        return 1;
+
+    return 0;
 }
