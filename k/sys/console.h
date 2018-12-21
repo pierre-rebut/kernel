@@ -17,7 +17,7 @@ enum ConsoleMode {
 struct CirBuffer {
     int readPtr;
     int writePtr;
-    int buffer[CONSOLE_BUFFER_SIZE];
+    char buffer[CONSOLE_BUFFER_SIZE];
 };
 
 struct Console {
@@ -44,7 +44,7 @@ void consoleKeyboardHandler(int code);
 
 char isConsoleReadReady(struct Console *console);
 
-int consoleGetkey(struct Console *console);
+char consoleGetkey(struct Console *console);
 
 s32 readKeyboardFromConsole(void *entryData, void *buf, u32 size);
 

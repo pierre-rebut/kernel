@@ -12,8 +12,8 @@
 #define LOG(x, ...)
 
 static char *currentKeyMap = NULL;
-static char keyMap[] = "&\0\"'(-\0_\0\0)=\r\tazertyuiop^$\n\0qsdfghjklm\0\0\0*wxcvbn,;:!\0\0\0 ";
-static char keyMapShift[] = "1234567890\0+\r\tAZERTYUIOP\0\0\n\0QSDFGHJKLM%\0\0\0WXCVBN?./\0";
+static char keyMap[] = "&\0\"'(-\0_\0\0)=\0\tazertyuiop^$\n\0qsdfghjklm\0\0\0*wxcvbn,;:!\0\0\0 ";
+static char keyMapShift[] = "1234567890\0+\0\tAZERTYUIOP\0\0\n\0QSDFGHJKLM%\0\0\0WXCVBN?./\0";
 
 static struct Console *consoleLists = NULL;
 struct Console *activeConsole = NULL;
@@ -77,26 +77,37 @@ void setActiveConsole(struct Console *console) {
 void consoleKeyboardHandler(int code) {
     LOG("keyboard: %d\n", code);
 
-    if (code == 91) {
+    int release = code >> 7;
+    code &= ~(1 << 7);
+
+    if (code == 91 && !release) {
         taskKill(activeConsole->task);
         return;
     }
 
-    if (code == 42) {
-        currentKeyMap = (currentKeyMap == keyMap ? keyMapShift : keyMap);
+    if (code == 42 || code == 54) {
+        currentKeyMap = (release ? keyMap : keyMapShift);
         return;
     }
+
+    if (release)
+        return;
 
     struct CirBuffer *val = &activeConsole->readBuffer;
 
     if ((val->writePtr + 1) % CONSOLE_BUFFER_SIZE == val->readPtr)
         val->readPtr = (val->readPtr + 1) % CONSOLE_BUFFER_SIZE;
 
-    val->buffer[val->writePtr] = code;
+    char c = currentKeyMap[code - 2];
+    val->buffer[val->writePtr] = c;
     val->writePtr = (val->writePtr + 1) % CONSOLE_BUFFER_SIZE;
 
-    if (activeConsole->mode == ConsoleModeText)
-        writeTerminal(currentKeyMap[code - 2]);
+    if (activeConsole->mode == ConsoleModeText) {
+        if (c == 0)
+            writeStringTerminal("^@", 2);
+        else
+            writeTerminal(c);
+    }
 }
 
 char isConsoleReadReady(struct Console *console) {
@@ -104,20 +115,20 @@ char isConsoleReadReady(struct Console *console) {
 
     int tmp = val->readPtr;
     while (tmp != val->writePtr) {
-        if (val->buffer[tmp] == 28)
+        if (val->buffer[tmp] == '\n')
             return 1;
         tmp = (tmp + 1) % CONSOLE_BUFFER_SIZE;
     }
     return 0;
 }
 
-int consoleGetkey(struct Console *console) {
+char consoleGetkey(struct Console *console) {
     struct CirBuffer *val = &console->readBuffer;
 
     if (val->readPtr == val->writePtr)
         return -1;
 
-    int tmp = val->buffer[val->readPtr];
+    char tmp = val->buffer[val->readPtr];
     val->readPtr = (val->readPtr + 1) % CONSOLE_BUFFER_SIZE;
     return tmp;
 }
@@ -131,10 +142,10 @@ s32 readKeyboardFromConsole(void *entryData, void *buf, u32 size) {
 
     char *str = (char *) buf;
     u32 read = 0;
-    int key;
+    char key;
 
     while ((key = consoleGetkey(console)) != -1 && read < size) {
-        str[read] = currentKeyMap[key - 2];
+        str[read] = key;
         read++;
     }
 
