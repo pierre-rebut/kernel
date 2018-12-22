@@ -131,6 +131,7 @@ enum e_mouse_codes {
 #define SYSCALL_READDIR         24
 #define SYSCALL_MOUNT           25
 #define SYSCALL_UMOUNT          26
+#define SYSCALL_MOUNT2          27
 
 int exit(int value);
 void *sbrk(ssize_t increment);
@@ -160,5 +161,6 @@ int closedir(int repertoire);
 struct dirent* readdir(int repertoire);
 int mount(char id, const char *fstype, const char *file);
 int umount(char id);
+int mount2(char id, const char *fstype, int unit);
 
 #endif

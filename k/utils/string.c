@@ -103,3 +103,11 @@ char isspace(char c) {
 
     return 0;
 }
+
+void strtoupper(char *str) {
+    while (*str) {
+        if (*str >= 'a' && *str <= 'z')
+            *str = *str - 32;
+        str++;
+    }
+}

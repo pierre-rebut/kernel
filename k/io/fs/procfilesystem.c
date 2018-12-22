@@ -131,17 +131,15 @@ static struct dirent *procReaddir(struct FsPath *path, struct dirent *result) {
         ksprintf(result->d_name, "%s", "mounts");
         result->d_type = FT_FILE;
         result->d_ino = (u32) -1;
-        procPath->data++;
-        return result;
+    } else {
+        struct Task *task = schedulerGetTaskByIndex((u32) procPath->data);
+        if (!task)
+            return NULL;
+
+        ksprintf(result->d_name, "%u", task->pid);
+        result->d_ino = (u32) procPath->data;
+        result->d_type = FT_FILE;
     }
-
-    struct Task *task = schedulerGetTaskByIndex((u32)procPath->data);
-    if (!task)
-        return NULL;
-
-    ksprintf(result->d_name, "%u", task->pid);
-    result->d_ino = (u32) procPath->data;
-    result->d_type = FT_FILE;
 
     procPath->data++;
     return result;
@@ -153,15 +151,20 @@ static int procReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
     if (!procPath || procPath->type != PP_FILE || blocknum > 0)
         return -1;
 
-    struct Task *task = getTaskByPid((u32)procPath->data);
-    if (!task)
-        return -1;
+    int read;
+    if (procPath->data < 0) {
+        read = 0;
+    } else {
+        struct Task *task = getTaskByPid((u32) procPath->data);
+        if (!task)
+            return -1;
 
-    int read = ksprintf(buffer, "cmdline:%s\nprivilege:%s\nevent:%d,%lu,%u\n",
-                        (task->cmdline ? task->cmdline : "NONE"),
-                        (task->privilege == TaskPrivilegeKernel ? "KERNEL" : "USER"),
-                        task->event.type, task->event.timer, task->event.arg
-    );
+        read = ksprintf(buffer, "cmdline:%s\nprivilege:%s\nevent:%d,%lu,%u\n",
+                            (task->cmdline ? task->cmdline : "NONE"),
+                            (task->privilege == TaskPrivilegeKernel ? "KERNEL" : "USER"),
+                            task->event.type, task->event.timer, task->event.arg
+        );
+    }
 
     return read;
 }

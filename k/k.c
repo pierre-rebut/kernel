@@ -5,6 +5,7 @@
 #include <sys/syscall.h>
 #include <include/multiboot.h>
 #include <io/fs/procfilesystem.h>
+#include <io/fs/isofilesystem.h>
 
 #include "io/serial.h"
 #include "sys/gdt.h"
@@ -60,6 +61,9 @@ static int k_init(const multiboot_info_t *info) {
     kprintf("Init Console\n");
     initConsole();
 
+    kprintf("Init IsoFileSystem\n");
+    initIsoFileSystem();
+
     kprintf("Init KFileSystem\n");
     initKFileSystem();
 
@@ -88,8 +92,8 @@ static int k_init(const multiboot_info_t *info) {
     kprintf("Start listening interruption\n");
     sti();
 
-    //kprintf("Init ATAPI\n");
-   // ata_init();
+    kprintf("Init ATAPI\n");
+    ata_init();
     return 0;
 }
 

@@ -27,7 +27,7 @@ set(K_FILES
         utils/list.c include/list.h
         io/ata.c io/ata.h
         sys/console.c sys/console.h
-        sys/kobject.c sys/kobject.h io/fs/procfilesystem.c io/fs/procfilesystem.h)
+        sys/kobject.c sys/kobject.h io/fs/procfilesystem.c io/fs/procfilesystem.h io/fs/isofilesystem.c io/fs/isofilesystem.h io/fs/iso.h)
 
 set(K_LIBS
         utils/kprintf.c

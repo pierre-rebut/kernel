@@ -169,3 +169,7 @@ int mount(char id, const char *fstype, const char *file) {
 int umount(char id) {
     return syscall1(SYSCALL_UMOUNT, (u32) id);
 }
+
+int mount2(char id, const char *fstype, int unit) {
+    return syscall3(SYSCALL_MOUNT2, (u32) id, (u32) fstype, (u32) unit);
+}

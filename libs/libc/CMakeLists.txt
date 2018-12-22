@@ -11,6 +11,7 @@ set(LIBC_SOURCE
         strcpy.c
         strcmp.c
         strlen.c
-        strncpy.c strcat.c)
+        strncpy.c strcat.c
+        stdlib.c)
 
 add_library(c STATIC ${LIBC_SOURCE})

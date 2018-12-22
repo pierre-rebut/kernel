@@ -46,4 +46,6 @@ char *strtok(char *s, const char *delim);
 u32 strcspn(const char *s1, register const char *s2);
 char isspace(char c);
 
+void strtoupper(char *str);
+
 #endif				/* !STRING_H_ */
