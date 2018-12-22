@@ -94,6 +94,23 @@ static int k_init(const multiboot_info_t *info) {
 
     kprintf("Init ATAPI\n");
     ata_init();
+
+    kprintf("Mount available ATAPI device\n");
+    char mountId = 'C';
+    struct Fs *isofs = fsGetFileSystemByName("iso");
+    for (int i = 0; i < 4; i++) {
+        u32 nblocks = 0;
+        int blocksize = 0;
+        char longname[256];
+
+        if (ata_probe(i, &nblocks, &blocksize, longname) == 1) {
+            kSerialPrintf("Mounting %s (%d) on %c\n", longname, i, mountId);
+            if (fsVolumeOpen(mountId, isofs, (void*) i) == NULL)
+                kSerialPrintf("Mounting failed\n");
+            else
+                mountId++;
+        }
+    }
     return 0;
 }
 
@@ -152,9 +169,9 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
             NULL
     };
     const char *env[] = {
-            "PATH=A:/",
-            "HOME=/",
-            "PWD=/",
+            "PATH=A:",
+            "HOME=A:",
+            "PWD=A:",
             NULL
     };
 

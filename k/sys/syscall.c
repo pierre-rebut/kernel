@@ -163,7 +163,7 @@ static void sys_open(struct esp_context *ctx) {
 
     currentTask->objectList[fd] = koCreate(KO_FS, path, ctx->ecx);
     ctx->eax = (u32) fd;
-    LOG("open: %s\n", (char *) ctx->ebx);
+    LOG("open: %s (%d)\n", (char *) ctx->ebx, fd);
 }
 
 static void sys_read(struct esp_context *ctx) {
@@ -193,7 +193,8 @@ static void sys_seek(struct esp_context *ctx) {
         ctx->eax = (u32) -1;
         return;
     }
-    ctx->eax = 0;
+
+    ctx->eax = (u32) koSeek(obj, (off_t)ctx->ecx, (int)ctx->edx);
 }
 
 static void sys_close(struct esp_context *ctx) {
@@ -295,7 +296,7 @@ static void sys_opendir(struct esp_context *ctx) {
         return;
     }
 
-    currentTask->objectList[fd] = koCreate(Ko_FS_FOLDER, path, 0);
+    currentTask->objectList[fd] = koCreate(KO_FS_FOLDER, path, 0);
     LOG("opendir: %s (%d) refcount: %u\n", (char *) ctx->ebx, fd, path->refcount);
     ctx->eax = (u32) fd;
 }

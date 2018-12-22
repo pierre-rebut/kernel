@@ -12,8 +12,8 @@
 #include <sys/allocator.h>
 #include <string.h>
 
-#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
-//#define LOG(x, ...)
+//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+#define LOG(x, ...)
 
 static char checkBlockChecksum(struct kfs_block *block) {
     u32 cksum = block->cksum;

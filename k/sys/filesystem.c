@@ -7,13 +7,12 @@
 #include <sys/physical-memory.h>
 #include <task.h>
 #include <include/stdio.h>
-#include "filesystem.h"
 
 static struct Fs *fsList = NULL;
-static struct FsVolume *fsVolumeList = NULL;
+struct FsVolume *fsVolumeList = NULL;
 
-#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
-//#define LOG(x, ...)
+//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+#define LOG(x, ...)
 
 struct FsPath *fsResolvePath(const char *path) {
     if (path[0] == '/') {
@@ -197,53 +196,51 @@ int fsReadFile(struct FsPath *file, char *buffer, u32 length, u32 offset) {
     if (!temp)
         return -1;
 
-    int blocknum = offset / bs;
+    u32 blocknum = offset / bs;;
+    int readSize;
+    int actual = 0;
 
-    while (length > 0) {
-        int actual = 0;
+    LOG("[FS] read start (offset: %u, blocknum: %u, length: %u)\n", offset, blocknum, length);
+
+    do {
+
+        readSize = file->volume->fs->readBlock(file, temp, blocknum);
+        if (readSize <= 0)
+            goto failure;
 
         if (offset % bs) {
-            LOG("here i am 1\n");
-            actual = file->volume->fs->readBlock(file, temp, blocknum);
-            if (actual <= 0) {
-                LOG("[FS] readFile failure 1: %d\n", actual);
-                goto failure;
-            }
-            actual = MIN(bs - offset % bs,(u32) actual);
+            LOG("[FS] offset % bs: %d\n", readSize - offset % bs);
+            actual = MIN(readSize - offset % bs, (u32) readSize);
             actual = MIN(actual, (int) length);
-            memcpy(buffer, &temp[offset % bs], (u32) actual);
-            LOG("here i am 1: %d\n", actual);
+
+            if (actual > 0)
+                memcpy(buffer, &temp[offset % bs], (u32) actual);
         } else if (length >= bs) {
-            LOG("here i am 2\n");
-            actual = file->volume->fs->readBlock(file, buffer, blocknum);
-            if (actual <= 0) {
-                LOG("[FS] readFile failure 2: %d - %d\n", actual, blocknum);
-                goto failure;
-            }
-            LOG("here i am 2: %d\n", actual);
+            LOG("[FS] length >= bs\n");
+            memcpy(buffer, temp, (u32) readSize);
+            actual = readSize;
         } else {
-            LOG("here i am 3\n");
-            actual = file->volume->fs->readBlock(file, temp, blocknum);
-            if (actual <= 0) {
-                LOG("[FS] readFile failure 3: %d\n", actual);
-                goto failure;
-            }
-            actual = MIN(actual, (int) length);
+            LOG("[FS] length < bs\n");
+            actual = MIN(readSize, (int) length);
             memcpy(buffer, temp, (u32) actual);
-            LOG("here i am 3: %d\n", actual);
         }
+
+        LOG("[FS] actual = %d\n", actual);
 
         buffer += actual;
         length -= actual;
         offset += actual;
-        blocknum++;
         total += actual;
-    }
+        blocknum++;
+
+    } while (length > 0 && actual && readSize == (int) bs);
 
     kfree(temp);
+    LOG("[FS] read end: %d\n", total);
     return total;
 
     failure:
+    LOG("[FS] read failure: %d\n", readSize);
     kfree(temp);
     if (total == 0)
         return -1;

@@ -10,8 +10,9 @@
 
 enum KObjectType {
     KO_FS,
-    Ko_FS_FOLDER,
-    Ko_CONS
+    KO_FS_FOLDER,
+    KO_CONS,
+    KO_ERROR
 };
 
 struct Kobject {
@@ -25,5 +26,6 @@ struct Kobject *koCreate(enum KObjectType type, void *data, int mode);
 s32 koRead(struct Kobject *kobject, void *buffer, u32 size);
 s32 koWrite(struct Kobject *kobject, void *buffer, u32 size);
 int koDestroy(struct Kobject *kobject);
+off_t koSeek(struct Kobject *obj, off_t offset, int whence);
 
 #endif //KERNEL_KOBJECT_H

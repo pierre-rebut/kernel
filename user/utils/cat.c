@@ -21,9 +21,9 @@ int main(int ac, char **av) {
     int size;
 
     while ((size = read(fd, buffer, 4095)) > 0) {
-        printf("test: %d\n", size);
+        //printf("test: %d\n", size);
         buffer[size] = '\0';
-        //printf("%s", buffer);
+        write(1, buffer, size);
     }
 
     close(fd);

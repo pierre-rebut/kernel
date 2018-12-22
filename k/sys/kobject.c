@@ -3,6 +3,7 @@
 //
 
 #include <io/terminal.h>
+#include <io/serial.h>
 #include "kobject.h"
 #include "allocator.h"
 
@@ -29,7 +30,7 @@ s32 koRead(struct Kobject *obj, void *buffer, u32 size) {
                 obj->offset += actual;
             return actual;
         }
-        case Ko_CONS:
+        case KO_CONS:
             return readKeyboardFromConsole(obj->data, buffer, size);
         default:
             return -1;
@@ -47,8 +48,10 @@ s32 koWrite(struct Kobject *obj, void *buffer, u32 size) {
                 obj->offset += actual;
             return actual;
         }
-        case Ko_CONS:
+        case KO_CONS:
             return writeStringTerminal(buffer, size);
+        case KO_ERROR:
+            return writeSerial(buffer, size);
         default:
             return -1;
     }
@@ -56,7 +59,7 @@ s32 koWrite(struct Kobject *obj, void *buffer, u32 size) {
 
 int koDestroy(struct Kobject *obj) {
     switch (obj->type) {
-        case Ko_FS_FOLDER:
+        case KO_FS_FOLDER:
         case KO_FS:
             fsPathDestroy(obj->data);
             break;
@@ -66,4 +69,44 @@ int koDestroy(struct Kobject *obj) {
 
     kfree(obj);
     return 0;
+}
+
+off_t koSeek(struct Kobject *obj, off_t offset, int whence) {
+    if (obj->type != KO_FS)
+        return -1;
+
+    u32 fileSize = ((struct FsPath*)obj->data)->size;
+    if (fileSize == 0)
+        return 0;
+
+    switch (whence) {
+        case SEEK_SET:
+            if (offset < 0)
+                return -1;
+
+            if ((u32) offset > fileSize)
+                offset = fileSize;
+
+            obj->offset = (u32) offset;
+            break;
+        case SEEK_END:
+            if (offset < 0)
+                return -1;
+
+            if ((u32) offset > fileSize)
+                obj->offset = 0;
+            else
+                obj->offset = fileSize - (u32) offset;
+            break;
+        case SEEK_CUR:
+            if (obj->offset + offset > fileSize)
+                obj->offset = fileSize;
+            else
+                obj->offset += (u32) offset;
+            break;
+        default:
+            return -1;
+    }
+
+    return obj->offset;
 }

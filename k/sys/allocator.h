@@ -27,4 +27,7 @@ int initAllocator();
 void *kmalloc(u32 size, u32 allign, const char *comment);
 void kfree(void *alloc);
 
+u32 getTotalPagedAlloc();
+u32 getTotalUsedAlloc();
+
 #endif //KERNEL_ALLOCATOR2_H

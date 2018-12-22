@@ -1,0 +1,76 @@
+/*
+*  license and disclaimer for the use of this source code as per statement below
+*  Lizenz und Haftungsausschluss f�r die Verwendung dieses Sourcecodes siehe unten
+*/
+
+#include "time.h"
+#include <io/cmos.h>
+#include <stdio.h>
+
+#define BCDtoDecimal(x) (u8)((x >> 4) * 10 + (x & 0xF))
+
+void cmosTime(struct tm *ptm) {
+    ptm->second = BCDtoDecimal(cmosRead(CMOS_SECOND));
+    ptm->minute = BCDtoDecimal(cmosRead(CMOS_MINUTE));
+    ptm->hour = BCDtoDecimal(cmosRead(CMOS_HOUR));
+    ptm->dayofmonth = BCDtoDecimal(cmosRead(CMOS_DAYOFMONTH));
+    ptm->month = BCDtoDecimal(cmosRead(CMOS_MONTH));
+    ptm->year = BCDtoDecimal(cmosRead(CMOS_YEAR));
+    ptm->century = BCDtoDecimal(cmosRead(CMOS_CENTURY));
+}
+
+static const u16 days[12] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
+
+static int isLeapyear(u16 year) {
+    return (year % 4 == 0) && ((year % 100 != 0) || (year % 400 == 0));
+}
+
+static u8 calculateWeekday(u16 year, u8 month, int day) {
+    day += 6;
+    day += (year * 146097) / 400 + days[month - 1];
+
+    if (isLeapyear(year) && (month < 2 || (month == 2 && day <= 28)))
+        day--;
+
+    return (day % 7 + 1);
+}
+
+static void writeInt(u16 val, char *dest) {
+    if (val < 10)
+        ksprintf(dest, "0%u", val);
+    else
+        ksprintf(dest, "%u", val);
+}
+
+static const char *const weekdays[] = {
+        "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
+};
+
+static const char *const months[] = {
+        "January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
+        "November", "December"
+};
+
+int getCurrentDateAndTime(char *pStr) {
+    static struct tm pct = {.dayofmonth = 0xFF};
+    static char dayofmonth[3];
+
+    u8 temp = pct.dayofmonth;
+    cmosTime(&pct);
+
+    if (temp != pct.dayofmonth) {
+        pct.weekday = calculateWeekday(100 * pct.century + pct.year, pct.month, pct.dayofmonth);
+
+        writeInt(pct.dayofmonth, dayofmonth);
+    }
+    char hour[3], minute[3], second[3];
+    writeInt(pct.hour, hour);
+    writeInt(pct.minute, minute);
+    writeInt(pct.second, second);
+
+    int read = ksprintf(pStr, "%s, %s %s, %u, %s:%s:%s", weekdays[pct.weekday - 1], months[pct.month - 1], dayofmonth,
+                        pct.century * 100 + pct.year, hour, minute, second);
+
+    pStr[read] = '\0';
+    return read + 1;
+}

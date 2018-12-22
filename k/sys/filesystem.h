@@ -96,4 +96,6 @@ int fsMkdir(struct FsPath *path, const char *name);
 int fsMkfile(struct FsPath *path, const char *name);
 int fsPathDestroy(struct FsPath *path);
 
+extern struct FsVolume *fsVolumeList;
+
 #endif //KERNEL_FILESYSTEM_H

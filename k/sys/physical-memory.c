@@ -9,8 +9,8 @@
 #include "physical-memory.h"
 #include "allocator.h"
 
-#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
-//#define LOG(x, ...)
+//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+#define LOG(x, ...)
 
 static u32 *physicalMemTable = NULL;
 static u32 physicalMemSize;
@@ -72,7 +72,6 @@ u32 initPhysicalMemory(const multiboot_info_t *info) {
 }
 
 u32 allocPhysicalMemory() {
-
     for (u32 i = 0; i < physicalMemSize; i++) {
         if (physicalMemTable[i] == 0xFFFFFFFF)
             continue;
@@ -92,4 +91,24 @@ void freePhysicalMemory(u32 allocAddr) {
     u32 i = allocAddr / PAGESIZE;
     LOG("[PHYMEM] free physical memory: %X\n", i);
     physicalMemTable[i] &= ~(1 << i / 32);
+}
+
+u32 getTotalPhysMemory() {
+    return physicalMemSize * PAGESIZE * 32;
+}
+
+u32 getTotalUsedPhysMemory() {
+    u32 total = 0;
+    for (u32 i = 0; i < physicalMemSize; i++) {
+        if (physicalMemTable[i] == 0xFFFFFFFF)
+            total += 32 * PAGESIZE;
+        else if (physicalMemTable[i] == 0)
+            continue;
+        else {
+            u32 tmp = physicalMemTable[i];
+            for (; tmp; total++)
+                tmp &= tmp - 1;
+        }
+    }
+    return total;
 }

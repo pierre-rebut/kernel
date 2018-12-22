@@ -85,12 +85,14 @@ static int iso_dirent_read_block(struct FsPath *d, char *buffer, u32 blocknum) {
 }
 
 static struct FsPath *iso_dirent_lookup(struct FsPath *dir, const char *name) {
+    LOG("[ISO] dirent lookup\n");
     struct iso_dirent *cddir = dir->privateData;
     char *data = iso_dirent_load(dir);
     if (!data)
         return 0;
 
     int data_length = cddir->length;
+    LOG("[ISO] dataLength: %d\n", data_length);
 
     struct iso_9660_directory_entry *d = (struct iso_9660_directory_entry *) data;
     char *upper_name = strdup(name);
@@ -99,6 +101,7 @@ static struct FsPath *iso_dirent_lookup(struct FsPath *dir, const char *name) {
         return NULL;
     }
     strtoupper(upper_name);
+    LOG("[ISO] strtoupper: %s\n", upper_name);
 
     while (data_length > 0 && d->descriptor_length > 0) {
         fix_filename(d->ident, d->ident_length);
@@ -111,6 +114,7 @@ static struct FsPath *iso_dirent_lookup(struct FsPath *dir, const char *name) {
 
             kfree(data);
             kfree(upper_name);
+            LOG("[ISO] dirent found\n");
             return iso_dirent_as_dirent(r);
         }
 
@@ -121,6 +125,7 @@ static struct FsPath *iso_dirent_lookup(struct FsPath *dir, const char *name) {
     kfree(data);
     kfree(upper_name);
 
+    LOG("[ISO] dirent not found\n");
     return 0;
 }
 
@@ -214,7 +219,7 @@ static struct FsVolume *iso_volume_open(void *data) {
         atapi_read(unit, d, 1, j + 16);
         // XXX check reuslt
 
-        if (strncmp(d->magic, "CD001", 5))
+        if (strncmp(d->magic, "CD001", 5) != 0)
             continue;
 
         if (d->type == ISO_9660_VOLUME_TYPE_PRIMARY) {
@@ -223,7 +228,7 @@ static struct FsVolume *iso_volume_open(void *data) {
             cdv->total_sectors = d->nsectors_little;
             cdv->unit = unit;
 
-            LOG("isofs: mounted filesystem on unit %d\n", cdv->unit);
+            LOG("isofs: mounted filesystem on unit %d, %d %d, %d\n", cdv->unit, cdv->root_sector, cdv->root_length, cdv->total_sectors);
 
             kfree(d);
             return iso_volume_as_volume(cdv);

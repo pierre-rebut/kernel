@@ -89,7 +89,7 @@ struct ata_count ata_stats() {
 static void ata_interrupt(struct esp_context *ctx) {
     (void)ctx;
     ata_interrupt_active = 1;
-    LOG("ata interrupt\n");
+    LOG("[ATA] interrupt\n");
     // process_wakeup_all(&queue);
 }
 
@@ -178,10 +178,8 @@ static int ata_begin(int id, int command, int nblocks, int offset) {
     int ready;
     if (command == ATAPI_COMMAND_IDENTIFY) {
         ready = ata_wait(id, ATA_STATUS_BSY, 0);
-        LOG("atapi begin ready: %d\n", ready);
     } else {
         ready = ata_wait(id, ATA_STATUS_BSY | ATA_STATUS_RDY, ATA_STATUS_RDY);
-        LOG("ata begin ready: %d\n", ready);
     }
 
     if (!ready)
@@ -318,9 +316,11 @@ static int atapi_read_unlocked(int id, void *buffer, int nblocks, int offset) {
 }
 
 int atapi_read(int id, void *buffer, int nblocks, int offset) {
+    LOG("[ATAPI] read\n");
     int result;
     // mutex_lock(&ata_mutex);
     result = atapi_read_unlocked(id, buffer, nblocks, offset);
+    LOG("[ATAPI] result: %d\n", result);
     // mutex_unlock(&ata_mutex);
     counters.blocks_read[id] += nblocks;
     /*if (current) {
@@ -374,13 +374,10 @@ the the device is simply not connected.
 */
 
 static int ata_identify(int id, int command, void *buffer) {
-    LOG("ata identify: enter\n");
     int result = 0;
     identify_in_progress = 1;
     if (ata_begin(id, command, 0, 0)) {
-        LOG("ata identify: begin %d\n", command);
         if (ata_wait(id, ATA_STATUS_DRQ, ATA_STATUS_DRQ)) {
-            LOG("ata identify: ready\n");
             ata_pio_read(id, buffer, 512);
             result = 1;
         }
@@ -391,7 +388,6 @@ static int ata_identify(int id, int command, void *buffer) {
 
 
 int ata_probe(int id, unsigned int *nblocks, int *blocksize, char *name) {
-    LOG("ata probe\n");
     u16 buffer[256];
     char *cbuffer = (char *) buffer;
 
@@ -438,25 +434,18 @@ int ata_probe(int id, unsigned int *nblocks, int *blocksize, char *name) {
         cbuffer[i] = cbuffer[i + 1];
         cbuffer[i + 1] = t;
     }
-    cbuffer[256] = 0;
+    cbuffer[255] = 0;
 
     /* Vendor supplied name is at byte 54 */
     strcpy(name, &cbuffer[54]);
     name[40] = 0;
 
     /* Get disk size in megabytes*/
-    u32 mbytes = (*nblocks) / KILO * (*blocksize) / KILO;
-
-    kSerialPrintf("ata unit %d: %s %u blocks %u MB %s\n", id, (*blocksize) == 512 ? "ata disk" : "atapi cdrom",
-                   *nblocks, mbytes, name);
+    //u32 mbytes = (*nblocks) / KILO * (*blocksize) / KILO;
     return 1;
 }
 
 void ata_init() {
-    unsigned int nblocks;
-    int blocksize = 0;
-
-    char longname[256];
     for (int i = 0; i < 4; i++) {
         counters.blocks_read[i] = 0;
         counters.blocks_written[i] = 0;
@@ -469,10 +458,4 @@ void ata_init() {
 
     interruptRegister(ATA_IRQ1, &ata_interrupt);
     allowIrq(ATA_IRQ1);
-
-    kprintf("ata: probing devices\n");
-
-    for (int i = 0; i < 4; i++) {
-        ata_probe(i, &nblocks, &blocksize, longname);
-    }
 }

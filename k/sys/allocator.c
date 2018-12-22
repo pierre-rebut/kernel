@@ -360,3 +360,20 @@ void heap_logRegions(void) {
     }
     kSerialPrintf("\n---------------- HEAP REGIONS ----------------\n\n");
 }
+
+u32 getTotalPagedAlloc() {
+    u32 total = 0;
+    for (u32 i = 0; i < regionCount; i++) {
+        total += regions[i].size;
+    }
+    return total;
+}
+
+u32 getTotalUsedAlloc() {
+    u32 total = 0;
+    for (u32 i = 0; i < regionCount; i++) {
+        if (regions[i].reserved)
+            total += regions[i].size;
+    }
+    return total;
+}

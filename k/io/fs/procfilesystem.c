@@ -9,6 +9,9 @@
 #include <task.h>
 #include <stdlib.h>
 #include <sheduler.h>
+#include <sys/physical-memory.h>
+#include <sys/time.h>
+#include <io/pit.h>
 #include "procfilesystem.h"
 
 #define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
@@ -89,15 +92,28 @@ static struct FsPath *procLookup(struct FsPath *path, const char *name) {
         return NULL;
 
     if (*name == 0 || strcmp(name, ".") == 0) {
-        procPath->data = -1;
+        procPath->data = -4;
         procPath->type = PP_FOLDER;
+    } else if (strcmp(name, "mounts") == 0) {
+        procPath->data = -1;
+        procPath->type = PP_FILE;
+    } else if (strcmp(name, "meminfo") == 0) {
+        procPath->data = -2;
+        procPath->type = PP_FILE;
+    } else if (strcmp(name, "time") == 0) {
+        procPath->data = -3;
+        procPath->type = PP_FILE;
+    } else if (strcmp(name, "uptime") == 0) {
+        procPath->data = -4;
+        procPath->type = PP_FILE;
     } else {
         struct Task *task;
 
-        if (strcmp(name, "0") == 0)
+        int pid = atoi(name);
+        if (pid == 0)
             task = &kernelTask;
         else
-            task = getTaskByPid((u32) atoi(name));
+            task = getTaskByPid((u32) pid);
 
         if (task == NULL) {
             kfree(procPath);
@@ -127,10 +143,25 @@ static struct dirent *procReaddir(struct FsPath *path, struct dirent *result) {
     if (!procPath || procPath->type != PP_FOLDER)
         return NULL;
 
-    if (procPath->data == -1) {
-        ksprintf(result->d_name, "%s", "mounts");
+    if (procPath->data < 0) {
+        switch (procPath->data) {
+            case -1:
+                ksprintf(result->d_name, "%s", "mounts");
+                break;
+            case -2:
+                ksprintf(result->d_name, "%s", "meminfo");
+                break;
+            case -3:
+                ksprintf(result->d_name, "%s", "time");
+                break;
+            case -4:
+                ksprintf(result->d_name, "%s", "uptime");
+                break;
+            default:
+                return NULL;
+        }
         result->d_type = FT_FILE;
-        result->d_ino = (u32) -1;
+        result->d_ino = (u32) procPath->data;
     } else {
         struct Task *task = schedulerGetTaskByIndex((u32) procPath->data);
         if (!task)
@@ -153,7 +184,36 @@ static int procReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
 
     int read;
     if (procPath->data < 0) {
-        read = 0;
+        switch (procPath->data) {
+            case -1:
+                read = 0;
+                struct FsVolume *tmpVolume = fsVolumeList;
+                while (tmpVolume) {
+                    read += ksprintf(buffer + read, "[VOLUME]\nmount:%c\ntype:%s\ndevice:%X\nrefcount:%u\nblocksize:%u\n",
+                                     tmpVolume->id, tmpVolume->fs->name, tmpVolume->privateData, tmpVolume->refcount,
+                                     tmpVolume->blockSize
+                    );
+                    tmpVolume = tmpVolume->next;
+                    if (tmpVolume != NULL)
+                        buffer[read++] = '\n';
+                }
+                break;
+            case -2:
+                read = ksprintf(buffer, "[PHYSMEM]\nused:%u\ntotal:%u\n\n[KERNEL MEM]\nused:%u\npaged:%u\n",
+                                getTotalUsedPhysMemory(), getTotalPhysMemory(), getTotalUsedAlloc(), getTotalPagedAlloc()
+                );
+                break;
+            case -3:
+                read = getCurrentDateAndTime(buffer);
+                buffer[read++] = '\n';
+                buffer[read] = '\0';
+                break;
+            case -4:
+                read = ksprintf(buffer, "%lu\n", gettick());
+                break;
+            default:
+                read = -1;
+        }
     } else {
         struct Task *task = getTaskByPid((u32) procPath->data);
         if (!task)

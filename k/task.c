@@ -21,8 +21,8 @@
 #include <io/keyboard.h>
 #include <include/list.h>
 
-#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
-//#define LOG(x, ...)
+//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+#define LOG(x, ...)
 
 static u32 nextPid = 0;
 
@@ -244,9 +244,9 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
 
     console->task = task;
 
-    task->objectList[0] = koCreate(Ko_CONS, console, O_RDONLY);
-    task->objectList[1] = koCreate(Ko_CONS, console, O_WRONLY);
-    task->objectList[2] = koCreate(Ko_CONS, console, O_WRONLY);
+    task->objectList[0] = koCreate(KO_CONS, console, O_RDONLY);
+    task->objectList[1] = koCreate(KO_CONS, console, O_WRONLY);
+    task->objectList[2] = koCreate(KO_ERROR, console, O_WRONLY);
 
     schedulerAddTask(task);
 
