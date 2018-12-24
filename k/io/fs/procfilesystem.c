@@ -2,7 +2,7 @@
 // Created by rebut_p on 21/12/18.
 //
 
-#include <sys/filesystem.h>
+#include <io/fs/filesystem.h>
 #include <sys/allocator.h>
 #include <stdio.h>
 #include <string.h>
@@ -46,7 +46,7 @@ static struct FsPath *procRoot(struct FsVolume *volume) {
 }
 
 static struct FsVolume *procMount(void *data) {
-    LOG("proc utils:\n");
+    LOG("[proc] mount:\n");
     (void) data;
 
     struct FsVolume *procVolume = kmalloc(sizeof(struct FsVolume), 0, "newProcVolume");

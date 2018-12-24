@@ -7,9 +7,10 @@
 #include <string.h>
 #include <task.h>
 #include "ata.h"
-#include "io.h"
-#include "pic.h"
-#include "pit.h"
+#include "io/io.h"
+#include "io/pic.h"
+#include "io/pit.h"
+#include "device.h"
 
 #define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
 //#define LOG(x, ...)
@@ -87,13 +88,13 @@ struct ata_count ata_stats() {
 }
 
 static void ata_interrupt(struct esp_context *ctx) {
-    (void)ctx;
+    (void) ctx;
     ata_interrupt_active = 1;
     LOG("[ATA] interrupt\n");
     // process_wakeup_all(&queue);
 }
 
-void ata_reset(int id) {
+static void ata_reset(int id) {
     outb(ata_base[id] + ATA_CONTROL, ATA_CONTROL_RESET);
     taskWaitEvent(TaskEventTimer, 1);
     outb(ata_base[id] + ATA_CONTROL, 0);
@@ -222,7 +223,7 @@ static int ata_read_unlocked(int id, void *buffer, int nblocks, int offset) {
     return nblocks;
 }
 
-int ata_read(int id, void *buffer, int nblocks, int offset) {
+static int ata_read(int id, void *buffer, int nblocks, int offset) {
     int result;
     // mutex_lock(&ata_mutex);
     result = ata_read_unlocked(id, buffer, nblocks, offset);
@@ -315,7 +316,7 @@ static int atapi_read_unlocked(int id, void *buffer, int nblocks, int offset) {
     return 1;
 }
 
-int atapi_read(int id, void *buffer, int nblocks, int offset) {
+static int atapi_read(int id, void *buffer, int nblocks, int offset) {
     LOG("[ATAPI] read\n");
     int result;
     // mutex_lock(&ata_mutex);
@@ -352,7 +353,7 @@ static int ata_write_unlocked(int id, const void *buffer, int nblocks, int offse
     return nblocks;
 }
 
-int ata_write(int id, const void *buffer, int nblocks, int offset) {
+static int ata_write(int id, const void *buffer, int nblocks, int offset) {
     int result;
     // mutex_lock(&ata_mutex);
     result = ata_write_unlocked(id, buffer, nblocks, offset);
@@ -387,7 +388,7 @@ static int ata_identify(int id, int command, void *buffer) {
 }
 
 
-int ata_probe(int id, unsigned int *nblocks, int *blocksize, char *name) {
+static int ata_probe(int id, unsigned int *nblocks, int *blocksize, char *name) {
     u16 buffer[256];
     char *cbuffer = (char *) buffer;
 
@@ -445,6 +446,22 @@ int ata_probe(int id, unsigned int *nblocks, int *blocksize, char *name) {
     return 1;
 }
 
+static struct DeviceDriver ataDriver = {
+        .name = "ata",
+        .reset = &ata_reset,
+        .read = &ata_read,
+        .write = &ata_write,
+        .probe = &ata_probe
+};
+
+static struct DeviceDriver atapiDriver = {
+        .name = "atapi",
+        .reset = &ata_reset,
+        .read = &atapi_read,
+        .probe = &ata_probe,
+        .multiplier = 0
+};
+
 void ata_init() {
     for (int i = 0; i < 4; i++) {
         counters.blocks_read[i] = 0;
@@ -458,4 +475,7 @@ void ata_init() {
 
     interruptRegister(ATA_IRQ1, &ata_interrupt);
     allowIrq(ATA_IRQ1);
+
+    deviceRegister(&ataDriver);
+    deviceRegister(&atapiDriver);
 }

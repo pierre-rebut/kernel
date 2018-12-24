@@ -5,7 +5,7 @@
 #ifndef KERNEL_KOBJECT_H
 #define KERNEL_KOBJECT_H
 
-#include "filesystem.h"
+#include "io/fs/filesystem.h"
 #include "console.h"
 
 enum KObjectType {

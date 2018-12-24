@@ -108,6 +108,9 @@ void consoleKeyboardHandler(int code) {
         else
             writeTerminal(c);
     }
+
+    if (isConsoleReadReady(activeConsole) == 1)
+        activeConsole->task->event.type = TaskEventNone;
 }
 
 char isConsoleReadReady(struct Console *console) {

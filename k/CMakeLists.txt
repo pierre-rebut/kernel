@@ -22,16 +22,16 @@ set(K_FILES
         sys/syscall.c sys/syscall.h
         task.c task.h
         io/terminal.c io/terminal.h
-        sys/filesystem.c sys/filesystem.h
+        io/fs/filesystem.c io/fs/filesystem.h
         sheduler.c sheduler.h
         utils/list.c include/list.h
-        io/ata.c io/ata.h
+        io/device/ata.c io/device/ata.h
         sys/console.c sys/console.h
         sys/kobject.c sys/kobject.h
         io/fs/procfilesystem.c io/fs/procfilesystem.h
         io/fs/isofilesystem.c io/fs/isofilesystem.h io/fs/iso.h
         io/cmos.c io/cmos.h
-        sys/time.c sys/time.h)
+        sys/time.c sys/time.h sys/mutex.c sys/mutex.h io/device/device.c io/device/device.h io/fs/devfilesystem.c io/fs/devfilesystem.h)
 
 set(K_LIBS
         utils/kprintf.c

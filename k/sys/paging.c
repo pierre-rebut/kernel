@@ -23,6 +23,7 @@ void initPaging(u32 memSize) {
     kernelPageDirectory = kmalloc(sizeof(struct PageDirectory), PAGESIZE, "kernelPageDirectory");
     memset(kernelPageDirectory, 0, sizeof(struct PageDirectory) - 4);
     kernelPageDirectory->physAddr = (u32) kernelPageDirectory;
+    mutexInit(&kernelPageDirectory->mtx);
 
     u32 addr = 0;
     for (u8 i = 0; i < 3; i++) {
@@ -82,6 +83,7 @@ struct PageDirectory *pagingCreatePageDirectory() {
 
     memcpy(pageDirectory, kernelPageDirectory, sizeof(struct PageDirectory) - 4);
     pageDirectory->physAddr = pagingGetPhysAddr(pageDirectory->tablesAddr);
+    mutexInit(&pageDirectory->mtx);
     return pageDirectory;
 }
 
@@ -237,16 +239,20 @@ int pagingAlloc(struct PageDirectory *pd, void *addr, u32 size, enum MEMFLAGS fl
 
     u32 pages = size / PAGESIZE;
 
+    mutexLock(&pd->mtx);
     if (!allocPages(pd, addr, pages)) {
+        mutexUnlock(&pd->mtx);
         kSerialPrintf("allocPages(%X, %X, %u) failed.\n", (u32) pd, (u32) addr, (u32) pages);
         return -2;
     }
 
     if (pagingAllocRec(pd, 0, pages, addr, flags) != 0) {
         freePages(pd, addr, pages);
+        mutexUnlock(&pd->mtx);
         return -3;
     }
 
+    mutexUnlock(&pd->mtx);
     return 0;
 }
 
@@ -264,9 +270,12 @@ void pagingFree(struct PageDirectory *pd, void *virtAddress, u32 size) {
     }
 
     u32 pageNumber = (u32) virtAddress / PAGESIZE;
+    mutexLock(&pd->mtx);
     while (size) {
-        if (!pd->tablesInfo[pageNumber / NB_PAGE] || checkPageAllowed(pd, pageNumber / NB_TABLE) == 0)
+        if (!pd->tablesInfo[pageNumber / NB_PAGE] || checkPageAllowed(pd, pageNumber / NB_TABLE) == 0) {
+            mutexUnlock(&pd->mtx);
             return;
+        }
 
         u32 physAddress = pagingGetPhysAddr(virtAddress);
 
@@ -276,6 +285,7 @@ void pagingFree(struct PageDirectory *pd, void *virtAddress, u32 size) {
         pageNumber++;
         size -= PAGESIZE;
     }
+    mutexUnlock(&pd->mtx);
 }
 
 int pagingSetFlags(struct PageDirectory *pd, void *addr, u32 size, enum MEMFLAGS flags) {
@@ -289,15 +299,18 @@ int pagingSetFlags(struct PageDirectory *pd, void *addr, u32 size, enum MEMFLAGS
         return -1;
     }
 
+    mutexLock(&pd->mtx);
     for (u32 done = 0; done < size / PAGESIZE; done++) {
         u32 pageNumber = (u32) addr / PAGESIZE + done;
         if (!pd->tablesInfo[pageNumber / NB_TABLE] ||
             !(pd->tablesInfo[pageNumber / NB_TABLE]->pages[pageNumber % NB_PAGE] & MEM_ALLOCATED)) {
+            mutexUnlock(&pd->mtx);
             kSerialPrintf("page not init\n");
             return -2;
         }
 
         if (checkPageAllowed(pd, pageNumber / NB_PAGE) == 0) {
+            mutexUnlock(&pd->mtx);
             kSerialPrintf("Alloc page not allowed: %u\n", pageNumber);
             return 0;
         }
@@ -309,5 +322,6 @@ int pagingSetFlags(struct PageDirectory *pd, void *addr, u32 size, enum MEMFLAGS
             invlpg((void *) (pageNumber * PAGESIZE));
     }
 
+    mutexUnlock(&pd->mtx);
     return 0;
 }

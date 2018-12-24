@@ -43,15 +43,15 @@ static void writeInt(u16 val, char *dest) {
 }
 
 static const char *const weekdays[] = {
-        "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
+        "Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"
 };
 
 static const char *const months[] = {
-        "January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
-        "November", "December"
+        "Janvier", "Fevrier", "Mars", "Avril", "Mai", "Juin", "Juillet", "Auout", "Septembre", "Octobre",
+        "Novembre", "Decembre"
 };
 
-int getCurrentDateAndTime(char *pStr) {
+int getCurrentDateAndTime(char *buf) {
     static struct tm pct = {.dayofmonth = 0xFF};
     static char dayofmonth[3];
 
@@ -68,9 +68,9 @@ int getCurrentDateAndTime(char *pStr) {
     writeInt(pct.minute, minute);
     writeInt(pct.second, second);
 
-    int read = ksprintf(pStr, "%s, %s %s, %u, %s:%s:%s", weekdays[pct.weekday - 1], months[pct.month - 1], dayofmonth,
+    int read = ksprintf(buf, "%s %s %s %u, %s:%s:%s", weekdays[pct.weekday - 1], dayofmonth, months[pct.month - 1],
                         pct.century * 100 + pct.year, hour, minute, second);
 
-    pStr[read] = '\0';
+    buf[read] = '\0';
     return read + 1;
 }

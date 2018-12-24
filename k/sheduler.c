@@ -40,15 +40,8 @@ static char checkTaskEvent(struct Task *task) {
                 return 1;
             }
             return 0;
-        case TaskEventWaitPid: {
+        case TaskEventWaitPid:
             if (getTaskByPid(task->event.arg) == NULL) {
-                task->event.type = TaskEventNone;
-                return 1;
-            }
-            return 0;
-        }
-        case TaskEventKeyboard:
-            if (isConsoleReadReady(task->console) == 1) {
                 task->event.type = TaskEventNone;
                 return 1;
             }

@@ -7,6 +7,7 @@
 
 #include <k/types.h>
 #include <compiler.h>
+#include "mutex.h"
 
 #define NB_TABLE 1024
 #define NB_PAGE 1024
@@ -19,6 +20,7 @@ struct PageDirectory {
     u32 tablesAddr[NB_TABLE];
     struct TableDirectory *tablesInfo[NB_TABLE];
     u32 physAddr;
+    struct Mutex mtx;
 } __attribute__((packed));
 
 enum MEMFLAGS {

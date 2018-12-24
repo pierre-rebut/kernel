@@ -14,6 +14,9 @@
 #include <sheduler.h>
 #include <include/cpu.h>
 
+//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+#define LOG(x, ...)
+
 struct InterruptList {
     u32 id;
 
@@ -104,15 +107,18 @@ static void executeInterruptFromLis(struct esp_context *ctx) {
 
 u32 interrupt_handler(u32 esp) {
     struct esp_context *ctx = (struct esp_context *) esp;
+    LOG("[INT] handle interrupt %d\n", ctx->int_no);
+
+    if ((ctx->int_no == 32 && taskSwitching) || ctx->int_no == 126) {
+        LOG("[INT] scheduler switch task\n");
+        esp = schedulerSwitchTask(esp);
+    }
 
     if (ctx->int_no < 48) {
+        LOG("[INT] send eoi for pic\n");
         if (ctx->int_no >= 40)
             pic_eoi_slave(ctx->int_no);
         pic_eoi_master(ctx->int_no);
-    }
-
-    if ((ctx->int_no == 32 && taskSwitching) || ctx->int_no == 126) {
-        esp = schedulerSwitchTask(esp);
     }
 
     if (ctx->int_no < 32)
@@ -120,6 +126,6 @@ u32 interrupt_handler(u32 esp) {
     else if (ctx->int_no != 126) {
         executeInterruptFromLis(ctx);
     }
-
+    LOG("[INT] handle interrupt end: %d\n", ctx->int_no);
     return esp;
 }

@@ -287,8 +287,10 @@ int taskKill(struct Task *task) {
     kfree(task);
     taskSwitching = tmpTaskSwitching;
 
+    LOG("[TASK] kill end\n");
+
     if (currentTask == task) {
-        hlt();
+        schedulerForceSwitchTask();
     }
 
     return 0;

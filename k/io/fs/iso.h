@@ -28,7 +28,7 @@ struct iso_9660_directory_entry {
     u16 volume_sequence_big;
     u8 ident_length;
     char ident[1];
-};
+} __attribute__((packed));
 
 #define ISO_9660_EXTENT_FLAG_HIDDEN     1
 #define ISO_9660_EXTENT_FLAG_DIRECTORY  2
@@ -42,7 +42,7 @@ struct iso_9660_time {
     char second[2];
     char subsec[2];
     char timezone;
-};
+} __attribute__((packed));
 
 #define ISO_9660_VOLUME_TYPE_BOOT 0
 #define ISO_9660_VOLUME_TYPE_PRIMARY 1
@@ -85,6 +85,6 @@ struct iso_9660_volume_descriptor {
     struct iso_9660_time expire_time;
     struct iso_9660_time effective_time;
     char unknown[2];
-};
+} __attribute__((packed));
 
 #endif //KERNEL_ISO_H

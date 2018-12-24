@@ -8,12 +8,14 @@
 
 #include "physical-memory.h"
 #include "allocator.h"
+#include "mutex.h"
 
 //#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
 static u32 *physicalMemTable = NULL;
 static u32 physicalMemSize;
+static struct Mutex mtx;
 
 static u32 getMemorySize(memory_map_t *memEntry, memory_map_t *memEnd) {
     u32 memSize = 0;
@@ -68,10 +70,12 @@ u32 initPhysicalMemory(const multiboot_info_t *info) {
     }
 
     memorySetRegion(0x00, PLACEMENT_END, 1);
+    mutexInit(&mtx);
     return memSize;
 }
 
 u32 allocPhysicalMemory() {
+    mutexLock(&mtx);
     for (u32 i = 0; i < physicalMemSize; i++) {
         if (physicalMemTable[i] == 0xFFFFFFFF)
             continue;
@@ -80,9 +84,11 @@ u32 allocPhysicalMemory() {
         asm volatile ("bsfl %1, %0\n\t" : "=r"(freeBite) : "r"(~physicalMemTable[i]));
 
         physicalMemTable[i] |= 1 << freeBite;
+        mutexUnlock(&mtx);
         LOG("[PHYMEM] allocate %u\n", i * 32 + freeBite);
         return (i * 32 + freeBite) * PAGESIZE;
     }
+    mutexUnlock(&mtx);
     LOG("[PHYMEM] can not alloc physical memory\n");
     return 0;
 }
@@ -90,7 +96,9 @@ u32 allocPhysicalMemory() {
 void freePhysicalMemory(u32 allocAddr) {
     u32 i = allocAddr / PAGESIZE;
     LOG("[PHYMEM] free physical memory: %X\n", i);
+    mutexLock(&mtx);
     physicalMemTable[i] &= ~(1 << i / 32);
+    mutexUnlock(&mtx);
 }
 
 u32 getTotalPhysMemory() {
@@ -99,6 +107,7 @@ u32 getTotalPhysMemory() {
 
 u32 getTotalUsedPhysMemory() {
     u32 total = 0;
+    mutexLock(&mtx);
     for (u32 i = 0; i < physicalMemSize; i++) {
         if (physicalMemTable[i] == 0xFFFFFFFF)
             total += 32 * PAGESIZE;
@@ -110,5 +119,6 @@ u32 getTotalUsedPhysMemory() {
                 tmp &= tmp - 1;
         }
     }
+    mutexUnlock(&mtx);
     return total;
 }

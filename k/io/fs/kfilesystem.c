@@ -3,7 +3,7 @@
 //
 
 #include "kfilesystem.h"
-#include "sys/filesystem.h"
+#include "filesystem.h"
 #include "io/serial.h"
 
 #include <k/kfs.h>

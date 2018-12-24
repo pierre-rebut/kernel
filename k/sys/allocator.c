@@ -2,12 +2,12 @@
 // Created by rebut_p on 15/12/18.
 //
 
-#include <include/cpu.h>
 #include <string.h>
 #include <include/stdio.h>
 #include "allocator.h"
 #include "paging.h"
 #include "physical-memory.h"
+#include "mutex.h"
 
 //#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
 #define LOG(x, ...)
@@ -33,6 +33,8 @@ static u8 *const heapStart = (void *) KERNEL_HEAP_START;
 static u32 heapSize = 0;
 static const u32 HEAP_MIN_GROWTH = 0x10000;
 
+static struct Mutex mtx;
+
 #ifdef _MEMLEAK_FIND_
 static u32 counter = 0;
 #endif
@@ -48,6 +50,8 @@ int initAllocator(void) {
     // We take the rest of the placement area
     regionCount = 0;
     regionMaxCount = (PLACEMENT_END - (u32) regions) / sizeof(region_t);
+
+    mutexInit(&mtx);
     return 0;
 }
 
@@ -62,10 +66,10 @@ static bool heap_grow(size_t size, u8 *heapEnd, bool continuous) {
         return (false);
     }
 
-    cli();
+    mutexLock(&mtx);
     // Enhance the memory
     if (pagingAlloc(kernelPageDirectory, heapEnd, size, MEM_WRITE) != 0) {
-        sti();
+        mutexUnlock(&mtx);
         return (false);
     }
 
@@ -83,7 +87,7 @@ static bool heap_grow(size_t size, u8 *heapEnd, bool continuous) {
     }
 
     heapSize += size;
-    sti();
+    mutexUnlock(&mtx);
     return (true);
 }
 
@@ -132,7 +136,7 @@ void *kmalloc(size_t size, u32 alignment, const char *comment) {
     // Avoid odd addresses
     size = alignUp(size, 4);
 
-    cli();
+    mutexLock(&mtx);
     // Walk the regions and find one being suitable
     bool foundFree = false;
     u8 *regionAddress = firstFreeAddr;
@@ -184,7 +188,7 @@ void *kmalloc(size_t size, u32 alignment, const char *comment) {
             if (alignedAddress != regionAddress) {
                 // Check whether we are able to expand
                 if (regionCount >= regionMaxCount) {
-                    sti();
+                    mutexUnlock(&mtx);
                     return (0);
                 }
 
@@ -208,7 +212,7 @@ void *kmalloc(size_t size, u32 alignment, const char *comment) {
             if (regions[i].size > size + additionalSize) {
                 // Check whether we are able to expand
                 if (regionCount + 1 > regionMaxCount) {
-                    sti();
+                    mutexUnlock(&mtx);
                     return (0);
                 }
 
@@ -241,7 +245,7 @@ void *kmalloc(size_t size, u32 alignment, const char *comment) {
             textColor(TEXT);
 #endif
 
-            sti();
+            mutexUnlock(&mtx);
             return (regionAddress);
 
         } //region is free and big enough
@@ -253,7 +257,7 @@ void *kmalloc(size_t size, u32 alignment, const char *comment) {
     u32 sizeToGrow = MAX(HEAP_MIN_GROWTH, alignUp(size * 3 / 2, PAGESIZE));
     bool success = heap_grow(sizeToGrow, (u8 *) ((u32) heapStart + heapSize), continuous);
 
-    sti();
+    mutexUnlock(&mtx);
 
     if (!success) {
         kSerialPrintf("\nmalloc (\"%s\") failed, heap could not be expanded!", comment);
@@ -287,7 +291,7 @@ void kfree(void *addr) {
     writeInfo(2, "Malloc - free: %u", counter);
 #endif
 
-    cli();
+    mutexLock(&mtx);
 
     // Walk the regions and find the correct one
     u8 *regionAddress = heapStart;
@@ -328,14 +332,14 @@ void kfree(void *addr) {
                 firstFreeAddr = regionAddress;
             }
 
-            sti();
+            mutexUnlock(&mtx);
             return;
         }
 
         regionAddress += regions[i].size;
     }
 
-    sti();
+    mutexUnlock(&mtx);
 
     kSerialPrintf("\nBroken free: %Xh", addr);
     //printStackTrace(0, 0); // Print a stack trace to get the function call that caused the problem
@@ -363,17 +367,21 @@ void heap_logRegions(void) {
 
 u32 getTotalPagedAlloc() {
     u32 total = 0;
+    mutexLock(&mtx);
     for (u32 i = 0; i < regionCount; i++) {
         total += regions[i].size;
     }
+    mutexUnlock(&mtx);
     return total;
 }
 
 u32 getTotalUsedAlloc() {
     u32 total = 0;
+    mutexLock(&mtx);
     for (u32 i = 0; i < regionCount; i++) {
         if (regions[i].reserved)
             total += regions[i].size;
     }
+    mutexUnlock(&mtx);
     return total;
 }

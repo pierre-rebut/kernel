@@ -7,7 +7,7 @@
 #include <k/types.h>
 #include <k/kstd.h>
 
-#include "sys/filesystem.h"
+#include "io/fs/filesystem.h"
 #include "sys/kobject.h"
 
 struct Console;
@@ -21,7 +21,8 @@ enum TaskEventType {
     TaskEventNone,
     TaskEventKeyboard,
     TaskEventTimer,
-    TaskEventWaitPid
+    TaskEventWaitPid,
+    TaskEventMutex
 };
 
 struct Heap {

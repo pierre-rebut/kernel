@@ -5,8 +5,9 @@
 #include <sys/allocator.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/filesystem.h>
-#include <io/ata.h>
+#include <io/fs/filesystem.h>
+#include <io/device/ata.h>
+#include <io/device/device.h>
 
 #include "isofilesystem.h"
 #include "iso.h"
@@ -15,7 +16,7 @@
 //#define LOG(x, ...)
 
 struct iso_volume {
-    int unit;
+    struct Device *device;
     int root_sector;
     int root_length;
     int total_sectors;
@@ -55,7 +56,7 @@ static char *iso_dirent_load(struct FsPath *d) {
     if (!data)
         return 0;
 
-    atapi_read(cdd->volume->unit, data, nsectors, cdd->sector);
+    deviceRead(cdd->volume->device, data, nsectors, cdd->sector);
     // XXX check result
 
     return data;
@@ -76,7 +77,7 @@ static void fix_filename(char *name, int length) {
 
 static int iso_dirent_read_block(struct FsPath *d, char *buffer, u32 blocknum) {
     struct iso_dirent *cdd = d->privateData;
-    int nblocks = atapi_read(cdd->volume->unit, buffer, 1, cdd->sector + blocknum);
+    int nblocks = deviceRead(cdd->volume->device, buffer, 1, cdd->sector + blocknum);
     if (nblocks == 1) {
         return ATAPI_BLOCKSIZE;
     } else {
@@ -201,23 +202,27 @@ static struct FsVolume *iso_volume_open(void *data) {
 
     struct iso_volume *cdv = kmalloc(sizeof(struct iso_volume), 0, "newIsoVolume");
     if (!cdv)
-        return 0;
+        return NULL;
 
     struct iso_9660_volume_descriptor *d = kmalloc(ATAPI_BLOCKSIZE, 0, "iso");
     if (!d) {
         kfree(cdv);
-        return 0;
+        return NULL;
     }
 
     LOG("isofs: scanning atapi unit %d...\n", unit);
 
-    int j;
+    struct Device *device = deviceCreate("atapi", unit);
+    if (device == NULL) {
+        kfree(cdv);
+        return NULL;
+    }
 
-    for (j = 0; j < 16; j++) {
+    for (int j = 0; j < 16; j++) {
         LOG("isofs: checking volume %d\n", j);
 
-        atapi_read(unit, d, 1, j + 16);
-        // XXX check reuslt
+        if (deviceRead(device, d, 1, j + 16) == 0)
+            break;
 
         if (strncmp(d->magic, "CD001", 5) != 0)
             continue;
@@ -226,28 +231,27 @@ static struct FsVolume *iso_volume_open(void *data) {
             cdv->root_sector = d->root.first_sector_little;
             cdv->root_length = d->root.length_little;
             cdv->total_sectors = d->nsectors_little;
-            cdv->unit = unit;
+            cdv->device = device;
 
-            LOG("isofs: mounted filesystem on unit %d, %d %d, %d\n", cdv->unit, cdv->root_sector, cdv->root_length, cdv->total_sectors);
+            LOG("isofs: mounted filesystem on unit %d, %d %d, %u, %u\n", unit, cdv->root_sector, cdv->root_length, cdv->total_sectors, d->nsectors_big);
 
             kfree(d);
             return iso_volume_as_volume(cdv);
 
         } else if (d->type == ISO_9660_VOLUME_TYPE_TERMINATOR) {
             break;
-        } else {
-            continue;
         }
     }
 
+    kfree(device);
     kfree(d);
     LOG("isofs: no filesystem found\n");
-    return 0;
+    return NULL;
 }
 
 static int iso_volume_close(struct FsVolume *v) {
     struct iso_volume *cdv = v->privateData;
-    LOG("isofs: umounted filesystem from unit %d\n", cdv->unit);
+    LOG("isofs: umounted filesystem\n", cdv->device->unit);
     kfree(v);
     return 0;
 }

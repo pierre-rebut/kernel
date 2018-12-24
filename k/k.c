@@ -1,11 +1,13 @@
 #include <stdio.h>
 #include <cpu.h>
 #include <multiboot.h>
-#include <io/ata.h>
+#include <io/device/ata.h>
 #include <sys/syscall.h>
 #include <include/multiboot.h>
 #include <io/fs/procfilesystem.h>
 #include <io/fs/isofilesystem.h>
+#include <io/fs/devfilesystem.h>
+#include <io/device/device.h>
 
 #include "io/serial.h"
 #include "sys/gdt.h"
@@ -23,6 +25,7 @@
 #include "sys/console.h"
 
 #define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+//#define LOG(x, ...)
 
 static int k_init(const multiboot_info_t *info) {
     initSerial(38400);
@@ -70,6 +73,9 @@ static int k_init(const multiboot_info_t *info) {
     kprintf("Init ProcFileSystem\n");
     initProcFileSystem();
 
+    kprintf("Init DevFileSystem\n");
+    initDevFileSystem();
+
     kprintf("Mount kfs on A\n");
     struct Fs *kfs = fsGetFileSystemByName("kfs");
     struct FsVolume *kvolume = fsVolumeOpen('A', kfs, (void*) ((module_t*)(info->mods_addr))->mod_start);
@@ -80,6 +86,12 @@ static int k_init(const multiboot_info_t *info) {
     struct Fs *procfs = fsGetFileSystemByName("proc");
     struct FsVolume *pvolume = fsVolumeOpen('B', procfs, NULL);
     if (!pvolume)
+        return -1;
+
+    kprintf("Mount devfs on C\n");
+    struct Fs *devfs = fsGetFileSystemByName("dev");
+    struct FsVolume *dvolume = fsVolumeOpen('C', devfs, NULL);
+    if (!dvolume)
         return -1;
 
     kprintf("Init Tasking\n");
@@ -95,18 +107,20 @@ static int k_init(const multiboot_info_t *info) {
     kprintf("Init ATAPI\n");
     ata_init();
 
+    struct DeviceDriver *driverAta = deviceGetDeviceDriverByName("ata");
+
     kprintf("Mount available ATAPI device\n");
-    char mountId = 'C';
+    char mountId = 'D';
     struct Fs *isofs = fsGetFileSystemByName("iso");
     for (int i = 0; i < 4; i++) {
         u32 nblocks = 0;
         int blocksize = 0;
         char longname[256];
 
-        if (ata_probe(i, &nblocks, &blocksize, longname) == 1) {
-            kSerialPrintf("Mounting %s (%d) on %c\n", longname, i, mountId);
+        if (driverAta->probe(i, &nblocks, &blocksize, longname) == 1) {
+            kprintf("Mounting unit %d on %c: %s\n", i, mountId, longname);
             if (fsVolumeOpen(mountId, isofs, (void*) i) == NULL)
-                kSerialPrintf("Mounting failed\n");
+                kprintf("Mounting failed\n");
             else
                 mountId++;
         }
@@ -162,6 +176,7 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
     kSerialPrintf("Read test file\n");
     printfile("/test");
 
+    taskWaitEvent(TaskEventTimer, 1000);
     kSerialPrintf("\n### Trying init binary [%s] ###\n\n", (char *) info->cmdline);
 
     const char *av[] = {
