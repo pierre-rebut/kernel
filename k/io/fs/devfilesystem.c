@@ -25,7 +25,7 @@ static struct FsPath *devRoot(struct FsVolume *volume) {
     return rootPath;
 }
 
-static struct FsVolume *devMount(void *data) {
+static struct FsVolume *devMount(u32 data) {
     LOG("[dev] mount:\n");
     (void) data;
 

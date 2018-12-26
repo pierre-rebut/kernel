@@ -45,7 +45,7 @@ static struct FsPath *procRoot(struct FsVolume *volume) {
     return rootPath;
 }
 
-static struct FsVolume *procMount(void *data) {
+static struct FsVolume *procMount(u32 data) {
     LOG("[proc] mount:\n");
     (void) data;
 

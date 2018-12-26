@@ -201,9 +201,10 @@ static int ata_begin(int id, int command, int nblocks, int offset) {
 }
 
 static int ata_read_unlocked(int id, void *buffer, int nblocks, int offset) {
-    int i;
+    kSerialPrintf("ata nblocks: %d\n", nblocks);
+
     if (!ata_begin(id, ATA_COMMAND_READ, nblocks, offset))
-        return 0;
+        return -2;
 
     // XXX On fast virtual hardware, waiting for the interrupt
     // doesn't work b/c it has already arrived before we get here.
@@ -211,15 +212,15 @@ static int ata_read_unlocked(int id, void *buffer, int nblocks, int offset) {
 
     // if(ata_interrupt_active) process_wait(&queue);
 
-    for (i = 0; i < nblocks; i++) {
+    for (int i = 0; i < nblocks; i++) {
         if (!ata_wait(id, ATA_STATUS_DRQ, ATA_STATUS_DRQ))
-            return 0;
+            return -3;
         ata_pio_read(id, buffer, ATA_BLOCKSIZE);
-        buffer = ((char *) buffer) + ATA_BLOCKSIZE;
-        offset++;
+        buffer += ATA_BLOCKSIZE;
     }
+
     if (!ata_wait(id, ATA_STATUS_BSY, 0))
-        return 0;
+        return -4;
     return nblocks;
 }
 
@@ -417,13 +418,13 @@ static int ata_probe(int id, unsigned int *nblocks, int *blocksize, char *name) 
         kprintf("%d logical sectors/track\n", buffer[6]);
         *blocksize = ATA_BLOCKSIZE;
 
-    } else if (ata_identify(id, ATAPI_COMMAND_IDENTIFY, cbuffer)) {
+    } /*else if (ata_identify(id, ATAPI_COMMAND_IDENTIFY, cbuffer)) {
 
         // XXX use SCSI sense to get media size
         *nblocks = 337920;
         *blocksize = ATAPI_BLOCKSIZE;
 
-    } else {
+    } */ else {
         kprintf("ata unit %d: not connected\n", id);
         return 0;
     }

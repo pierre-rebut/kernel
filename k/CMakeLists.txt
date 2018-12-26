@@ -29,9 +29,8 @@ set(K_FILES
         sys/console.c sys/console.h
         sys/kobject.c sys/kobject.h
         io/fs/procfilesystem.c io/fs/procfilesystem.h
-        io/fs/isofilesystem.c io/fs/isofilesystem.h io/fs/iso.h
         io/cmos.c io/cmos.h
-        sys/time.c sys/time.h sys/mutex.c sys/mutex.h io/device/device.c io/device/device.h io/fs/devfilesystem.c io/fs/devfilesystem.h)
+        sys/time.c sys/time.h sys/mutex.c sys/mutex.h io/device/device.c io/device/device.h io/fs/devfilesystem.c io/fs/devfilesystem.h io/fs/ext2filesystem.c io/fs/ext2filesystem.h)
 
 set(K_LIBS
         utils/kprintf.c

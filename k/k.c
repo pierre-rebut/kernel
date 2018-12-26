@@ -5,9 +5,9 @@
 #include <sys/syscall.h>
 #include <include/multiboot.h>
 #include <io/fs/procfilesystem.h>
-#include <io/fs/isofilesystem.h>
 #include <io/fs/devfilesystem.h>
 #include <io/device/device.h>
+#include <io/fs/ext2filesystem.h>
 
 #include "io/serial.h"
 #include "sys/gdt.h"
@@ -64,9 +64,6 @@ static int k_init(const multiboot_info_t *info) {
     kprintf("Init Console\n");
     initConsole();
 
-    kprintf("Init IsoFileSystem\n");
-    initIsoFileSystem();
-
     kprintf("Init KFileSystem\n");
     initKFileSystem();
 
@@ -76,21 +73,24 @@ static int k_init(const multiboot_info_t *info) {
     kprintf("Init DevFileSystem\n");
     initDevFileSystem();
 
+    kprintf("Init Ext2FileSystem\n");
+    initExt2FileSystem();
+
     kprintf("Mount kfs on A\n");
     struct Fs *kfs = fsGetFileSystemByName("kfs");
-    struct FsVolume *kvolume = fsVolumeOpen('A', kfs, (void*) ((module_t*)(info->mods_addr))->mod_start);
+    struct FsVolume *kvolume = fsVolumeOpen('A', kfs, ((module_t*)(info->mods_addr))->mod_start);
     if (!kvolume)
         return -1;
 
     kprintf("Mount procfs on B\n");
     struct Fs *procfs = fsGetFileSystemByName("proc");
-    struct FsVolume *pvolume = fsVolumeOpen('B', procfs, NULL);
+    struct FsVolume *pvolume = fsVolumeOpen('B', procfs, 0);
     if (!pvolume)
         return -1;
 
     kprintf("Mount devfs on C\n");
     struct Fs *devfs = fsGetFileSystemByName("dev");
-    struct FsVolume *dvolume = fsVolumeOpen('C', devfs, NULL);
+    struct FsVolume *dvolume = fsVolumeOpen('C', devfs, 0);
     if (!dvolume)
         return -1;
 
@@ -104,23 +104,24 @@ static int k_init(const multiboot_info_t *info) {
     kprintf("Start listening interruption\n");
     sti();
 
-    kprintf("Init ATAPI\n");
+    kprintf("Init ATA driver\n");
     ata_init();
 
     struct DeviceDriver *driverAta = deviceGetDeviceDriverByName("ata");
 
-    kprintf("Mount available ATAPI device\n");
+    kprintf("Mount available ATA device\n");
     char mountId = 'D';
-    struct Fs *isofs = fsGetFileSystemByName("iso");
-    for (int i = 0; i < 4; i++) {
+    struct Fs *extfs = fsGetFileSystemByName("ext2");
+    for (u32 i = 0; i < 4; i++) {
         u32 nblocks = 0;
         int blocksize = 0;
         char longname[256];
 
         if (driverAta->probe(i, &nblocks, &blocksize, longname) == 1) {
+            kSerialPrintf("Mounting unit %d on %c: %s\n", i, mountId, longname);
             kprintf("Mounting unit %d on %c: %s\n", i, mountId, longname);
-            if (fsVolumeOpen(mountId, isofs, (void*) i) == NULL)
-                kprintf("Mounting failed\n");
+            if (fsVolumeOpen(mountId, extfs, i) == NULL)
+                kSerialPrintf("Mounting failed\n");
             else
                 mountId++;
         }

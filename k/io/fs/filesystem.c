@@ -58,7 +58,7 @@ struct Fs *fsGetFileSystemByName(const char *name) {
     return NULL;
 }
 
-struct FsVolume *fsVolumeOpen(char id, struct Fs *fs, void *data) {
+struct FsVolume *fsVolumeOpen(char id, struct Fs *fs, u32 data) {
     LOG("[FS] check if %c is used\n", id);
     if (!fs || !fs->mount)
         return NULL;
@@ -74,15 +74,25 @@ struct FsVolume *fsVolumeOpen(char id, struct Fs *fs, void *data) {
     volume->fs = fs;
     volume->refcount = 0;
 
-    if (fsVolumeList)
-        fsVolumeList->prev = volume;
-
-    volume->next = fsVolumeList;
-    volume->prev = NULL;
-    fsVolumeList = volume;
-
     volume->root = fsVolumeRoot(volume);
+    if (volume->root == NULL) {
+        kfree(volume);
+        return NULL;
+    }
 
+    if (fsVolumeList == NULL) {
+        fsVolumeList = volume;
+        volume->prev = NULL;
+    }
+    else {
+        struct FsVolume *tmpVolume = fsVolumeList;
+        while (tmpVolume->next != NULL)
+            tmpVolume = tmpVolume->next;
+        tmpVolume->next = volume;
+        volume->prev = tmpVolume;
+    }
+
+    volume->next = NULL;
     return volume;
 }
 
@@ -102,9 +112,12 @@ int fsVolumeClose(struct FsVolume *v) {
 
 struct FsPath *fsVolumeRoot(struct FsVolume *volume) {
     if (!volume || !volume->fs->root)
-        return 0;
+        return NULL;
 
     struct FsPath *pathRoot = volume->fs->root(volume);
+    if (pathRoot == NULL)
+        return NULL;
+
     pathRoot->volume = volume;
     volume->refcount++;
     pathRoot->refcount = 1;

@@ -40,7 +40,7 @@ struct Fs {
     char *name;
 
     struct FsPath *(*root)(struct FsVolume *volume);
-    struct FsVolume *(*mount)(void *data);
+    struct FsVolume *(*mount)(u32 data);
     int (*umount)(struct FsVolume *volume);
     int (*close)(struct FsPath *path);
     int (*mkdir)(struct FsPath *path, const char *name);
@@ -79,7 +79,7 @@ struct FsPath *fsResolvePath(const char *path);
 void fsRegister(struct Fs *fs);
 struct Fs *fsGetFileSystemByName(const char *name);
 
-struct FsVolume *fsVolumeOpen(char id, struct Fs *fs, void *data);
+struct FsVolume *fsVolumeOpen(char id, struct Fs *fs, u32 data);
 struct FsVolume *fsGetVolumeById(char mountPoint);
 struct FsPath *fsVolumeRoot(struct FsVolume *volume);
 int fsVolumeClose(struct FsVolume *volume);

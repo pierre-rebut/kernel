@@ -53,8 +53,8 @@ static struct FsPath *kfsRoot(struct FsVolume *volume) {
     return rootPath;
 }
 
-static struct FsVolume *kfsMount(void *data) {
-    LOG("kfs utils: %p\n", data);
+static struct FsVolume *kfsMount(u32 data) {
+    LOG("kfs utils: %X\n", data);
     struct kfs_superblock *tmp = (struct kfs_superblock *) data;
 
     if (tmp->magic != KFS_MAGIC) {
