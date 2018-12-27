@@ -36,22 +36,22 @@ static int ext2_write_block(void *buf, u32 block, struct Ext2PrivData *priv) {
 
 static void ext2_read_inode(struct Ext2Inode *inode_buf, u32 inode, struct Ext2PrivData *priv) {
     u32 bg = (inode - 1) / priv->sb.inodes_in_blockgroup;
-    u32 i = 0;
-    /* Now we have which BG the inode is in, load that desc */
-    void *block_buf = kmalloc(priv->blocksize * 4, 0, "blockBuf");
+
+    void *block_buf = kmalloc(priv->blocksize, 0, "blockBuf");
     if (block_buf == NULL)
         return;
 
-    // todo a fix
-    ext2_read_block(block_buf, priv->first_bgd, priv);
-    ext2_read_block(block_buf + priv->blocksize, priv->first_bgd + 1, priv);
-    ext2_read_block(block_buf + (priv->blocksize * 2), priv->first_bgd + 2, priv);
-    ext2_read_block(block_buf + (priv->blocksize * 3), priv->first_bgd + 3, priv);
+    u32 nbBgPerBlock = priv->blocksize / sizeof(struct Ext2BlockGroupDesc);
+    u32 bgblockId = bg / nbBgPerBlock;
+
+    LOG("We seek BG %d (block: %d, offset: %d)\n", bg, bgblockId, bg % nbBgPerBlock);
+    bg %= nbBgPerBlock;
+
+    LOG("test %u, %u, %u\n", nbBgPerBlock, bgblockId, bg);
+
+    ext2_read_block(block_buf, priv->first_bgd + bgblockId, priv);
 
     struct Ext2BlockGroupDesc *bgd = (struct Ext2BlockGroupDesc *) block_buf;
-    LOG("We seek BG %d (%d)\n", bg, bg *sizeof(struct Ext2BlockGroupDesc));
-    // Seek to the BG's desc
-
     bgd += bg;
 
     LOG("%u, %u, %u, %u, %u, %u\n", bgd->block_of_block_usage_bitmap, bgd->block_of_inode_usage_bitmap,
@@ -59,7 +59,6 @@ static void ext2_read_inode(struct Ext2Inode *inode_buf, u32 inode, struct Ext2P
         bgd->num_of_unalloc_block, bgd->num_of_unalloc_inode, bgd->num_of_dirs
     );
 
-    // Find the index and seek to the inode
     u32 index = (inode - 1) % priv->sb.inodes_in_blockgroup;
     LOG("Index of our inode is %d\n", index);
     u32 block = (index * sizeof(struct Ext2Inode)) / priv->blocksize;
@@ -67,11 +66,8 @@ static void ext2_read_inode(struct Ext2Inode *inode_buf, u32 inode, struct Ext2P
     ext2_read_block(block_buf, bgd->block_of_inode_table + block, priv);
 
     struct Ext2Inode *_inode = (struct Ext2Inode *) block_buf;
-    index = index % priv->inodes_per_block;
-    for (i = 0; i < index; i++) {
-        _inode++;
-    }
-    // We have found the inode!
+    _inode += (index % priv->inodes_per_block);
+
     memcpy(inode_buf, _inode, sizeof(struct Ext2Inode));
     kfree(block_buf);
 }
@@ -543,47 +539,18 @@ static int ext2ReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
         }
 
         LOG("Reading block: %d\n", b);
-        ext2_read_block((void*)buffer, b, priv);
+        ext2_read_block((void *) buffer, b, priv);
     } else if (blocknum - 12 < (priv->blocksize / sizeof(u32))) {
         ext2_read_singly_linked(pathInode->singly_block, blocknum - 12, buffer, priv);
-    } else if (blocknum) {
+    } else if (blocknum - 12 - (priv->blocksize / sizeof(u32)) < SIZE_OF_SINGLY) {
         u32 tmp = blocknum - 12 - (priv->blocksize / sizeof(u32));
         ext2_read_doubly_linked(pathInode->doubly_block, tmp, buffer, priv);
     } else {
-        ext2_read_triply_linked(pathInode->triply_block, 0, buffer, priv);
+        u32 tmp = blocknum - 12 - (priv->blocksize / sizeof(u32)) - SIZE_OF_SINGLY;
+        ext2_read_triply_linked(pathInode->triply_block, tmp, buffer, priv);
     }
 
     return (pathInode->size / priv->blocksize == blocknum ? pathInode->size % priv->blocksize : priv->blocksize);
-
-    // todo a finir
-
-   /* for (int i = 0; i < 12; i++) {
-        u32 b = minode->dbp[i];
-        if (b == 0) {
-            LOG("EOF\n");
-            return 1;
-        }
-
-        if (b > priv->sb.blocks) {
-            LOG("block %d outside range (max: %d)!\n", b, priv->sb.blocks);
-            return 0;
-        }
-        LOG("Reading block: %d\n", b);
-
-
-        //kprintf("Copying to: 0x%x size: %d bytes\n", buffer + i*(priv->blocksize), priv->blocksize);
-        memcpy(buffer + i * (priv->blocksize), root_buf, priv->blocksize);
-        //kprintf("%c%c%c\n", *(u8*)(buffer + 1),*(u8*)(buffer + 2), *(u8*)(buffer + 3));
-    }
-    if (minode->singly_block) {
-        //kprintf("Block of singly: %d\n", minode->singly_block);
-        ext2_read_singly_linked(minode->singly_block, buffer + 12 * (priv->blocksize), dev, priv);
-    }
-    if (minode->doubly_block) {
-        u32 s = SIZE_OF_SINGLY + 12 * priv->blocksize;
-        //kprintf("s is 0x%x (%d)\n", s, s);
-        ext2_read_doubly_linked(minode->doubly_block, buffer + s, dev, priv);
-    }*/
 }
 
 static struct dirent *ext2Readdir(struct FsPath *path, struct dirent *result) {
@@ -619,7 +586,7 @@ static struct dirent *ext2Readdir(struct FsPath *path, struct dirent *result) {
     pathInode->tmpDir += dir->size;
 
     dir = (struct Ext2DirEntry *) ((u32) dir + dir->size);
-    if ((u32)pathInode->tmpDir >= priv->blocksize || dir->inode == 0) {
+    if ((u32) pathInode->tmpDir >= priv->blocksize || dir->inode == 0) {
         LOG("bite en bois\n");
         pathInode->tmpDir = 0;
         pathInode->tmpBreadir += 1;
