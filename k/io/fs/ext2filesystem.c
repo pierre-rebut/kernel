@@ -38,20 +38,23 @@ static void ext2_read_inode(Ext2Inode *inode_buf, u32 inode, ext2_priv_data *pri
     u32 bg = (inode - 1) / priv->sb.inodes_in_blockgroup;
     u32 i = 0;
     /* Now we have which BG the inode is in, load that desc */
-    void *block_buf = kmalloc(priv->blocksize, 0, "newBlockBuf");
+    void *block_buf = kmalloc(priv->blocksize * 4, 0, "newBlockBuf");
     if (block_buf == NULL)
         return;
 
+    // todo a fix
     ext2_read_block(block_buf, priv->first_bgd, priv);
+    ext2_read_block(block_buf + priv->blocksize, priv->first_bgd + 1, priv);
+    ext2_read_block(block_buf + (priv->blocksize * 2), priv->first_bgd + 2, priv);
+    ext2_read_block(block_buf + (priv->blocksize * 3), priv->first_bgd + 3, priv);
 
     block_group_desc_t *bgd = (block_group_desc_t *) block_buf;
-    LOG("We seek BG %d\n", bg);
+    LOG("We seek BG %d (%d)\n", bg, bg *sizeof(block_group_desc_t));
     // Seek to the BG's desc
 
-    for (i = 0; i < bg; i++)
-        bgd++;
+    bgd += bg;
 
-    LOG("%d, %d, %d, %d, %d, %d\n", bgd->block_of_block_usage_bitmap, bgd->block_of_inode_usage_bitmap,
+    LOG("%u, %u, %u, %u, %u, %u\n", bgd->block_of_block_usage_bitmap, bgd->block_of_inode_usage_bitmap,
         bgd->block_of_inode_table,
         bgd->num_of_unalloc_block, bgd->num_of_unalloc_inode, bgd->num_of_dirs
     );
@@ -564,32 +567,73 @@ u8 ext2_exist(char *file, struct Device *dev, ext2_priv_data *priv) {
 }
 */
 
-static u32 ext2_read_directory(const char *filename, ext2_dir *dir) {
+static int ext2ReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
+    LOG("[ext2] readblock: %u\n", blocknum);
+    ext2_priv_data *priv = path->volume->privateData;
+    Ext2Inode *pathInode = path->privateData;
 
-    while (dir->inode != 0) {
-        char *name = (char *) kmalloc(dir->namelength + 1, 0, "newName");
-        memcpy(name, &dir->reserved + 1, dir->namelength);
-        name[dir->namelength] = 0;
-        LOG("DIR: %s (%d)\n", name, dir->size);
+    if ((pathInode->type & 0xF000) == INODE_TYPE_DIRECTORY)
+        return -1;
 
-        if (strcmp(filename, name) == 0) {
-            kfree(name);
-            return dir->inode;
+    if (blocknum < 12) {
+        u32 b = pathInode->dbp[blocknum];
+        if (b == 0) {
+            LOG("[ext2] readblock EOF\n");
+            return 0;
         }
 
-        dir = (ext2_dir *) ((u32) dir + dir->size);
-        kfree(name);
+        if (b > priv->sb.blocks) {
+            kSerialPrintf("[ext2] readblock: block %d outside range (max: %d)!\n", b, priv->sb.blocks);
+            return -1;
+        }
+
+        LOG("Reading block: %d\n", b);
+        ext2_read_block((void*)buffer, b, priv);
+        return (pathInode->size / priv->blocksize == blocknum ? pathInode->size % priv->blocksize : priv->blocksize);
     }
-    return 0;
+
+    LOG("[ext2] readblock: not implemented\n");
+    return -1;
+
+    // todo a finir
+
+   /* for (int i = 0; i < 12; i++) {
+        u32 b = minode->dbp[i];
+        if (b == 0) {
+            LOG("EOF\n");
+            return 1;
+        }
+
+        if (b > priv->sb.blocks) {
+            LOG("block %d outside range (max: %d)!\n", b, priv->sb.blocks);
+            return 0;
+        }
+        LOG("Reading block: %d\n", b);
+
+
+        //kprintf("Copying to: 0x%x size: %d bytes\n", buffer + i*(priv->blocksize), priv->blocksize);
+        memcpy(buffer + i * (priv->blocksize), root_buf, priv->blocksize);
+        //kprintf("%c%c%c\n", *(u8*)(buffer + 1),*(u8*)(buffer + 2), *(u8*)(buffer + 3));
+    }
+    if (minode->singly_block) {
+        //kprintf("Block of singly: %d\n", minode->singly_block);
+        ext2_read_singly_linked(minode->singly_block, buffer + 12 * (priv->blocksize), dev, priv);
+    }
+    if (minode->doubly_block) {
+        u32 s = SIZE_OF_SINGLY + 12 * priv->blocksize;
+        //kprintf("s is 0x%x (%d)\n", s, s);
+        ext2_read_doubly_linked(minode->doubly_block, buffer + s, dev, priv);
+    }*/
 }
 
 static struct dirent *ext2Readdir(struct FsPath *path, struct dirent *result) {
-    LOG("[ext2] readdir\n");
     ext2_priv_data *priv = path->volume->privateData;
     Ext2Inode *pathInode = path->privateData;
 
     if ((pathInode->type & 0xF000) != INODE_TYPE_DIRECTORY)
         return NULL;
+
+    LOG("[ext2] readdir b=%d,tmp=%d\n", pathInode->tmpBreadir, pathInode->tmpDir);
 
     if (pathInode->tmpBreadir == 12)
         return NULL;
@@ -602,11 +646,8 @@ static struct dirent *ext2Readdir(struct FsPath *path, struct dirent *result) {
     if (buf == NULL)
         return NULL;
 
-    ext2_dir *dir = buf;
-
-    ext2_read_block((void*)dir, b, priv);
-
-    dir = (ext2_dir *) ((u32) dir + pathInode->tmpDir);
+    ext2_read_block(buf, b, priv);
+    ext2_dir *dir = (ext2_dir *) (buf + pathInode->tmpDir);
 
     memcpy(result->d_name, &dir->reserved + 1, dir->namelength);
     result->d_name[dir->namelength] = 0;
@@ -614,16 +655,36 @@ static struct dirent *ext2Readdir(struct FsPath *path, struct dirent *result) {
     result->d_ino = dir->inode;
     result->d_type = FT_FILE;
 
+    LOG("dir size = %u, %X\n", dir->size, dir);
     pathInode->tmpDir += dir->size;
 
     dir = (ext2_dir *) ((u32) dir + dir->size);
-    if (dir->inode == 0) {
+    if ((u32)pathInode->tmpDir >= priv->blocksize || dir->inode == 0) {
+        LOG("bite en bois\n");
         pathInode->tmpDir = 0;
         pathInode->tmpBreadir += 1;
     }
 
     kfree(buf);
     return result;
+}
+
+static u32 ext2_read_directory(const char *filename, ext2_dir *dir) {
+    while (dir->inode != 0) {
+        char *name = (char *) kmalloc(dir->namelength + 1, 0, "newName");
+        memcpy(name, &dir->reserved + 1, dir->namelength);
+        name[dir->namelength] = 0;
+        LOG("DIR: %s (inode: %d, size: %d)\n", name, dir->inode, dir->size);
+
+        if (strcmp(filename, name) == 0) {
+            kfree(name);
+            return dir->inode;
+        }
+
+        dir = (ext2_dir *) ((u32) dir + dir->size);
+        kfree(name);
+    }
+    return 0;
 }
 
 static struct FsPath *ext2Lookup(struct FsPath *path, const char *name) {
@@ -670,10 +731,10 @@ static struct FsPath *ext2Lookup(struct FsPath *path, const char *name) {
         goto ext2LookupFaillure;
 
     inode->tmpBreadir = 0;
-    pathInode->tmpDir = 0;
+    inode->tmpDir = 0;
 
     newPath->privateData = inode;
-    newPath->size = 0;
+    newPath->size = inode->size;
 
     kfree(buf);
     return newPath;
@@ -802,7 +863,7 @@ static struct Fs fs_ext2 = {
         .close = &ext2Close,
         .readdir = &ext2Readdir,
         .lookup = &ext2Lookup,
-        //.readBlock = &iso_dirent_read_block
+        .readBlock = &ext2ReadBlock
 };
 
 void initExt2FileSystem() {
