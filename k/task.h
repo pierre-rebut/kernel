@@ -46,7 +46,6 @@ struct TaskCreator {
     u32 ac;
     const char **av;
     const char **env;
-    struct FsPath *dir;
     struct Console *console;
 };
 
@@ -80,7 +79,7 @@ u32 taskSwitch(struct Task *newTask);
 
 struct Task *createTask(struct TaskCreator *info);
 u32 createProcess(const char *cmdline, const char **av, const char **env);
-void initTasking(struct FsPath *rootDirectory);
+void initTasking();
 
 int taskKill(struct Task *);
 int taskExit();

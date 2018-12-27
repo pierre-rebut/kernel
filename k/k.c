@@ -76,26 +76,8 @@ static int k_init(const multiboot_info_t *info) {
     kprintf("Init Ext2FileSystem\n");
     initExt2FileSystem();
 
-    kprintf("Mount kfs on A\n");
-    struct Fs *kfs = fsGetFileSystemByName("kfs");
-    struct FsVolume *kvolume = fsVolumeOpen('A', kfs, ((module_t*)(info->mods_addr))->mod_start);
-    if (!kvolume)
-        return -1;
-
-    kprintf("Mount procfs on B\n");
-    struct Fs *procfs = fsGetFileSystemByName("proc");
-    struct FsVolume *pvolume = fsVolumeOpen('B', procfs, 0);
-    if (!pvolume)
-        return -1;
-
-    kprintf("Mount devfs on C\n");
-    struct Fs *devfs = fsGetFileSystemByName("dev");
-    struct FsVolume *dvolume = fsVolumeOpen('C', devfs, 0);
-    if (!dvolume)
-        return -1;
-
     kprintf("Init Tasking\n");
-    initTasking(fsVolumeRoot(kvolume));
+    initTasking();
 
     kprintf("Allow KEYBOARD & PIT interrupt\n");
     allowIrq(ISQ_KEYBOARD_VALUE);
@@ -108,10 +90,11 @@ static int k_init(const multiboot_info_t *info) {
     ata_init();
 
     struct DeviceDriver *driverAta = deviceGetDeviceDriverByName("ata");
+    struct FsVolume *kvolume = NULL;
 
     kprintf("Mount available ATA device\n");
-    char mountId = 'D';
-    struct Fs *extfs = fsGetFileSystemByName("ext2");
+    char mountId = 'A';
+    struct Fs *extfs = fsGetFileSystemByName("ext2fs");
     for (u32 i = 0; i < 4; i++) {
         u32 nblocks = 0;
         int blocksize = 0;
@@ -120,12 +103,32 @@ static int k_init(const multiboot_info_t *info) {
         if (driverAta->probe(i, &nblocks, &blocksize, longname) == 1) {
             kSerialPrintf("Mounting unit %d on %c: %s\n", i, mountId, longname);
             kprintf("Mounting unit %d on %c: %s\n", i, mountId, longname);
-            if (fsVolumeOpen(mountId, extfs, i) == NULL)
+            kvolume = fsVolumeOpen(mountId, extfs, i);
+            if (kvolume == NULL)
                 kSerialPrintf("Mounting failed\n");
             else
                 mountId++;
         }
     }
+
+    if (kvolume == NULL)
+        return -1;
+
+    kernelTask.currentDir = freeTimeTask->currentDir = fsVolumeRoot(kvolume);
+    freeTimeTask->currentDir->refcount++;
+
+    kprintf("Mount procfs on %c\n", mountId);
+    struct Fs *procfs = fsGetFileSystemByName("procfs");
+    struct FsVolume *pvolume = fsVolumeOpen(mountId++, procfs, 0);
+    if (!pvolume)
+        return -1;
+
+    kprintf("Mount devfs on %c\n", mountId);
+    struct Fs *devfs = fsGetFileSystemByName("devfs");
+    struct FsVolume *dvolume = fsVolumeOpen(mountId, devfs, 0);
+    if (!dvolume)
+        return -1;
+
     return 0;
 }
 
@@ -168,7 +171,7 @@ void printfile(const char *pathname) {
 void k_main(unsigned long magic, multiboot_info_t *info) {
     taskSwitching = 0;
 
-    if (magic != MULTIBOOT_BOOTLOADER_MAGIC || info->mods_count != 1)
+    if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
         goto error;
 
     if (k_init(info))
@@ -185,8 +188,8 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
             NULL
     };
     const char *env[] = {
-            "PATH=A:",
-            "HOME=A:",
+            "PATH=A:/bin",
+            "HOME=A:/home",
             "PWD=A:",
             NULL
     };

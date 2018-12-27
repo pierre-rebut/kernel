@@ -71,8 +71,6 @@ static void sys_readdir(struct esp_context *ctx);
 
 static void sys_mount(struct esp_context *ctx);
 
-static void sys_mount2(struct esp_context *ctx);
-
 static void sys_umount(struct esp_context *ctx);
 
 typedef void (*syscall_t)(struct esp_context *);
@@ -104,8 +102,7 @@ static syscall_t syscall[] = {
         sys_closedir,
         sys_readdir,
         sys_mount,
-        sys_umount,
-        sys_mount2
+        sys_umount
 };
 
 static void syscall_handler(struct esp_context *ctx);
@@ -326,10 +323,7 @@ static void sys_closedir(struct esp_context *ctx) {
 }
 
 static void sys_mount(struct esp_context *ctx) {
-    LOG("mount: %s -> %c (%s)\n", (char *) ctx->edx, ctx->ebx, (char *) ctx->ecx);
-
-    char *data = NULL;
-    struct FsPath *file = NULL;
+    LOG("mount: %c (%s)\n", ctx->ebx, (char *) ctx->ecx);
 
     if (fsGetVolumeById((char)ctx->ebx))
         goto failure;
@@ -339,59 +333,17 @@ static void sys_mount(struct esp_context *ctx) {
     if (!fs)
         goto failure;
 
-    LOG("mount: resolve path\n");
-    file = fsResolvePath((const char *)ctx->edx);
-    if (!file)
-        goto failure;
-
-    LOG("mount: alloc memory %u\n", file->size);
-    data = kmalloc(sizeof(char) * file->size, 0, "mountAlloc");
-    if (!data)
-        goto failure;
-
-    LOG("mount: read file\n");
-    if (fsReadFile(file, data, file->size, 0) != (s32) file->size)
-        goto failure;
-
     LOG("mount: create new volume\n");
-    struct FsVolume *volume = fsVolumeOpen((char)ctx->ebx, fs, data);
+    struct FsVolume *volume = fsVolumeOpen((char)ctx->ebx, fs, ctx->edx);
     if (!volume)
         goto failure;
 
-    fsPathDestroy(file);
     ctx->eax = 0;
     LOG("mount: end\n");
     return;
 
     failure:
     kSerialPrintf("mount: failure\n");
-    fsPathDestroy(file);
-    kfree(data);
-    ctx->eax = (u32) -1;
-}
-
-static void sys_mount2(struct esp_context *ctx) {
-    LOG("mount2: %d -> %c (%s)\n", ctx->edx, ctx->ebx, (char *) ctx->ecx);
-
-    if (fsGetVolumeById((char)ctx->ebx))
-        goto failure;
-
-    LOG("mount2: get fs by name\n");
-    struct Fs *fs = fsGetFileSystemByName((const char *) ctx->ecx);
-    if (!fs)
-        goto failure;
-
-    LOG("mount2: create new volume\n");
-    struct FsVolume *volume = fsVolumeOpen((char)ctx->ebx, fs, (void*)ctx->edx);
-    if (!volume)
-        goto failure;
-    
-    ctx->eax = 0;
-    LOG("mount2: end\n");
-    return;
-
-    failure:
-    kSerialPrintf("mount2: failure\n");
     ctx->eax = (u32) -1;
 }
 

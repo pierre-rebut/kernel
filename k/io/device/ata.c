@@ -6,6 +6,7 @@
 #include <sys/idt.h>
 #include <string.h>
 #include <task.h>
+#include <sys/mutex.h>
 #include "ata.h"
 #include "io/io.h"
 #include "io/pic.h"
@@ -82,6 +83,8 @@ static int ata_interrupt_active = 0;
 static int identify_in_progress = 0;
 
 static struct ata_count counters = {0};
+
+static struct Mutex ata_mutex;
 
 struct ata_count ata_stats() {
     return counters;
@@ -201,7 +204,7 @@ static int ata_begin(int id, int command, int nblocks, int offset) {
 }
 
 static int ata_read_unlocked(int id, void *buffer, int nblocks, int offset) {
-    kSerialPrintf("ata nblocks: %d\n", nblocks);
+    LOG("ata read unlocked\n");
 
     if (!ata_begin(id, ATA_COMMAND_READ, nblocks, offset))
         return -2;
@@ -211,6 +214,8 @@ static int ata_read_unlocked(int id, void *buffer, int nblocks, int offset) {
     // For now, busy wait until a fix is in place.
 
     // if(ata_interrupt_active) process_wait(&queue);
+
+    LOG("[ata] read unlocked: loop\n");
 
     for (int i = 0; i < nblocks; i++) {
         if (!ata_wait(id, ATA_STATUS_DRQ, ATA_STATUS_DRQ))
@@ -226,9 +231,11 @@ static int ata_read_unlocked(int id, void *buffer, int nblocks, int offset) {
 
 static int ata_read(int id, void *buffer, int nblocks, int offset) {
     int result;
-    // mutex_lock(&ata_mutex);
+    mutexLock(&ata_mutex);
+    LOG("[ata] read: %u\n", nblocks);
     result = ata_read_unlocked(id, buffer, nblocks, offset);
-    // mutex_unlock(&ata_mutex);
+    LOG("[ata] read: res = %d\n", result);
+    mutexUnlock(&ata_mutex);
     counters.blocks_read[id] += nblocks;
     /*if (current) {
         current->stats.blocks_read += nblocks;
@@ -468,6 +475,8 @@ void ata_init() {
         counters.blocks_read[i] = 0;
         counters.blocks_written[i] = 0;
     }
+
+    mutexInit(&ata_mutex);
 
     kprintf("ata: setting up interrupts\n");
 

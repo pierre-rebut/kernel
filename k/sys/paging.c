@@ -93,6 +93,9 @@ static int checkPageAllowed(struct PageDirectory *pageDirectory, u32 index) {
 }
 
 void pagingDestroyPageDirectory(struct PageDirectory *pageDirectory) {
+    if (pageDirectory == NULL)
+        return;
+
     if (pageDirectory == kernelPageDirectory) {
         kSerialPrintf("Can not free kernel page directory\n");
         return;

@@ -230,7 +230,7 @@ static int procReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
 }
 
 static struct Fs fs_procfs = {
-        .name = "proc",
+        .name = "procfs",
         .mount = &procMount,
         .umount = &procUmount,
         .root = &procRoot,

@@ -553,6 +553,20 @@ static int ext2ReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
     return (pathInode->size / priv->blocksize == blocknum ? pathInode->size % priv->blocksize : priv->blocksize);
 }
 
+static int ext2Stat(struct FsPath *path, struct stat *result) {
+    // struct Ext2PrivData *priv = path->volume->privateData;
+    struct Ext2Inode *pathInode = path->privateData;
+
+    result->inumber = 0;
+    result->file_sz = pathInode->size;
+    result->i_blk_cnt = 0;
+    result->d_blk_cnt = 0;
+    result->blk_cnt = 0;
+    result->idx = 0;
+    result->cksum = 0;
+    return 0;
+}
+
 static struct dirent *ext2Readdir(struct FsPath *path, struct dirent *result) {
     struct Ext2PrivData *priv = path->volume->privateData;
     struct Ext2Inode *pathInode = path->privateData;
@@ -783,14 +797,15 @@ static struct FsVolume *ext2Mount(u32 unit) {
 }
 
 static struct Fs fs_ext2 = {
-        "ext2",
+        "ext2fs",
         .mount = &ext2Mount,
         .umount = &ext2Umount,
         .root = &ext2Root,
         .close = &ext2Close,
         .readdir = &ext2Readdir,
         .lookup = &ext2Lookup,
-        .readBlock = &ext2ReadBlock
+        .readBlock = &ext2ReadBlock,
+        .stat = &ext2Stat
 };
 
 void initExt2FileSystem() {

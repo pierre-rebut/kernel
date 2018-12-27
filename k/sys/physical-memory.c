@@ -61,7 +61,7 @@ u32 initPhysicalMemory(const multiboot_info_t *info) {
     LOG("[PHYMEM] set zero into memory\n");
     memset(physicalMemTable, 0xFF, physicalMemSize * 4);
 
-    LOG("[PHYMEM] set used memory region\n");
+    LOG("[PHYMEM] set unused memory region\n");
     while (memEntry < memEnd) {
         if (memEntry->type == 1 && memEntry->regionAddr < MAX_MEMORY) {
             memorySetRegion((u32) memEntry->regionAddr, (u32) (memEntry->regionAddr + memEntry->regionSize), 0);

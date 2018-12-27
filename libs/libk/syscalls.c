@@ -162,14 +162,10 @@ struct dirent *readdir(int repertoire) {
     return  (struct dirent *) syscall2(SYSCALL_READDIR, (u32) repertoire, (u32) &data);
 }
 
-int mount(char id, const char *fstype, const char *file) {
-    return syscall3(SYSCALL_MOUNT, (u32) id, (u32) fstype, (u32) file);
+int mount(char id, const char *fstype, u32 arg) {
+    return syscall3(SYSCALL_MOUNT, (u32) id, (u32) fstype, arg);
 }
 
 int umount(char id) {
     return syscall1(SYSCALL_UMOUNT, (u32) id);
-}
-
-int mount2(char id, const char *fstype, int unit) {
-    return syscall3(SYSCALL_MOUNT2, (u32) id, (u32) fstype, (u32) unit);
 }

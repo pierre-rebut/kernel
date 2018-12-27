@@ -31,7 +31,7 @@ struct Task *currentTask = NULL;
 struct Task *freeTimeTask = NULL;
 struct Task kernelTask = {0};
 
-void initTasking(struct FsPath *rootDirectory) {
+void initTasking() {
     kernelTask.pid = 0;
     kernelTask.ss = 0x10;
     kernelTask.event.type = TaskEventNone;
@@ -40,8 +40,6 @@ void initTasking(struct FsPath *rootDirectory) {
     kernelTask.console = kernelConsole;
     kernelTask.cmdline = strdup("kernelTask");
     kernelConsole->task = &kernelTask;
-
-    kernelTask.currentDir = rootDirectory;
 
     for (int i = 0; i < MAX_NB_FILE; i++)
         kernelTask.objectList[i] = NULL;
@@ -53,7 +51,6 @@ void initTasking(struct FsPath *rootDirectory) {
             .ac = 0,
             .av = NULL,
             .env = NULL,
-            .dir = kernelTask.currentDir,
             .console = kernelConsole,
             .cmdline = "kernelTask"
     };
@@ -82,9 +79,6 @@ struct Task *createTask(struct TaskCreator *info) {
     task->console = info->console;
 
     task->cmdline = strdup(info->cmdline);
-
-    task->currentDir = info->dir;
-    info->dir->refcount++;
 
     for (int i = 0; i < MAX_NB_FILE; i++)
         task->objectList[i] = NULL;
@@ -233,7 +227,6 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
             .ac = ac,
             .av = newAv,
             .env = newEnv,
-            .dir = currentTask->currentDir,
             .console = console,
             .cmdline = av[0]
     };
@@ -243,6 +236,9 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
         return 0;
 
     console->task = task;
+
+    task->currentDir = currentTask->currentDir;
+    task->currentDir->refcount++;
 
     task->objectList[0] = koCreate(KO_CONS, console, O_RDONLY);
     task->objectList[1] = koCreate(KO_CONS, console, O_WRONLY);

@@ -79,7 +79,7 @@ static struct dirent *devReaddir(struct FsPath *path, struct dirent *result) {
 }
 
 static struct Fs fs_devfs = {
-        .name = "dev",
+        .name = "devfs",
         .mount = &devMount,
         .umount = &devUmount,
         .root = &devRoot,
