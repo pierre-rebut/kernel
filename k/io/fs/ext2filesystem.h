@@ -10,7 +10,15 @@
 
 #define EXT2_SIGNATURE 0xEF53
 
-typedef struct {
+#define INODE_TYPE_FIFO 0x1000
+#define INODE_TYPE_CHAR_DEV 0x2000
+#define INODE_TYPE_DIRECTORY 0x4000
+#define INODE_TYPE_BLOCK_DEV 0x6000
+#define INODE_TYPE_FILE 0x8000
+#define INODE_TYPE_SYMLINK 0xA000
+#define INODE_TYPE_SOCKET 0xC000
+
+struct Ext2Superblock {
     u32 inodes;
     u32 blocks;
     u32 reserved_for_root;
@@ -39,9 +47,9 @@ typedef struct {
     u32 first_nonreserved_inode;
     u16 inode_size;
     u8 unused[934];
-} __attribute__((packed)) Ext2Superblock;
+} __attribute__((packed));
 
-typedef struct {
+struct Ext2BlockGroupDesc {
     u32 block_of_block_usage_bitmap;
     u32 block_of_inode_usage_bitmap;
     u32 block_of_inode_table;
@@ -49,17 +57,9 @@ typedef struct {
     u16 num_of_unalloc_inode;
     u16 num_of_dirs;
     u8 unused[14];
-} __attribute__((packed)) block_group_desc_t;
+} __attribute__((packed));
 
-
-#define INODE_TYPE_FIFO 0x1000
-#define INODE_TYPE_CHAR_DEV 0x2000
-#define INODE_TYPE_DIRECTORY 0x4000
-#define INODE_TYPE_BLOCK_DEV 0x6000
-#define INODE_TYPE_FILE 0x8000
-#define INODE_TYPE_SYMLINK 0xA000
-#define INODE_TYPE_SOCKET 0xC000
-typedef struct {
+struct Ext2Inode {
     u16 type;
     u16 uid;
     u32 size;
@@ -83,25 +83,25 @@ typedef struct {
     u32 tmpBreadir;
     u32 tmpDir;
     u8 ossv2[4];
-} __attribute__((packed)) Ext2Inode;
+} __attribute__((packed));
 
-typedef struct __ext2_dir_entry {
+struct Ext2DirEntry {
     u32 inode;
     u16 size;
     u8 namelength;
     u8 reserved;
     /* name here */
-} __attribute__((packed)) ext2_dir;
+} __attribute__((packed));
 
-typedef struct __ext2_priv_data {
-    Ext2Superblock sb;
+struct Ext2PrivData {
+    struct Ext2Superblock sb;
     u32 first_bgd;
     u32 number_of_bgs;
     u32 blocksize;
     u32 sectors_per_block;
     u32 inodes_per_block;
     struct Device *device;
-} __attribute__((packed)) ext2_priv_data;
+};
 
 void initExt2FileSystem();
 
