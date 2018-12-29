@@ -7,10 +7,10 @@
 
 #include <k/kfs.h>
 #include <stdio.h>
-#include <sys/allocator.h>
 #include <string.h>
+#include <cpu.h>
 #include <sys/paging.h>
-#include <include/cpu.h>
+#include <sys/allocator.h>
 #include <sys/physical-memory.h>
 
 #define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
@@ -52,13 +52,18 @@ static struct FsPath *kfsRoot(struct FsVolume *volume) {
     if (!rootPath)
         return NULL;
 
-    struct kfs_superblock *kfs = volume->privateData;
-    rootPath->privateData = volume->privateData + (kfs->inode_idx * KFS_BLK_SZ);
+    struct kfs_superblock *kfs = (struct kfs_superblock *) KFS_MEM_POS;
+
+    cli();
+    pagingSwitchPageDirectory(volume->privateData);
+    rootPath->privateData = ((void *) kfs + (kfs->inode_idx * KFS_BLK_SZ));
+    pagingSwitchPageDirectory(currentTask->pageDirectory);
+    sti();
     return rootPath;
 }
 
 static struct FsVolume *kfsMount(u32 data) {
-    LOG("kfs mount: %s\n", (const char *) data);
+    LOG("kfs mount: %s - %u - %p\n", (const char *) data, currentTask->pid, currentTask->pageDirectory);
 
     void *pd = NULL;
     void *tmpData = NULL;
@@ -73,23 +78,28 @@ static struct FsVolume *kfsMount(u32 data) {
     struct stat fileStat;
     if (fsStat(file, &fileStat) == -1) {
         kSerialPrintf("[kfs] Can not get file info: %s\n", (const char *) data);
-        goto failure;
+        goto kfsMountFailure;
     }
 
     LOG("[kfs] alloc tmp data\n");
     tmpData = kmalloc(4096, 0, "kfsTmp");
     if (tmpData == NULL)
-        goto failure;
+        goto kfsMountFailure;
 
     LOG("[kfs] create page directory\n");
     pd = pagingCreatePageDirectory();
     if (!pd)
-        goto failure;
+        goto kfsMountFailure;
 
     u32 lengthFile = 0;
-    LOG("[kfs] alloc page (addr: %X, size: %u)\n", KFS_MEM_POS, alignUp(fileStat.file_sz, PAGESIZE));
-    if (pagingAlloc(pd, (void *) KFS_MEM_POS, alignUp(fileStat.file_sz, PAGESIZE), MEM_WRITE))
-        goto failure;
+    u32 allocSize = alignUp(fileStat.file_sz, PAGESIZE);
+    LOG("[kfs] alloc page %p (addr: %X, size: %u)\n", pd, KFS_MEM_POS, allocSize);
+
+    LOG("kfs mount2: %u - %p\n", currentTask->pid, currentTask->pageDirectory);
+    if (pagingAlloc(pd, (void *) KFS_MEM_POS, allocSize, MEM_WRITE))
+        goto kfsMountFailure;
+
+    LOG("kfs mount3: %u - %p\n", currentTask->pid, currentTask->pageDirectory);
 
     LOG("[kfs) read file and put into page alloc\n");
     while (lengthFile < fileStat.file_sz) {
@@ -97,7 +107,7 @@ static struct FsVolume *kfsMount(u32 data) {
         int tmp = fsReadFile(file, tmpData, 4096, lengthFile);
         LOG("[kfs] result: %d\n", tmp);
         if (tmp < 0)
-            goto failure;
+            goto kfsMountFailure;
         if (tmp == 0)
             break;
 
@@ -108,7 +118,6 @@ static struct FsVolume *kfsMount(u32 data) {
         pagingSwitchPageDirectory(currentTask->pageDirectory);
         sti();
         lengthFile += tmp;
-        LOG("[kfs] current pos = %u\n", lengthFile);
     }
 
     LOG("[kfs] check kfs superblock\n");
@@ -122,13 +131,13 @@ static struct FsVolume *kfsMount(u32 data) {
 
     if (res) {
         kSerialPrintf("KFS - Bad superblock\n");
-        goto failure;
+        goto kfsMountFailure;
     }
 
     LOG("[kfs] create FsVolume\n");
     struct FsVolume *kfsVolume = kmalloc(sizeof(struct FsVolume), 0, "newKfsVolume");
     if (kfsVolume == NULL)
-        goto failure;
+        goto kfsMountFailure;
 
     kfsVolume->blockSize = KFS_BLK_DATA_SZ;
     kfsVolume->privateData = pd;
@@ -136,7 +145,7 @@ static struct FsVolume *kfsMount(u32 data) {
     fsPathDestroy(file);
     return kfsVolume;
 
-    failure:
+    kfsMountFailure:
     fsPathDestroy(file);
     kfree(tmpData);
     pagingDestroyPageDirectory(pd);
@@ -174,6 +183,7 @@ static int kfsStat(struct FsPath *path, struct stat *result) {
 static struct FsPath *kfsLookup(struct FsPath *path, const char *name) {
     LOG("[KFS] lookup fct\n");
     struct kfs_inode *node;
+    u32 filesize = 0;
 
     if (*name == 0 || strcmp(name, ".") == 0)
         node = path->privateData;
@@ -181,6 +191,8 @@ static struct FsPath *kfsLookup(struct FsPath *path, const char *name) {
         cli();
         pagingSwitchPageDirectory(path->volume->privateData);
         node = getFileINode(name);
+        if (node != NULL)
+            filesize = node->file_sz;
         pagingSwitchPageDirectory(currentTask->pageDirectory);
         sti();
     }
@@ -194,17 +206,15 @@ static struct FsPath *kfsLookup(struct FsPath *path, const char *name) {
         return NULL;
 
     file->privateData = node;
-    cli();
-    pagingSwitchPageDirectory(path->volume->privateData);
-    file->size = node->file_sz;
-    pagingSwitchPageDirectory(currentTask->pageDirectory);
-    sti();
+    file->size = filesize;
     return file;
 }
 
 static struct dirent *kfsReaddir(struct FsPath *path, struct dirent *result) {
     struct kfs_inode *node = (struct kfs_inode *) path->privateData;
     struct kfs_superblock *kfs = (struct kfs_superblock *) KFS_MEM_POS;
+
+    struct dirent tmp;
 
     cli();
     pagingSwitchPageDirectory(path->volume->privateData);
@@ -216,14 +226,16 @@ static struct dirent *kfsReaddir(struct FsPath *path, struct dirent *result) {
         return NULL;
     }
 
-    strcpy(result->d_name, node->filename);
-    result->d_ino = node->idx;
-    result->d_type = FT_FILE;
+    strcpy(tmp.d_name, node->filename);
+    tmp.d_ino = node->idx;
+    tmp.d_type = FT_FILE;
 
-    path->privateData = (struct kfs_inode *) (path->volume->privateData + (node->next_inode * KFS_BLK_SZ));
+    path->privateData = (struct kfs_inode *) (KFS_MEM_POS + (node->next_inode * KFS_BLK_SZ));
 
     pagingSwitchPageDirectory(currentTask->pageDirectory);
     sti();
+
+    memcpy(result, &tmp, sizeof(struct dirent));
     return result;
 }
 

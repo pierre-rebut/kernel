@@ -24,14 +24,14 @@
 #include "sheduler.h"
 #include "sys/console.h"
 
-#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
-//#define LOG(x, ...)
+//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+#define LOG(x, ...)
 
 static int k_init(const multiboot_info_t *info) {
     initSerial(38400);
-    kSerialPrintf("Init Serial\n");
+    LOG("Init Serial\n");
 
-    kSerialPrintf("Init Terminal\n");
+    LOG("Init Terminal\n");
     initTerminal();
 
     LOG("Init memory\n");
@@ -93,6 +93,7 @@ static int k_init(const multiboot_info_t *info) {
     struct FsVolume *kvolume = NULL;
 
     kprintf("Mount available ATA device\n");
+    LOG("Mount available ATA device\n");
     char mountId = 'A';
     struct Fs *extfs = fsGetFileSystemByName("ext2fs");
     for (u32 i = 0; i < 4; i++) {
@@ -101,7 +102,7 @@ static int k_init(const multiboot_info_t *info) {
         char longname[256];
 
         if (driverAta->probe(i, &nblocks, &blocksize, longname) == 1) {
-            kSerialPrintf("Mounting unit %d on %c: %s\n", i, mountId, longname);
+            LOG("Mounting unit %d on %c: %s\n", i, mountId, longname);
             kprintf("Mounting unit %d on %c: %s\n", i, mountId, longname);
             kvolume = fsVolumeOpen(mountId, extfs, i);
             if (kvolume == NULL)
@@ -118,12 +119,14 @@ static int k_init(const multiboot_info_t *info) {
     freeTimeTask->currentDir->refcount++;
 
     kprintf("Mount procfs on %c\n", mountId);
+    LOG("Mount procfs on %c\n", mountId);
     struct Fs *procfs = fsGetFileSystemByName("procfs");
     struct FsVolume *pvolume = fsVolumeOpen(mountId++, procfs, 0);
     if (!pvolume)
         return -1;
 
     kprintf("Mount devfs on %c\n", mountId);
+    LOG("Mount devfs on %c\n", mountId);
     struct Fs *devfs = fsGetFileSystemByName("devfs");
     struct FsVolume *dvolume = fsVolumeOpen(mountId, devfs, 0);
     if (!dvolume)
@@ -177,11 +180,11 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
     if (k_init(info))
         goto error;
 
-    kSerialPrintf("Read test file\n");
-    printfile("/test");
+    LOG("Read test file\n");
+    // printfile("/test");
 
     taskWaitEvent(TaskEventTimer, 1000);
-    kSerialPrintf("\n### Trying init binary [%s] ###\n\n", (char *) info->cmdline);
+    LOG("\n### Trying init binary [%s] ###\n\n", (char *) info->cmdline);
 
     const char *av[] = {
             (char*)info->cmdline,

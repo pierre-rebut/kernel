@@ -1,25 +1,36 @@
-//
-// Created by rebut_p on 15/12/18.
-//
 
-#include <string.h>
-#include <include/stdio.h>
 #include "allocator.h"
 #include "paging.h"
 #include "physical-memory.h"
-#include "mutex.h"
+#include <stdio.h>
+#include <string.h>
 
-//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
-#define LOG(x, ...)
+/* The heap provides the malloc/free-functionality, i.e. dynamic allocation of memory.
+   It manages a certain amount of continuous virtual memory, starting at "heapStart".
+   Whenever more memory is requested than there is available, the heap expands.
+   For expansion, the heap asks the paging module to map physical memory to the following virtual addresses
+   and increases its "heapSize" variable (but at least by "HEAP_MIN_GROWTH") afterwards.
 
-typedef char bool;
-#define false 0
-#define true 1
+   To manage the free and reserved (allocated) areas of the heap an array of "region" elements is kept.
+   Each region specifies its size and reservation status.
+   Free regions always get merged. Regions don't store their addresses.
+   The third region address is calculated by adding the first and second region size to "heapStart":
+   region_3_addr = heapStart + regions[0].size + regions[1].size
+
+   Before the heap is set up, memory is allocated on a "placement address".
+   This is an identity mapped area of continuous memory,
+   the allocation just moves a pointer forward by the requested size and returns its previous value.
+
+   The heap's management data is placed at this placement address, too.
+   Since this area cannot grow, the heap has a maximum amount of region objects ("regionMaxCount").*/
+
+// TODO: Ensure the heap will not overflow (above KERNEL_heapEnd, cf. memory.h)
+
 
 typedef struct {
     u32 size;
     u32 number;
-    bool reserved;
+    char reserved;
     char comment[21];
 } __attribute__((packed)) region_t;
 
@@ -33,7 +44,7 @@ static u8 *const heapStart = (void *) KERNEL_HEAP_START;
 static u32 heapSize = 0;
 static const u32 HEAP_MIN_GROWTH = 0x10000;
 
-static struct Mutex mtx;
+static struct Mutex mutex = mutexInit();
 
 #ifdef _MEMLEAK_FIND_
 static u32 counter = 0;
@@ -50,8 +61,6 @@ int initAllocator(void) {
     // We take the rest of the placement area
     regionCount = 0;
     regionMaxCount = (PLACEMENT_END - (u32) regions) / sizeof(region_t);
-
-    mutexInit(&mtx);
     return 0;
 }
 
@@ -59,18 +68,17 @@ void *heap_getCurrentEnd(void) {
     return (heapStart + heapSize);
 }
 
-static bool heap_grow(size_t size, u8 *heapEnd, bool continuous) {
-    (void)continuous;
+static char heap_grow(size_t size, u8 *heapEnd, char continuous) {
     // We will have to append another region-object to our array if we can't merge with the last region - check whether there would be enough space to insert the region-object
     if ((regionCount > 0) && regions[regionCount - 1].reserved && (regionCount >= regionMaxCount)) {
-        return (false);
+        return (0);
     }
 
-    mutexLock(&mtx);
+    mutexLock(&mutex);
     // Enhance the memory
-    if (pagingAlloc(kernelPageDirectory, heapEnd, size, MEM_WRITE) != 0) {
-        mutexUnlock(&mtx);
-        return (false);
+    if (pagingAlloc(kernelPageDirectory, heapEnd, size, MEM_WRITE)) {
+        mutexUnlock(&mutex);
+        return (0);
     }
 
     // Maybe we can merge with the last region object?
@@ -79,7 +87,7 @@ static bool heap_grow(size_t size, u8 *heapEnd, bool continuous) {
     }
         // Otherwise insert a new region object
     else {
-        regions[regionCount].reserved = false;
+        regions[regionCount].reserved = 0;
         regions[regionCount].size = size;
         regions[regionCount].number = 0;
 
@@ -87,13 +95,11 @@ static bool heap_grow(size_t size, u8 *heapEnd, bool continuous) {
     }
 
     heapSize += size;
-    mutexUnlock(&mtx);
-    return (true);
+    mutexUnlock(&mutex);
+    return (1);
 }
 
 static void *placementMalloc(size_t size, u32 alignment) {
-    LOG("placement malloc\n");
-
     static void *nextPlacement = (void *) PLACEMENT_BEGIN;
 
     // Avoid odd addresses
@@ -107,7 +113,10 @@ static void *placementMalloc(size_t size, u32 alignment) {
         return (0);
 
     // Do simple placement allocation
+    mutexLock(&mutex);
     nextPlacement = currPlacement + size;
+    mutexUnlock(&mutex);
+
     return (currPlacement);
 }
 
@@ -118,13 +127,15 @@ void *kmalloc(size_t size, u32 alignment, const char *comment) {
     // Analyze alignment and other requirements
     size_t within = 0xFFFFFFFF;
     if (alignment & HEAP_WITHIN_PAGE) {
+        kSerialPrintf("kmalloc alignment warning\n");
         //ASSERT(size <= PAGESIZE);
         within = PAGESIZE;
     } else if (alignment & HEAP_WITHIN_64K) {
+        kSerialPrintf("kmalloc alignment heap within 64k warning\n");
         //ASSERT(size <= 0x10000);
         within = 0x10000;
     }
-    bool continuous = alignment & HEAP_CONTINUOUS;
+    char continuous = alignment & HEAP_CONTINUOUS;
 
     alignment &= HEAP_ALIGNMENT_MASK;
 
@@ -136,14 +147,14 @@ void *kmalloc(size_t size, u32 alignment, const char *comment) {
     // Avoid odd addresses
     size = alignUp(size, 4);
 
-    mutexLock(&mtx);
+    mutexLock(&mutex);
     // Walk the regions and find one being suitable
-    bool foundFree = false;
+    char foundFree = 0;
     u8 *regionAddress = firstFreeAddr;
     for (u32 i = firstFreeRegion; i < regionCount; i++) {
         // Manage caching of first free region
         if (!regions[i].reserved)
-            foundFree = true;
+            foundFree = 1;
         else if (!foundFree) {
             firstFreeRegion = i;
             firstFreeAddr = regionAddress;
@@ -158,13 +169,13 @@ void *kmalloc(size_t size, u32 alignment, const char *comment) {
             (within - (u32) regionAddress % within >= additionalSize)) {
             // Check if the region consists of continuous physical memory if required
             if (continuous) {
-                bool iscontinuous = true;
+                char iscontinuous = 1;
                 for (void *virt1 = (void *) alignDown((u32) alignedAddress, PAGESIZE);
                      (u32) (virt1 + PAGESIZE) <= (u32) (alignedAddress + size); virt1 += PAGESIZE) {
                     u32 phys1 = pagingGetPhysAddr(virt1);
                     u32 phys2 = pagingGetPhysAddr(virt1 + PAGESIZE);
                     if (phys1 + PAGESIZE != phys2) {
-                        iscontinuous = false;
+                        iscontinuous = 0;
                         break;
                     }
                 }
@@ -188,7 +199,7 @@ void *kmalloc(size_t size, u32 alignment, const char *comment) {
             if (alignedAddress != regionAddress) {
                 // Check whether we are able to expand
                 if (regionCount >= regionMaxCount) {
-                    mutexUnlock(&mtx);
+                    mutexUnlock(&mutex);
                     return (0);
                 }
 
@@ -199,7 +210,7 @@ void *kmalloc(size_t size, u32 alignment, const char *comment) {
 
                 // Setup the regions
                 regions[i].size = alignedAddress - regionAddress;
-                regions[i].reserved = false;
+                regions[i].reserved = 0;
 
                 regions[i + 1].size -= regions[i].size;
 
@@ -212,7 +223,7 @@ void *kmalloc(size_t size, u32 alignment, const char *comment) {
             if (regions[i].size > size + additionalSize) {
                 // Check whether we are able to expand
                 if (regionCount + 1 > regionMaxCount) {
-                    mutexUnlock(&mtx);
+                    mutexUnlock(&mutex);
                     return (0);
                 }
 
@@ -223,14 +234,14 @@ void *kmalloc(size_t size, u32 alignment, const char *comment) {
 
                 // Setup the regions
                 regions[i + 1].size = regions[i].size - size;
-                regions[i + 1].reserved = false;
+                regions[i + 1].reserved = 0;
                 regions[i + 1].number = 0;
 
                 regions[i].size = size;
             }
 
             // Set the region to "reserved" and return its address
-            regions[i].reserved = true;
+            regions[i].reserved = 1;
             strncpy(regions[i].comment, comment, 20);
             regions[i].comment[20] = 0;
             regions[i].number = ++consecutiveNumber;
@@ -245,7 +256,7 @@ void *kmalloc(size_t size, u32 alignment, const char *comment) {
             textColor(TEXT);
 #endif
 
-            mutexUnlock(&mtx);
+            mutexUnlock(&mutex);
             return (regionAddress);
 
         } //region is free and big enough
@@ -255,9 +266,9 @@ void *kmalloc(size_t size, u32 alignment, const char *comment) {
 
     // There is nothing free, try to expand the heap
     u32 sizeToGrow = MAX(HEAP_MIN_GROWTH, alignUp(size * 3 / 2, PAGESIZE));
-    bool success = heap_grow(sizeToGrow, (u8 *) ((u32) heapStart + heapSize), continuous);
+    char success = heap_grow(sizeToGrow, (u8 *) ((u32) heapStart + heapSize), continuous);
 
-    mutexUnlock(&mtx);
+    mutexUnlock(&mutex);
 
     if (!success) {
         kSerialPrintf("\nmalloc (\"%s\") failed, heap could not be expanded!", comment);
@@ -291,7 +302,7 @@ void kfree(void *addr) {
     writeInfo(2, "Malloc - free: %u", counter);
 #endif
 
-    mutexLock(&mtx);
+    mutexLock(&mutex);
 
     // Walk the regions and find the correct one
     u8 *regionAddress = heapStart;
@@ -303,7 +314,7 @@ void kfree(void *addr) {
             textColor(TEXT);
 #endif
             regions[i].number = 0;
-            regions[i].reserved = false; // free the region
+            regions[i].reserved = 0; // free the region
 
             // Check for a merge with the next region
             if ((i + 1 < regionCount) && !regions[i + 1].reserved) {
@@ -332,17 +343,16 @@ void kfree(void *addr) {
                 firstFreeAddr = regionAddress;
             }
 
-            mutexUnlock(&mtx);
+            mutexUnlock(&mutex);
             return;
         }
 
         regionAddress += regions[i].size;
     }
 
-    mutexUnlock(&mtx);
+    mutexUnlock(&mutex);
 
     kSerialPrintf("\nBroken free: %Xh", addr);
-    //printStackTrace(0, 0); // Print a stack trace to get the function call that caused the problem
 }
 
 void heap_logRegions(void) {
@@ -363,25 +373,4 @@ void heap_logRegions(void) {
         regionAddress += regions[i].size;
     }
     kSerialPrintf("\n---------------- HEAP REGIONS ----------------\n\n");
-}
-
-u32 getTotalPagedAlloc() {
-    u32 total = 0;
-    mutexLock(&mtx);
-    for (u32 i = 0; i < regionCount; i++) {
-        total += regions[i].size;
-    }
-    mutexUnlock(&mtx);
-    return total;
-}
-
-u32 getTotalUsedAlloc() {
-    u32 total = 0;
-    mutexLock(&mtx);
-    for (u32 i = 0; i < regionCount; i++) {
-        if (regions[i].reserved)
-            total += regions[i].size;
-    }
-    mutexUnlock(&mtx);
-    return total;
 }

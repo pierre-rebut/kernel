@@ -6,6 +6,9 @@
 #include "pic.h"
 #include "io.h"
 
+//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+#define LOG(x, ...)
+
 #define PIC_MASK_ALL 0xFF
 
 #define PIC_MASTER_A 0x20
@@ -43,7 +46,7 @@ void allowIrq(int irq) {
         outb(PIC_SLAVE_B, tmp);
     }
 
-    kSerialPrintf("PIC - Allow irq %d\n", irq);
+    LOG("PIC - Allow irq %d\n", irq);
 }
 
 void pic_eoi_master(int irq) {

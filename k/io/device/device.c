@@ -5,7 +5,11 @@
 
 #include <sys/allocator.h>
 #include <string.h>
+#include <stdio.h>
 #include "device.h"
+
+//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+#define LOG(x, ...)
 
 static struct DeviceDriver *deviceList = NULL;
 
@@ -51,6 +55,8 @@ struct Device *deviceCreate(const char *deviceName, int arg) {
 
     if (deviceDriver->probe(arg, &nblocks, &blockSize, info) == 0)
         return NULL;
+
+    LOG("Device blocksize = %d - %u\n", blockSize, nblocks);
 
     struct Device *device = kmalloc(sizeof(struct Device), 0, "newDevice");
     if (device == NULL)

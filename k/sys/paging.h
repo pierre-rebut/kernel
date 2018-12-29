@@ -24,7 +24,6 @@ struct PageDirectory {
 } __attribute__((packed));
 
 enum MEMFLAGS {
-    MEM_NONE = 0,
     MEM_PRESENT = 1,
     MEM_WRITE = 1 << 1,
     MEM_USER = 1 << 2,

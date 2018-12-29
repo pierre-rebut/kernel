@@ -10,8 +10,8 @@
 #include "devfilesystem.h"
 #include "filesystem.h"
 
-#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
-//#define LOG(x, ...)
+//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+#define LOG(x, ...)
 
 static struct FsPath *devRoot(struct FsVolume *volume) {
     struct FsPath *rootPath = kmalloc(sizeof(struct FsPath), 0, "devRoot");

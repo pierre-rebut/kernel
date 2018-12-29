@@ -13,8 +13,8 @@
 #include "io/pit.h"
 #include "device.h"
 
-#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
-//#define LOG(x, ...)
+//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+#define LOG(x, ...)
 
 #define ATA_IRQ0    46
 #define ATA_IRQ1    47
@@ -108,29 +108,38 @@ static int ata_wait(int id, int mask, int state) {
     clock_t start, elapsed;
     int t;
 
+    LOG("[ata] wait\n");
     clock_t timeout_millis = identify_in_progress ? ATA_IDENTIFY_TIMEOUT : ATA_TIMEOUT;
 
+    LOG("[ata] wait get start tick\n");
     start = gettick();
 
+    LOG("[ata] wait loop\n");
     while (1) {
+        LOG("[ata] inb data\n");
         t = inb(ata_base[id] + ATA_STATUS);
         if ((t & mask) == state) {
+            LOG("[ata] return ok\n");
             return 1;
         }
         if (t & ATA_STATUS_ERR) {
-            kprintf("ata: error\n");
+            kSerialPrintf("ata: error\n");
             ata_reset(id);
             return 0;
         }
+        LOG("[ata] check time\n");
         elapsed = gettick() - start;
         if (elapsed > timeout_millis) {
             if (!identify_in_progress) {
-                kprintf("ata: timeout\n");
+                kSerialPrintf("ata: timeout\n");
             }
             ata_reset(id);
+            LOG("[ata] wait end\n");
             return 0;
         }
+        LOG("[ata] wait event\n");
         taskWaitEvent(TaskEventTimer, 1);
+        LOG("[ata] loop end\n");
     }
 }
 
@@ -218,14 +227,18 @@ static int ata_read_unlocked(int id, void *buffer, int nblocks, int offset) {
     LOG("[ata] read unlocked: loop\n");
 
     for (int i = 0; i < nblocks; i++) {
+        LOG("[ata] wait for data: %d\n", i);
         if (!ata_wait(id, ATA_STATUS_DRQ, ATA_STATUS_DRQ))
             return -3;
+        LOG("[ata] read nblock: %d\n", i);
         ata_pio_read(id, buffer, ATA_BLOCKSIZE);
         buffer += ATA_BLOCKSIZE;
+        LOG("[ata] read end: %d\n", i);
     }
-
+    LOG("[ata] wait busy\n");
     if (!ata_wait(id, ATA_STATUS_BSY, 0))
         return -4;
+    LOG("[ata] read unlocked end\n");
     return nblocks;
 }
 
@@ -476,7 +489,7 @@ void ata_init() {
         counters.blocks_written[i] = 0;
     }
 
-    mutexInit(&ata_mutex);
+    mutexReset(&ata_mutex);
 
     kprintf("ata: setting up interrupts\n");
 

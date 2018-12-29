@@ -6,12 +6,13 @@
 #include <string.h>
 #include <stdio.h>
 #include <sys/allocator.h>
+#include <io/device/fscache.h>
 
 #include "ext2filesystem.h"
 #include "filesystem.h"
 
-#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
-//#define LOG(x, ...)
+//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+#define LOG(x, ...)
 
 static int ext2_read_block(void *buf, u32 block, struct Ext2PrivData *priv) {
     u32 sectors_per_block = priv->sectors_per_block;
@@ -21,8 +22,8 @@ static int ext2_read_block(void *buf, u32 block, struct Ext2PrivData *priv) {
     LOG("we want to read block %d which is sectors [%d; %d] (sector per block: %d)\n",
         block, block * sectors_per_block, block * sectors_per_block + sectors_per_block, sectors_per_block);
 
-    int tmp = deviceRead(priv->device, buf, sectors_per_block, block * sectors_per_block);
-    kSerialPrintf("read block value: %d\n", tmp);
+    int tmp = fsCacheRead(priv->device, buf, sectors_per_block, block * sectors_per_block);
+    LOG("read block value: %d\n", tmp);
     return tmp;
 }
 
@@ -629,6 +630,7 @@ static u32 ext2_read_directory(const char *filename, struct Ext2DirEntry *dir) {
 }
 
 static struct FsPath *ext2Lookup(struct FsPath *path, const char *name) {
+    // todo need fix
     LOG("[ext2] Lookup: %s\n", name);
     struct Ext2PrivData *priv = path->volume->privateData;
     struct Ext2Inode *pathInode = path->privateData;
@@ -645,7 +647,7 @@ static struct FsPath *ext2Lookup(struct FsPath *path, const char *name) {
 
     for (int i = 0; i < 12; i++) {
         u32 b = pathInode->dbp[i];
-        kSerialPrintf("test loop %d: %u\n", i, b);
+        LOG("test loop %d: %u\n", i, b);
         if (b == 0) {
             kSerialPrintf("error 1");
             goto ext2LookupFaillure;
@@ -688,6 +690,8 @@ static struct FsPath *ext2Lookup(struct FsPath *path, const char *name) {
 
 static int ext2Umount(struct FsVolume *volume) {
     struct Ext2PrivData *priv = volume->privateData;
+
+    fsCacheFlush(priv->device);
     deviceDestroy(priv->device);
 
     kfree(volume->privateData);

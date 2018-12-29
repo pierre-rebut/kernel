@@ -14,8 +14,8 @@
 #include <io/pit.h>
 #include "procfilesystem.h"
 
-#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
-//#define LOG(x, ...)
+//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+#define LOG(x, ...)
 
 enum ProcPathType {
     PP_FILE,
@@ -189,18 +189,15 @@ static int procReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
                 read = 0;
                 struct FsVolume *tmpVolume = fsVolumeList;
                 while (tmpVolume) {
-                    read += ksprintf(buffer + read, "[VOLUME]\nmount:%c\ntype:%s\ndevice:%X\nrefcount:%u\nblocksize:%u\n",
-                                     tmpVolume->id, tmpVolume->fs->name, tmpVolume->privateData, tmpVolume->refcount,
-                                     tmpVolume->blockSize
+                    read += ksprintf(buffer + read, "%c:%s,%u,%u\n",
+                                     tmpVolume->id, tmpVolume->fs->name, tmpVolume->refcount, tmpVolume->blockSize
                     );
                     tmpVolume = tmpVolume->next;
-                    if (tmpVolume != NULL)
-                        buffer[read++] = '\n';
                 }
                 break;
             case -2:
-                read = ksprintf(buffer, "[PHYSMEM]\nused:%u\ntotal:%u\n\n[KERNEL MEM]\nused:%u\npaged:%u\n",
-                                getTotalUsedPhysMemory(), getTotalPhysMemory(), getTotalUsedAlloc(), getTotalPagedAlloc()
+                read = ksprintf(buffer, "[PHYSMEM]\nused:%u\ntotal:%u\n\n[KERNEL MEM]\nused:\npaged:\n",
+                                getTotalUsedPhysMemory(), getTotalPhysMemory()//, getTotalUsedAlloc(), getTotalPagedAlloc()
                 );
                 break;
             case -3:

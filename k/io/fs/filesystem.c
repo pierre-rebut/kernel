@@ -17,7 +17,7 @@ struct FsVolume *fsVolumeList = NULL;
 struct FsPath *fsResolvePath(const char *path) {
     if (path[0] == '/') {
         LOG("[FS] resolve path 1\n");
-        return fsGetPathByName(freeTimeTask->currentDir, &path[1]);
+        return fsGetPathByName(currentTask->currentDir->volume->root, &path[1]);
     }
     if (strlen(path) < 3 || path[1] != ':') {
         LOG("[FS] resolve path 2\n");

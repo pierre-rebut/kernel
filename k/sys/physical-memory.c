@@ -15,7 +15,7 @@
 
 static u32 *physicalMemTable = NULL;
 static u32 physicalMemSize;
-static struct Mutex mtx;
+static struct Mutex mtx = mutexInit();
 
 static u32 getMemorySize(memory_map_t *memEntry, memory_map_t *memEnd) {
     u32 memSize = 0;
@@ -70,7 +70,6 @@ u32 initPhysicalMemory(const multiboot_info_t *info) {
     }
 
     memorySetRegion(0x00, PLACEMENT_END, 1);
-    mutexInit(&mtx);
     return memSize;
 }
 

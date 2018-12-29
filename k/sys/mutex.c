@@ -9,7 +9,7 @@
 //#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
-void mutexInit(struct Mutex *mtx) {
+void mutexReset(struct Mutex *mtx) {
     mtx->locked = 0;
     mtx->currentTask = NULL;
     mtx->lstTasksLocked = NULL;
@@ -61,6 +61,7 @@ int mutexTryLock(struct Mutex *mtx) {
     else if (mtx->locked == 0) {
         value = 1;
         mtx->locked = 1;
+        mtx->currentTask = currentTask;
     }
 
     taskSwitching = tmpTaskswitching;

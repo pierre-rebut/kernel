@@ -71,7 +71,8 @@ u32 schedulerSwitchTask(u32 esp) {
 
     if (oldTask == newTask)
         return esp;
-    LOG("Task switch: oldTask: %p / newTask: %p - pid %u %u %u\n", oldTask, newTask, newTask->pid, esp, newTask->esp);
+    LOG("Task switch: oldTask: %p (pid %u, esp %u)/ newTask: %p (pid %u, esp %u)\n",
+        oldTask, oldTask->pid, esp, newTask, newTask->pid, newTask->esp);
     return taskSwitch(newTask);
 }
 

@@ -18,7 +18,8 @@ struct Mutex {
     struct MutexTaskLock *lstTasksLocked;
 };
 
-void mutexInit(struct Mutex *mtx);
+#define mutexInit() {0, NULL, NULL}
+void mutexReset(struct Mutex *mtx);
 int mutexLock(struct Mutex *mtx);
 int mutexTryLock(struct Mutex *mtx);
 int mutexUnlock(struct Mutex *mtx);
