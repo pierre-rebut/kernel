@@ -602,7 +602,6 @@ static struct dirent *ext2Readdir(struct FsPath *path, struct dirent *result) {
 
     dir = (struct Ext2DirEntry *) ((u32) dir + dir->size);
     if ((u32) pathInode->tmpDir >= priv->blocksize || dir->inode == 0) {
-        LOG("bite en bois\n");
         pathInode->tmpDir = 0;
         pathInode->tmpBreadir += 1;
     }
@@ -611,8 +610,9 @@ static struct dirent *ext2Readdir(struct FsPath *path, struct dirent *result) {
     return result;
 }
 
-static u32 ext2_read_directory(const char *filename, struct Ext2DirEntry *dir) {
-    while (dir->inode != 0) {
+static u32 ext2_read_directory(const char *filename, void *buf, u32 blocksize) {
+    struct Ext2DirEntry *dir = buf;
+    while ((u32)dir < (u32)buf + blocksize && dir->inode != 0) {
         char *name = (char *) kmalloc(dir->namelength + 1, 0, "newName");
         memcpy(name, &dir->reserved + 1, dir->namelength);
         name[dir->namelength] = 0;
@@ -654,7 +654,7 @@ static struct FsPath *ext2Lookup(struct FsPath *path, const char *name) {
         }
 
         ext2_read_block(buf, b, priv);
-        fileInode = ext2_read_directory(name, buf);
+        fileInode = ext2_read_directory(name, buf, priv->blocksize);
         if (fileInode)
             break;
     }
