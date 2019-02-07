@@ -51,6 +51,9 @@ u32 loadBinary(struct PageDirectory *pd, const void *data, u32 size) {
         memset((void *) (vaddr + prgHeader[i].p_filesz), 0, prgHeader[i].p_memsz - prgHeader[i].p_filesz);
         pagingSwitchPageDirectory(currentTask->pageDirectory);
         sti();
+
+        if (!(prgHeader[i].p_flags & PF_W))
+            pagingSetFlags(pd, (void*) vaddr, memsz, MEM_USER);
     }
 
     return binHeader->e_entry;

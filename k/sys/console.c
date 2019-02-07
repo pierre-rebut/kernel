@@ -100,6 +100,7 @@ void consoleKeyboardHandler(int code) {
 
     char c = currentKeyMap[code - 2];
     val->buffer[val->writePtr] = c;
+    val->tmpBuffer[val->writePtr] = code;
     val->writePtr = (val->writePtr + 1) % CONSOLE_BUFFER_SIZE;
 
     if (activeConsole->mode == ConsoleModeText) {
@@ -132,6 +133,17 @@ char consoleGetkey(struct Console *console) {
         return -1;
 
     char tmp = val->buffer[val->readPtr];
+    val->readPtr = (val->readPtr + 1) % CONSOLE_BUFFER_SIZE;
+    return tmp;
+}
+
+int consoleGetkey2(struct Console *console) {
+    struct CirBuffer *val = &console->readBuffer;
+
+    if (val->readPtr == val->writePtr)
+        return -1;
+
+    int tmp = val->tmpBuffer[val->readPtr];
     val->readPtr = (val->readPtr + 1) % CONSOLE_BUFFER_SIZE;
     return tmp;
 }

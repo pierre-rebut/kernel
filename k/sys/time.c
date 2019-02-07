@@ -1,7 +1,6 @@
-/*
-*  license and disclaimer for the use of this source code as per statement below
-*  Lizenz und Haftungsausschluss f�r die Verwendung dieses Sourcecodes siehe unten
-*/
+//
+// Created by rebut_p on 23/12/18.
+//
 
 #include "time.h"
 #include <io/cmos.h>

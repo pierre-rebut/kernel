@@ -22,8 +22,3 @@ int writeSerial(const void *str, u32 length) {
     }
     return res;
 }
-
-int writeSerialFromFD(void *tmp, void *data, u32 size) {
-    (void)tmp;
-    return writeSerial(data, size);
-}

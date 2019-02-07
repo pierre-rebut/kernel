@@ -487,14 +487,12 @@ struct image *load_image(const char *path) {
 
     for (unsigned int i = 0; i < img->height; i++) {
         rc = read(fd, img->data[i], img->width);
-        printfErr("bite en bois: %d\n", ppl);
         if (rc < (int) img->width) {
             printfErr("read 2 error: %d - %d\n", rc, img->width);
             goto err;
         }
 
         rc = seek(fd, ppl, SEEK_CUR);
-        printfErr("seek: %d\n", rc);
 
         if (rc == (off_t) -1) {
             printfErr("seek error\n");

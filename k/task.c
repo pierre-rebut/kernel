@@ -104,7 +104,7 @@ struct Task *createTask(struct TaskCreator *info) {
     *(--stack) = 0;                 // error code
     *(--stack) = 0;                 // Interrupt nummer
 
-    *(--stack) = info->ac;                // eax. Used to give argc to user programs.
+    *(--stack) = info->ac;          // eax. Used to give argc to user programs.
     *(--stack) = (u32) info->av;    // ecx. Used to give argv to user programs.
     *(--stack) = (u32) info->env;
     *(--stack) = 0;
@@ -154,14 +154,14 @@ static const char **copyArrayIntoUserland(struct PageDirectory *pd, u32 position
 }
 
 u32 createProcess(const char *cmdline, const char **av, const char **env) {
-    LOG("task: openfile\n");
+    LOG("[TASK] openfile\n");
     struct FsPath *file = fsResolvePath(cmdline);
     if (!file) {
         kSerialPrintf("[TASK] Can not open file: %s\n", cmdline);
         return 0;
     }
 
-    LOG("task: get file stat\n");
+    LOG("[TASK] get file stat\n");
     struct stat fileStat;
     if (fsStat(file, &fileStat) == -1) {
         kSerialPrintf("[TASK] Can not get file info: %s\n", cmdline);
@@ -170,7 +170,7 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
 
     s32 fileSize = fileStat.file_sz;
 
-    LOG("task: kmalloc of size %d\n", fileSize);
+    LOG("[TASK] kmalloc of size %d\n", fileSize);
     char *data = kmalloc(sizeof(char) * fileSize, 0, "data bin file");
     if (data == NULL) {
         fsPathDestroy(file);
@@ -178,7 +178,7 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
         return 0;
     }
 
-    LOG("task: read\n");
+    LOG("[TASK] read\n");
     s32 readSize = fsReadFile(file, data, (u32) fileSize, 0);
     fsPathDestroy(file);
 
@@ -188,7 +188,7 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
         return 0;
     }
 
-    LOG("task: alloc pagedirec\n");
+    LOG("[TASK] alloc pagedirec\n");
     struct PageDirectory *pageDirectory = pagingCreatePageDirectory();
     if (pageDirectory == NULL) {
         kfree(data);
@@ -196,7 +196,7 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
         return 0;
     }
 
-    LOG("task: loadbin\n");
+    LOG("[TASK] loadbin\n");
     u32 entryPrg = loadBinary(pageDirectory, data, (u32) fileSize);
     kfree(data);
 
@@ -214,12 +214,12 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
     const char **newAv = copyArrayIntoUserland(pageDirectory, USER_ARG_BUFFER, ac, av);
     const char **newEnv = copyArrayIntoUserland(pageDirectory, USER_ENV_BUFFER, envc, env);
 
-    LOG("task: create new console\n");
+    LOG("[TASK] create new console\n");
     struct Console *console = createConsole();
     if (!console)
         return 0;
 
-    LOG("task: add task (entry: %X)\n", entryPrg);
+    LOG("[TASK] add task (entry: %X)\n", entryPrg);
     struct TaskCreator taskInfo = {
             .pageDirectory = pageDirectory,
             .entryPoint = entryPrg,
@@ -248,15 +248,15 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
 
     setActiveConsole(console);
 
-    LOG("task: end\n");
+    LOG("[TASK] end\n");
     return task->pid;
 }
 
 int taskKill(struct Task *task) {
-    LOG("Killing task: %u\n", task->pid);
+    LOG("[TASK] Killing %u\n", task->pid);
 
     if (task->pid == 0) {
-        kSerialPrintf("can not kill kernel task !!\n");
+        kSerialPrintf("[TASK] can not kill kernel task !!\n");
         return -1;
     }
 

@@ -30,7 +30,7 @@ void schedulerDoNothing() {
 }
 
 static char checkTaskEvent(struct Task *task) {
-    //LOG("Check task event for: %X\n", task);
+    LOG("[scheduler] Check task event for: %X\n", task);
     switch (task->event.type) {
         case TaskEventNone:
             return 1;
@@ -71,13 +71,13 @@ u32 schedulerSwitchTask(u32 esp) {
 
     if (oldTask == newTask)
         return esp;
-    LOG("Task switch: oldTask: %p (pid %u, esp %u)/ newTask: %p (pid %u, esp %u)\n",
+    LOG("[scheduler] Task switch: oldTask: %p (pid %u, esp %u)/ newTask: %p (pid %u, esp %u)\n",
         oldTask, oldTask->pid, esp, newTask, newTask->pid, newTask->esp);
     return taskSwitch(newTask);
 }
 
 void schedulerForceSwitchTask() {
-    LOG("Scheduler: force switch task\n");
+    LOG("[scheduler] force switch task\n");
     asm volatile("int $126");
 }
 

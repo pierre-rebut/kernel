@@ -7,8 +7,8 @@
 #include <include/stdio.h>
 #include "fscache.h"
 
-#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
-//#define LOG(x, ...)
+//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+#define LOG(x, ...)
 
 struct FsCache *fsCacheList = NULL;
 
@@ -32,6 +32,9 @@ static struct FsCache *findOrCreateFsCache(struct Device *device) {
     tmpCache->prev = NULL;
     tmpCache->next = fsCacheList;
     tmpCache->dataBlock = NULL;
+    tmpCache->nbBlock = 0;
+    tmpCache->lastBlock = NULL;
+
     if (fsCacheList)
         fsCacheList->prev = tmpCache;
     fsCacheList = tmpCache;
@@ -60,6 +63,10 @@ static struct FsCacheBlock *findFsCacheBlock(struct FsCache *fsCache, int offset
             LOG("[fsCache] cache found %d\n", offset);
 
             if (fsCache->dataBlock != tmpBlock) {
+                if (fsCache->lastBlock == tmpBlock) {
+                    fsCache->lastBlock = tmpBlock->prev;
+                }
+
                 if (tmpBlock->next)
                     tmpBlock->next->prev = tmpBlock->prev;
                 if (tmpBlock->prev)
@@ -102,6 +109,19 @@ static struct FsCacheBlock *createAndReadDevice(struct FsCache *fsCache, int nbl
         fsCache->dataBlock->prev = tmpBlock;
 
     fsCache->dataBlock = tmpBlock;
+    if (fsCache->lastBlock == NULL)
+        fsCache->lastBlock = tmpBlock;
+
+    if (fsCache->nbBlock < FSCACHE_NB_BLOCK_LIMIT)
+        fsCache->nbBlock++;
+    else {
+        LOG("[fsCache] remove block upon limit\n");
+        struct FsCacheBlock *tmp = fsCache->lastBlock;
+        fsCache->lastBlock = tmp->prev;
+        fsCache->lastBlock->next = NULL;
+        kfree(tmp->data);
+        kfree(tmp);
+    }
     return tmpBlock;
 
     createAndReadDeviceFailure:
@@ -135,6 +155,7 @@ int fsCacheFlush(struct Device *device) {
     while (tmpBlock) {
         struct FsCacheBlock *tmp = tmpBlock;
         tmpBlock = tmpBlock->next;
+        kfree(tmp->data);
         kfree(tmp);
     }
 

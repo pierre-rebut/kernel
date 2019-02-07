@@ -136,7 +136,7 @@ static void sys_sbrk(struct esp_context *ctx) {
 }
 
 static void sys_getkey(struct esp_context *ctx) {
-    int tmp = consoleGetkey(currentTask->console);
+    int tmp = consoleGetkey2(currentTask->console);
     ctx->eax = (u32) tmp;
 }
 

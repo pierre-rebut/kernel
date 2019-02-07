@@ -5,6 +5,8 @@
 #ifndef KERNEL_FSCACHE_H
 #define KERNEL_FSCACHE_H
 
+#define FSCACHE_NB_BLOCK_LIMIT 2000
+
 #include <k/types.h>
 #include "device.h"
 
@@ -22,6 +24,9 @@ struct FsCache {
 
     struct FsCache *next;
     struct FsCache *prev;
+
+    u32 nbBlock;
+    struct FsCacheBlock *lastBlock;
 };
 
 int fsCacheRead(struct Device *device, void *buffer, int nblocks, int offset);

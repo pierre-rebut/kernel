@@ -87,7 +87,7 @@ static int k_init(const multiboot_info_t *info) {
     sti();
 
     kprintf("Init ATA driver\n");
-    ata_init();
+    ataInit();
 
     struct DeviceDriver *driverAta = deviceGetDeviceDriverByName("ata");
     struct FsVolume *kvolume = NULL;
@@ -135,42 +135,6 @@ static int k_init(const multiboot_info_t *info) {
     return 0;
 }
 
-void printfile(const char *pathname) {
-    char *data = NULL;
-
-    struct FsPath *file = fsResolvePath(pathname);
-    if (!file)
-        return;
-
-    kSerialPrintf("File found\n");
-
-    struct stat fileStat;
-    if (fsStat(file, &fileStat) == -1)
-        goto failure;
-
-    kSerialPrintf("Stat found: %d\n", fileStat.file_sz);
-    s32 fileSize = fileStat.file_sz;
-
-    data = kmalloc(sizeof(char) * fileSize, 0, "datale");
-    if (data == NULL)
-        goto failure;
-
-    kSerialPrintf("alloc ok\n");
-
-    s32 readSize = fsReadFile(file, data, (u32) fileSize, 0);
-    if (readSize != fileSize)
-        goto failure;
-
-    kSerialPrintf("read ok\n");
-
-    writeSerial(data, (u32)readSize);
-
-    failure:
-    kSerialPrintf("end\n");
-    fsPathDestroy(file);
-    kfree(data);
-}
-
 void k_main(unsigned long magic, multiboot_info_t *info) {
     taskSwitching = 0;
 
@@ -179,9 +143,6 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
 
     if (k_init(info))
         goto error;
-
-    LOG("Read test file\n");
-    // printfile("/test");
 
     taskWaitEvent(TaskEventTimer, 1000);
     LOG("\n### Trying init binary [%s] ###\n\n", (char *) info->cmdline);

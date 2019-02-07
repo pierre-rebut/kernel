@@ -6,15 +6,12 @@
 #define KERNEL_ATA_H
 
 #define ATA_BLOCKSIZE 512
-#define ATAPI_BLOCKSIZE 2048
 
 struct ata_count {
 	int blocks_written[4];
 	int blocks_read[4];
 };
 
-void ata_init();
-
-struct ata_count ata_stats();
+void ataInit();
 
 #endif //KERNEL_ATA_H

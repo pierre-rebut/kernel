@@ -13,8 +13,8 @@
 #include <sys/allocator.h>
 #include <sys/physical-memory.h>
 
-#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
-//#define LOG(x, ...)
+//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+#define LOG(x, ...)
 
 #define KFS_MEM_POS 0x1400000
 
@@ -63,55 +63,55 @@ static struct FsPath *kfsRoot(struct FsVolume *volume) {
 }
 
 static struct FsVolume *kfsMount(u32 data) {
-    LOG("kfs mount: %s - %u - %p\n", (const char *) data, currentTask->pid, currentTask->pageDirectory);
+    LOG("KFS mount: %s - %u - %p\n", (const char *) data, currentTask->pid, currentTask->pageDirectory);
 
     void *pd = NULL;
     void *tmpData = NULL;
 
     struct FsPath *file = fsResolvePath((const char *) data);
     if (!file) {
-        kSerialPrintf("[kfs] Can not open file: %s\n", (const char *) data);
+        kSerialPrintf("[KFS] Can not open file: %s\n", (const char *) data);
         return NULL;
     }
 
-    LOG("[kfs] get file stat\n");
+    LOG("[KFS] get file stat\n");
     struct stat fileStat;
     if (fsStat(file, &fileStat) == -1) {
-        kSerialPrintf("[kfs] Can not get file info: %s\n", (const char *) data);
+        kSerialPrintf("[KFS] Can not get file info: %s\n", (const char *) data);
         goto kfsMountFailure;
     }
 
-    LOG("[kfs] alloc tmp data\n");
+    LOG("[KFS] alloc tmp data\n");
     tmpData = kmalloc(4096, 0, "kfsTmp");
     if (tmpData == NULL)
         goto kfsMountFailure;
 
-    LOG("[kfs] create page directory\n");
+    LOG("[KFS] create page directory\n");
     pd = pagingCreatePageDirectory();
     if (!pd)
         goto kfsMountFailure;
 
     u32 lengthFile = 0;
     u32 allocSize = alignUp(fileStat.file_sz, PAGESIZE);
-    LOG("[kfs] alloc page %p (addr: %X, size: %u)\n", pd, KFS_MEM_POS, allocSize);
+    LOG("[KFS] alloc page %p (addr: %X, size: %u)\n", pd, KFS_MEM_POS, allocSize);
 
-    LOG("kfs mount2: %u - %p\n", currentTask->pid, currentTask->pageDirectory);
+    LOG("[KFS] mount2: %u - %p\n", currentTask->pid, currentTask->pageDirectory);
     if (pagingAlloc(pd, (void *) KFS_MEM_POS, allocSize, MEM_WRITE))
         goto kfsMountFailure;
 
-    LOG("kfs mount3: %u - %p\n", currentTask->pid, currentTask->pageDirectory);
+    LOG("[KFS] mount3: %u - %p\n", currentTask->pid, currentTask->pageDirectory);
 
-    LOG("[kfs) read file and put into page alloc\n");
+    LOG("[KFS] read file and put into page alloc\n");
     while (lengthFile < fileStat.file_sz) {
-        LOG("[kfs] read data from file\n");
+        LOG("[KFS] read data from file\n");
         int tmp = fsReadFile(file, tmpData, 4096, lengthFile);
-        LOG("[kfs] result: %d\n", tmp);
+        LOG("[KFS] result: %d\n", tmp);
         if (tmp < 0)
             goto kfsMountFailure;
         if (tmp == 0)
             break;
 
-        LOG("[kfs] memcpy to page alloc\n");
+        LOG("[KFS] memcpy to page alloc\n");
         cli();
         pagingSwitchPageDirectory(pd);
         memcpy((void *) KFS_MEM_POS + lengthFile, tmpData, (u32) tmp);
@@ -120,7 +120,7 @@ static struct FsVolume *kfsMount(u32 data) {
         lengthFile += tmp;
     }
 
-    LOG("[kfs] check kfs superblock\n");
+    LOG("[KFS] check kfs superblock\n");
     struct kfs_superblock *tmp = (struct kfs_superblock *) KFS_MEM_POS;
 
     cli();
@@ -134,7 +134,7 @@ static struct FsVolume *kfsMount(u32 data) {
         goto kfsMountFailure;
     }
 
-    LOG("[kfs] create FsVolume\n");
+    LOG("[KFS] create FsVolume\n");
     struct FsVolume *kfsVolume = kmalloc(sizeof(struct FsVolume), 0, "newKfsVolume");
     if (kfsVolume == NULL)
         goto kfsMountFailure;
@@ -261,11 +261,11 @@ static int kfsReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
 
         blockIndex = iblock->blks;
         blocknum = (blocknum - KFS_DIRECT_BLK) % KFS_INDIRECT_BLK;
-        LOG("iblockIndex: %u (max %d) %d / blocknum = %u\n", iblockIndex, node->i_blk_cnt, iblock->blk_cnt, blocknum);
+        LOG("[KFS] iblockIndex: %u (max %d) %d / blocknum = %u\n", iblockIndex, node->i_blk_cnt, iblock->blk_cnt, blocknum);
     } else {
         if (blocknum >= node->d_blk_cnt)
             goto failure;
-        LOG("blocknum %u\n", blocknum);
+        LOG("[KFS] blocknum %u\n", blocknum);
     }
 
     struct kfs_block *block = ((void *) kfs) + (blockIndex[blocknum] * KFS_BLK_SZ);

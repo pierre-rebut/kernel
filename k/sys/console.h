@@ -18,6 +18,7 @@ struct CirBuffer {
     int readPtr;
     int writePtr;
     char buffer[CONSOLE_BUFFER_SIZE];
+    int tmpBuffer[CONSOLE_BUFFER_SIZE];
 };
 
 struct Console {
@@ -45,6 +46,8 @@ void consoleKeyboardHandler(int code);
 char isConsoleReadReady(struct Console *console);
 
 char consoleGetkey(struct Console *console);
+
+int consoleGetkey2(struct Console *console);
 
 s32 readKeyboardFromConsole(void *entryData, void *buf, u32 size);
 
