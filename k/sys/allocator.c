@@ -233,3 +233,17 @@ void kfree(void *addr) {
 
     kSerialPrintf("[kfree] Broken free: %Xh\n", addr);
 }
+
+void kmallocGetInfo(u32 *total, u32 *used) {
+    *total = 0;
+    *used = 0;
+
+    mutexLock(&mutex);
+    for (u32 i = 0; i < regionCount; i++) {
+        if (regions[i].reserved)
+            *used += regions[i].size;
+
+        *total += regions[i].size;
+    }
+    mutexUnlock(&mutex);
+}

@@ -85,14 +85,14 @@ static int procStat(struct FsPath *path, struct stat *result) {
 }
 
 static struct FsPath *procLookup(struct FsPath *path, const char *name) {
-    (void)path;
+    (void) path;
 
     struct ProcPath *procPath = kmalloc(sizeof(struct ProcPath), 0, "newProcPath");
     if (procPath == NULL)
         return NULL;
 
     if (*name == 0 || strcmp(name, ".") == 0) {
-        procPath->data = -4;
+        procPath->data = -5;
         procPath->type = PP_FOLDER;
     } else if (strcmp(name, "mounts") == 0) {
         procPath->data = -1;
@@ -105,6 +105,9 @@ static struct FsPath *procLookup(struct FsPath *path, const char *name) {
         procPath->type = PP_FILE;
     } else if (strcmp(name, "uptime") == 0) {
         procPath->data = -4;
+        procPath->type = PP_FILE;
+    } else if (strcmp(name, "self") == 0) {
+        procPath->data = -5;
         procPath->type = PP_FILE;
     } else {
         struct Task *task;
@@ -157,6 +160,9 @@ static struct dirent *procReaddir(struct FsPath *path, struct dirent *result) {
             case -4:
                 ksprintf(result->d_name, "%s", "uptime");
                 break;
+            case -5:
+                ksprintf(result->d_name, "%s", "self");
+                break;
             default:
                 return NULL;
         }
@@ -195,11 +201,13 @@ static int procReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
                     tmpVolume = tmpVolume->next;
                 }
                 break;
-            case -2:
-                read = ksprintf(buffer, "[PHYSMEM]\nused:%u\ntotal:%u\n\n[KERNEL MEM]\nused:\npaged:\n",
-                                getTotalUsedPhysMemory(), getTotalPhysMemory()//, getTotalUsedAlloc(), getTotalPagedAlloc()
-                );
+            case -2: {
+                u32 total, used;
+                kmallocGetInfo(&total, &used);
+                read = ksprintf(buffer, "[PHYSMEM]\nused:%u\ntotal:%u\n\n[KERNEL MEM]\nused:%u\npaged:%u\n",
+                                getTotalUsedPhysMemory(), getTotalPhysMemory(), total, used);
                 break;
+            }
             case -3:
                 read = getCurrentDateAndTime(buffer);
                 buffer[read++] = '\n';
@@ -207,6 +215,14 @@ static int procReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
                 break;
             case -4:
                 read = ksprintf(buffer, "%lu\n", gettick());
+                break;
+            case -5:
+                read = ksprintf(buffer, "pid:%u\ncmdline:%s\nprivilege:%s\nevent:%d,%lu,%u\n",
+                                currentTask->pid,
+                                (currentTask->cmdline ? currentTask->cmdline : "NONE"),
+                                (currentTask->privilege == TaskPrivilegeKernel ? "KERNEL" : "USER"),
+                                currentTask->event.type, currentTask->event.timer, currentTask->event.arg
+                );
                 break;
             default:
                 read = -1;
@@ -216,10 +232,11 @@ static int procReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
         if (!task)
             return -1;
 
-        read = ksprintf(buffer, "cmdline:%s\nprivilege:%s\nevent:%d,%lu,%u\n",
-                            (task->cmdline ? task->cmdline : "NONE"),
-                            (task->privilege == TaskPrivilegeKernel ? "KERNEL" : "USER"),
-                            task->event.type, task->event.timer, task->event.arg
+        read = ksprintf(buffer, "pid:%u\ncmdline:%s\nprivilege:%s\nevent:%d,%lu,%u\n",
+                        task->pid,
+                        (task->cmdline ? task->cmdline : "NONE"),
+                        (task->privilege == TaskPrivilegeKernel ? "KERNEL" : "USER"),
+                        task->event.type, task->event.timer, task->event.arg
         );
     }
 
