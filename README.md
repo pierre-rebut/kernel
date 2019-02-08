@@ -11,16 +11,12 @@ dependancies for building
 
 launch k
 --------
-	$ qemu-system-x86_64 -cdrom k.iso -serial stdio
+	* Use tools/create-img.sh to genreate a k.img virtual hard drive
+	* Create a build dir && use cmake .. && make
+	* Use tools/generate_ext2.sh to cpy kernel_epita and app onto k.img
+	$ qemu-system-x86_64 -hda format=raw,k.img -serial stdio
 
 TODO
 ----
 
-* rework syscall apis
-* change Fs (iso? something else?)
-* propagation of all changes in courses
-* maybe rename libc/libk
-* rework/rewrite *all* roms
-* more userland tests for the students
-* how the sound is working?
-* implement mouse support in ref
+Check trello k - os
