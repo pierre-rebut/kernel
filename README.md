@@ -1,14 +1,6 @@
 K
 =
 
-dependancies for building
---------------------------
-
-* gcc-multilib
-* grub2 (for grub-mkrescue)
-* libisoburn
-* find
-
 launch k
 --------
 	* Use tools/create-img.sh to genreate a k.img virtual hard drive
