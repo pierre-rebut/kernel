@@ -12,4 +12,8 @@ typedef signed int s32;
 typedef unsigned long long u64;
 typedef signed long long s64;
 
+#define KILO 1024
+#define MEGA (KILO*KILO)
+#define GIGA (KILO*KILO*KILO)
+
 #endif

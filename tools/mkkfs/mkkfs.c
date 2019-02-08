@@ -30,8 +30,11 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
+#include <getopt.h>
+#include <libgen.h>
+#include <zconf.h>
 
-#include <k/kfs.h>
+#include "kfs.h"
 
 #define align_up(v, d)    ((((v) + (d) - 1) / (d)) * (d))
 
@@ -169,7 +172,7 @@ kfs_write_files(int romfd, char **files, size_t nb_files, size_t blkoff) {
     for (size_t i = 0; i < nb_files; ++i, inode_off++) {
         int fd = open(files[i], O_RDONLY);
 
-        if (!fd)
+        if (fd == -1)
             err(1, "unable to open \"%s\"", files[i]);
 
         struct stat st;
@@ -212,7 +215,7 @@ kfs_write_files(int romfd, char **files, size_t nb_files, size_t blkoff) {
 static inline void usage(void) {
     extern const char *__progname;
 
-    fprintf(stderr, "usage: %s [-v] [-n name] -o rom_file files...\n",
+    fprintf(stderr, "usage: %s [-volume] [-n name] -o rom_file files...\n",
             __progname);
 
     exit(1);
@@ -223,7 +226,7 @@ int main(int argc, char **argv) {
     char *rom_name = NULL;
     int opt;
 
-    while ((opt = getopt(argc, argv, "n:o:v")) != -1) {
+    while ((opt = getopt(argc, argv, "n:o:volume")) != -1) {
         switch (opt) {
             case 'n':
                 rom_name = optarg;

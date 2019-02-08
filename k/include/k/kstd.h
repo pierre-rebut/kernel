@@ -25,8 +25,6 @@
 #define K_KSTD_H_
 
 #include <k/types.h>
-
-typedef s32 ssize_t;
 typedef s32 off_t;
 
 struct melody {
@@ -117,31 +115,13 @@ enum e_mouse_codes {
 
 /* misc */
 #define O_RDONLY	0
+#define O_WRONLY	1
 #define SEEK_SET	0
 #define SEEK_CUR	1
 #define SEEK_END	2
-#define VIDEO_GRAPHIC	0
-#define VIDEO_TEXT	1
 
 /*
 ** syscalls
 */
-
-#define SYSCALL_WRITE			0
-#define SYSCALL_WRITESERIAL		1
-#define SYSCALL_SBRK			2
-#define SYSCALL_GETKEY			3
-#define SYSCALL_GETTICK			4
-#define SYSCALL_OPEN			5
-#define SYSCALL_READ			6
-#define SYSCALL_SEEK			7
-#define SYSCALL_CLOSE			8
-#define SYSCALL_SETVIDEO		9
-#define SYSCALL_SWAP_FRONTBUFFER	10
-#define SYSCALL_PLAYSOUND		11
-#define SYSCALL_GETMOUSE		12 /* XXX: not implemented */
-#define SYSCALL_GETKEYMODE		13
-
-#define NR_SYSCALL			(SYSCALL_GETKEYMODE + 1)
 
 #endif				/* !KSTD_H_ */

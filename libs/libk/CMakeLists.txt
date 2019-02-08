@@ -1,0 +1,13 @@
+include_directories(include)
+include_directories(../libc/include)
+
+set(SOURCE
+        calloc.c
+        graphic.c
+        malloc.c
+        realloc.c
+        sound.c
+        strdup.c
+        syscalls.c)
+
+add_library(k STATIC ${SOURCE})

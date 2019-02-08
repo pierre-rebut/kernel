@@ -1,207 +1,174 @@
-#include "multiboot.h"
-#include "serial.h"
-#include "gdt.h"
-#include "idt.h"
-#include "pic.h"
-#include "getkey.h"
-#include "pit.h"
-#include "libvga.h"
-#include "kfilesystem.h"
-#include "terminal.h"
-#include "binary.h"
-#include "task.h"
-
 #include <stdio.h>
+#include <cpu.h>
+#include <multiboot.h>
+#include <io/device/ata.h>
+#include <sys/syscall.h>
+#include <include/multiboot.h>
+#include <io/fs/procfilesystem.h>
+#include <io/fs/devfilesystem.h>
+#include <io/device/device.h>
+#include <io/fs/ext2filesystem.h>
 
-#define TEST_INTERRUPT(id) \
-    printf("- Test interrupt: "#id"\n"); \
-    asm volatile("int $"#id"\n")
+#include "io/serial.h"
+#include "sys/gdt.h"
+#include "sys/idt.h"
+#include "io/pic.h"
+#include "io/keyboard.h"
+#include "io/pit.h"
+#include "io/fs/kfilesystem.h"
+#include "io/terminal.h"
+#include "task.h"
+#include "sys/allocator.h"
+#include "sys/physical-memory.h"
+#include "sys/paging.h"
+#include "sheduler.h"
+#include "sys/console.h"
 
-static void k_init() {
+//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+#define LOG(x, ...)
+
+static int k_init(const multiboot_info_t *info) {
     initSerial(38400);
-    printf("Serial init\n");
+    LOG("Init Serial\n");
 
-    initMemory();
-    printf("Memory init\n");
-
+    LOG("Init Terminal\n");
     initTerminal();
-    printf("Terminal init\n");
 
+    LOG("Init memory\n");
+    kprintf("Init Memory\n");
+    initMemory();
+
+    LOG("Init Physical Memory\n");
+    kprintf("Init Physical Memory\n");
+    u32 memSize = initPhysicalMemory(info);
+    kprintf("Total memory size: %u\n", memSize);
+
+    LOG("Init paging\n");
+    kprintf("Init Paging\n");
+    initPaging(memSize);
+
+    LOG("Init allocator\n");
+    kprintf("Init Allocator\n");
+    if (initAllocator())
+        return -1;
+
+    LOG("Init interrupt\n");
+    kprintf("Init Interrupt\n");
     initInterrupt();
-    printf("Interrupt init\n");
-
     initPic();
-    printf("Pic init\n");
-
     initPit();
-    printf("Pit init\n");
+    initKeyboard();
+    initSyscall();
 
+    LOG("Init console\n");
+    kprintf("Init Console\n");
+    initConsole();
+
+    kprintf("Init KFileSystem\n");
+    initKFileSystem();
+
+    kprintf("Init ProcFileSystem\n");
+    initProcFileSystem();
+
+    kprintf("Init DevFileSystem\n");
+    initDevFileSystem();
+
+    kprintf("Init Ext2FileSystem\n");
+    initExt2FileSystem();
+
+    kprintf("Init Tasking\n");
+    initTasking();
+
+    kprintf("Allow KEYBOARD & PIT interrupt\n");
     allowIrq(ISQ_KEYBOARD_VALUE);
     allowIrq(ISQ_PIT_VALUE);
-}
 
-static void k_test() {
-    TEST_INTERRUPT(0);
-    TEST_INTERRUPT(3);
-    TEST_INTERRUPT(30);
-    TEST_INTERRUPT(15);
-    TEST_INTERRUPT(20);
-    TEST_INTERRUPT(16);
-    TEST_INTERRUPT(6);
+    kprintf("Start listening interruption\n");
+    sti();
 
-    u32 res;
-    char *str = "Syscall write ok\n";
-    asm volatile ("int $0x80" : "=a"(res) : "a"(0), "b"((u32)str), "c"(17));
+    kprintf("Init ATA driver\n");
+    ataInit();
 
-    printf("Write syscall result: %d\n", res);
+    struct DeviceDriver *driverAta = deviceGetDeviceDriverByName("ata");
+    struct FsVolume *kvolume = NULL;
 
-    listFiles();
-    int fd = open("test", O_RDONLY);
-    printf("Open file: %d\n", fd);
+    kprintf("Mount available ATA device\n");
+    LOG("Mount available ATA device\n");
+    char mountId = 'A';
+    struct Fs *extfs = fsGetFileSystemByName("ext2fs");
+    for (u32 i = 0; i < 4; i++) {
+        u32 nblocks = 0;
+        int blocksize = 0;
+        char longname[256];
 
-    if (fd >= 0) {
-        char buf[100];
-        u32 i = 0, fileLength = length("test");
-
-        while (i < fileLength) {
-            int tmp = read(fd, buf, 99);
-            buf[tmp] = 0;
-
-            i += tmp;
-            printf("%s", buf);
+        if (driverAta->probe(i, &nblocks, &blocksize, longname) == 1) {
+            LOG("Mounting unit %d on %c: %s\n", i, mountId, longname);
+            kprintf("Mounting unit %d on %c: %s\n", i, mountId, longname);
+            kvolume = fsVolumeOpen(mountId, extfs, i);
+            if (kvolume == NULL)
+                kSerialPrintf("Mounting failed\n");
+            else
+                mountId++;
         }
-        printf("\nClosing file: %d\n", close(fd));
-    }
-}
-
-static char keyMap[] = "&\0\"'(-\0_\0\0)=\r\tazertyuiop^$\n\0qsdfghjklm\0*<wxcvbn,;:!";
-static char keyMapShift[] = "1234567890°+\r\tAZERTYUIOP\0\0\nQSDFGHJKLM%\0>WXCVBN?./\0";
-static char keyMapCtrl[] = "\0~#{[|`\\^@]}\r\t";
-
-static char running = 1;
-static int keyMode[3] = {0};
-
-static void keyHandler(int key) {
-    int release = key >> 7;
-    key &= ~(1 << 7);
-
-    if (key == 42 || key == 54) {
-        keyMode[0] = (release ? 0 : 1);
-        return;
     }
 
-    if (key == 29 || key == 96) {
-        keyMode[1] = (release ? 0 : 1);
-        return;
-    }
+    if (kvolume == NULL)
+        return -1;
 
-    if (release == 1)
-        return;
+    kernelTask.currentDir = freeTimeTask->currentDir = fsVolumeRoot(kvolume);
+    freeTimeTask->currentDir->refcount++;
 
-    switch (key) {
-        case KEY_ESC:
-            running = 0;
-            break;
-        case KEY_F1:
-            clearTerminal();
-            break;
-        case KEY_F2:
-            printf("### Trying executing binary ###\n");
-            launchTask();
-            break;
-        case KEY_F7:
-            switchVgaMode(VIDEO_GRAPHIC);
-            break;
-        case KEY_F8:
-            switchVgaMode(VIDEO_TEXT);
-            break;
-        case KEY_MAJLOCK:
-            keyMode[2] = (keyMode[2] ? 0 : 1);
-            break;
-        default:
-            if (getVideoMode() != VIDEO_TEXT)
-                return;
+    kprintf("Mount procfs on %c\n", mountId);
+    LOG("Mount procfs on %c\n", mountId);
+    struct Fs *procfs = fsGetFileSystemByName("procfs");
+    struct FsVolume *pvolume = fsVolumeOpen(mountId++, procfs, 0);
+    if (!pvolume)
+        return -1;
 
-            if (key < 87 && key >= 2) {
-                if (key == 57) {
-                    writeTerminal(' ');
-                } else {
-                    char c;
+    kprintf("Mount devfs on %c\n", mountId);
+    LOG("Mount devfs on %c\n", mountId);
+    struct Fs *devfs = fsGetFileSystemByName("devfs");
+    struct FsVolume *dvolume = fsVolumeOpen(mountId, devfs, 0);
+    if (!dvolume)
+        return -1;
 
-                    if (keyMode[0] == 1)
-                        c = keyMapShift[key - 2];
-                    else if (keyMode[1] == 1) {
-                        if (key > 16)
-                            c = '\0';
-                        else
-                            c = keyMapCtrl[key];
-                    } else if (keyMode[2] == 1)
-                        c = keyMapShift[key - 2];
-                    else
-                        c = keyMap[key - 2];
-
-                    if (c == '\0')
-                        writeStringTerminal("^@", 2);
-                    else
-                        writeTerminal(c);
-                }
-            }
-    }
-}
-
-void my_putnbr(unsigned long n, size_t pos) {
-    if (n > 9) {
-        my_putnbr(n / 10, pos++);
-        my_putnbr(n % 10, pos++);
-    } else
-        writeTerminalAt(n + '0', CONS_GREEN, pos, 24);
+    return 0;
 }
 
 void k_main(unsigned long magic, multiboot_info_t *info) {
+    taskSwitching = 0;
 
-    if (magic != MULTIBOOT_BOOTLOADER_MAGIC || info->mods_count != 1)
+    if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
         goto error;
 
-    k_init();
-    unsigned long oldTick = 0;
-    writeTerminalAt('0', CONS_GREEN, 0, 24);
-    writeStringTerminal("Init ok\n", 8);
+    if (k_init(info))
+        goto error;
 
-    initKFileSystem((module_t *) info->mods_addr);
+    taskWaitEvent(TaskEventTimer, 1000);
+    LOG("\n### Trying init binary [%s] ###\n\n", (char *) info->cmdline);
 
-    printf("\n### Starting kernel test ###\n\n");
-    k_test();
-    printf("\n### Kernel test ok ###\n### Trying init binary [%s] ###\n\n", (char*)info->cmdline);
-    loadBinary((module_t *) info->mods_addr, info->cmdline);
+    const char *av[] = {
+            (char*)info->cmdline,
+            NULL
+    };
+    const char *env[] = {
+            "PATH=A:/bin",
+            "HOME=A:/home",
+            "PWD=A:",
+            NULL
+    };
 
-    writeStringTerminal("\n[F1] Clear - [F2] Start bin - [F7] - Graphic mode test - [F8] Text mode\n", 73);
-
-
-    while (running) {
-        int key = getkey();
-        if (key >= 0) {
-            keyHandler(key);
-        }
-
-        int videoMode = getVideoMode();
-
-        unsigned long tick = gettick() / 1000;
-        if (videoMode == VIDEO_TEXT && tick > oldTick) {
-            my_putnbr(tick, 0);
-            oldTick = tick;
-        }
-
-        if (videoMode == VIDEO_GRAPHIC && (gettick() / 10) % 4 == 0)
-            moveBlock();
+    while (1) {
+        clearTerminal();
+        u32 pid = createProcess((char*)info->cmdline, av, env);
+        taskWaitEvent(TaskEventWaitPid, pid);
+        kprintf("Resetting terminal\n");
+        taskWaitEvent(TaskEventTimer, 1000);
     }
 
-    printf("Stop running\n");
 
     error:
-    for (;;)
-            asm volatile ("hlt");
-}
-
-int write(const char *s, size_t i) {
-    return writeSerial((const void *) s, i);
+    kSerialPrintf("An error occurred\n");
+    cli();
+    hlt();
 }

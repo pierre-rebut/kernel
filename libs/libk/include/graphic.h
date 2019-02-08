@@ -25,6 +25,7 @@
 #define GRAPHIC_H_
 
 #include <kstd.h>
+
 #include <stddef.h>
 #include <string.h>
 #include <stdio.h>

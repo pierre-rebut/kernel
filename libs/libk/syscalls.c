@@ -23,104 +23,149 @@
 */
 #include <kstd.h>
 #include <stddef.h>
+#include <stdio.h>
 
-static inline u32 syscall0(int syscall_nb)
-{
-	u32 res;
+static inline u32 syscall0(int syscall_nb) {
+    u32 res;
 
-	asm volatile ("int $0x80" : "=a"(res) : "a"(syscall_nb));
+    asm volatile ("int $0x80" : "=a"(res) : "a"(syscall_nb));
 
-	return res;
+    return res;
 }
 
-static inline u32 syscall1(int syscall_nb, u32 ebx)
-{
-	u32 res;
+static inline u32 syscall1(int syscall_nb, u32 ebx) {
+    u32 res;
 
-	asm volatile ("int $0x80" : "=a"(res) : "a"(syscall_nb), "b"(ebx));
+    asm volatile ("int $0x80" : "=a"(res) : "a"(syscall_nb), "b"(ebx));
 
-	return res;
+    return res;
 }
 
-static inline u32 syscall2(int syscall_nb, u32 ebx, u32 ecx)
-{
-	u32 res;
+static inline u32 syscall2(int syscall_nb, u32 ebx, u32 ecx) {
+    u32 res;
 
-	asm volatile ("int $0x80" : "=a"(res) : "a"(syscall_nb), "b"(ebx), "c"(ecx));
+    asm volatile ("int $0x80" : "=a"(res) : "a"(syscall_nb), "b"(ebx), "c"(ecx));
 
-	return res;
+    return res;
 }
 
-static inline u32 syscall3(int syscall_nb, u32 ebx, u32 ecx, u32 edx)
-{
-	u32 res;
+static inline u32 syscall3(int syscall_nb, u32 ebx, u32 ecx, u32 edx) {
+    u32 res;
 
-	asm volatile ("int $0x80" : "=a"(res) : "a"(syscall_nb), "b"(ebx), "c"(ecx), "d"(edx));
+    asm volatile ("int $0x80" : "=a"(res) : "a"(syscall_nb), "b"(ebx), "c"(ecx), "path"(edx));
 
-	return res;
+    return res;
 }
 
-int write(const void *s, size_t length)
-{
-	return ((int)syscall2(SYSCALL_WRITE, (u32)s, length));
+int exit(int value) {
+    return ((int) syscall1(SYSCALL_EXIT, (u32) value));
 }
 
-void *sbrk(ssize_t increment)
-{
-	return ((void *)syscall1(SYSCALL_SBRK, increment));
+void *sbrk(ssize_t increment) {
+    return ((void *) syscall1(SYSCALL_SBRK, increment));
 }
 
-int getkey(void)
-{
-	return ((int)syscall0(SYSCALL_GETKEY));
+int getkey(void) {
+    return ((int) syscall0(SYSCALL_GETKEY));
 }
 
-unsigned long gettick(void)
-{
-	return ((unsigned long)syscall0(SYSCALL_GETTICK));
+unsigned long gettick(void) {
+    return ((unsigned long) syscall0(SYSCALL_GETTICK));
 }
 
-int open(const char *pathname, int flags)
-{
-	return ((int)syscall2(SYSCALL_OPEN, (u32)pathname, flags));
+int open(const char *pathname, int flags) {
+    return ((int) syscall2(SYSCALL_OPEN, (u32) pathname, flags));
 }
 
-ssize_t read(int fd, void *buf, size_t count)
-{
-	return ((ssize_t)syscall3(SYSCALL_READ, fd, (u32)buf, count));
+ssize_t read(int fd, void *buf, size_t count) {
+    return ((ssize_t) syscall3(SYSCALL_READ, fd, (u32) buf, count));
 }
 
-off_t seek(int filedes, off_t offset, int whence)
-{
-	return ((off_t)syscall3(SYSCALL_SEEK, filedes, offset, whence));
+int write(int fd, const void *s, size_t length) {
+    return ((int) syscall3(SYSCALL_WRITE, fd, (u32) s, length));
 }
 
-int close(int fd)
-{
-	return ((int)syscall1(SYSCALL_CLOSE, fd));
+off_t seek(int filedes, off_t offset, int whence) {
+    return ((off_t) syscall3(SYSCALL_SEEK, filedes, offset, whence));
 }
 
-int playsound(struct melody *melody, int repeat)
-{
-	return ((int)syscall2(SYSCALL_PLAYSOUND, (u32)melody, repeat));
+int close(int fd) {
+    return ((int) syscall1(SYSCALL_CLOSE, fd));
 }
 
-int setvideo(int mode)
-{
-	return ((int)syscall1(SYSCALL_SETVIDEO, mode));
+int playsound(struct melody *melody, int repeat) {
+    return ((int) syscall2(SYSCALL_PLAYSOUND, (u32) melody, repeat));
 }
 
-void swap_frontbuffer(const void *buffer)
-{
-	syscall1(SYSCALL_SWAP_FRONTBUFFER, (u32)buffer);
+int setvideo(int mode) {
+    return ((int) syscall1(SYSCALL_SETVIDEO, mode));
 }
 
-int getmouse(int *x, int *y, int *buttons)
-{
-	return ((int)syscall3(SYSCALL_GETMOUSE, (u32)x, (u32)y, (u32)buttons));
+void swap_frontbuffer(const void *buffer) {
+    syscall1(SYSCALL_SWAP_FRONTBUFFER, (u32) buffer);
 }
 
-int getkeymode(int mode)
-{
-	return ((int)syscall1(SYSCALL_GETKEYMODE, mode));
+int getmouse(int *x, int *y, int *buttons) {
+    return ((int) syscall3(SYSCALL_GETMOUSE, (u32) x, (u32) y, (u32) buttons));
+}
+
+int getkeymode(int mode) {
+    return ((int) syscall1(SYSCALL_GETKEYMODE, mode));
+}
+
+int usleep(u32 duration) {
+    return ((int) syscall1(SYSCALL_USLEEP, duration));
+}
+
+u32 kill(u32 pid) {
+    return syscall1(SYSCALL_KILL, pid);
+}
+
+int waitpid(u32 pid) {
+    return ((int) syscall1(SYSCALL_WAITPID, pid));
+}
+
+u32 getpid() {
+    return syscall0(SYSCALL_GETPID);
+}
+
+int sleep(u32 duration) {
+    return usleep(duration * 1000);
+}
+
+u32 execve(const char *prg, const char **av, const char **env) {
+    return syscall3(SYSCALL_EXECVE, (u32) prg, (u32) av, (u32) env);
+}
+
+int stat(const char *pathname, struct stat *data) {
+    return syscall2(SYSCALL_STAT, (u32) pathname, (u32) data);
+}
+
+int fstat(int fd, struct stat *data) {
+    return syscall2(SYSCALL_FSTAT, (u32) fd, (u32) data);
+}
+
+int chdir(const char *path) {
+    return syscall1(SYSCALL_CHDIR, (u32) path);
+}
+
+int opendir(const char *name) {
+    return syscall1(SYSCALL_OPENDIR, (u32) name);
+}
+
+int closedir(int repertoire) {
+    return syscall1(SYSCALL_CLOSEDIR, (u32) repertoire);
+}
+
+struct dirent *readdir(int repertoire) {
+    static struct dirent data = {0};
+    return  (struct dirent *) syscall2(SYSCALL_READDIR, (u32) repertoire, (u32) &data);
+}
+
+int mount(char id, const char *fstype, u32 arg) {
+    return syscall3(SYSCALL_MOUNT, (u32) id, (u32) fstype, arg);
+}
+
+int umount(char id) {
+    return syscall1(SYSCALL_UMOUNT, (u32) id);
 }

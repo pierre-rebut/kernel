@@ -30,5 +30,7 @@ int puts(const char *s);
 int printf(const char *format, ...);
 int sprintf(char *buf, const char *format, ...);
 int vsprintf(char *buf, const char *format, va_list args);
+int putErrors(const char *s);
+int printfErr(const char *format, ...);
 
 #endif				/* !STDLIB_H_ */

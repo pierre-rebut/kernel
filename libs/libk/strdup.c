@@ -1,20 +1,19 @@
 #include <string.h>
 #include <stdlib.h>
 
-char *strdup(const char *s)
-{
-	char *r = NULL;
-	char *p = NULL;
+char *strdup(const char *s) {
+    char *r = NULL;
+    char *p = NULL;
 
-	r = malloc(strlen(s) + 1);
-	if (!r)
-		return NULL;
+    r = malloc(strlen(s) + 1);
+    if (!r)
+        return NULL;
 
-	for (p = r; *s != '\0'; s++, p++)
-		*p = *s;
+    for (p = r; *s != '\0'; s++, p++)
+        *p = *s;
 
-	*p = '\0';
+    *p = '\0';
 
-	return (r);
+    return (r);
 }
 
