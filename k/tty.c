@@ -47,7 +47,7 @@ void createNewTTY() {
     if (!task)
         return;
 
-    task->currentDir = currentTask->currentDir;
+    task->currentDir = kernelTask.currentDir;
     task->currentDir->refcount += 1;
 
     schedulerAddActiveTask(task);

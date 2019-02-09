@@ -34,8 +34,8 @@ void setVgaFrameBuffer(const void *buffer);
 
 
 
-#define VGA_HEIGHT 200
-#define VGA_WIDTH 320
+#define VGA_VIDEO_HEIGHT 200
+#define VGA_VIDEO_WIDTH 320
 
 #define VGA_AC_INDEX		0x3C0
 #define VGA_AC_WRITE		0x3C0

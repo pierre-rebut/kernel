@@ -7,6 +7,7 @@
 #include <io/libvga.h>
 #include <io/terminal.h>
 #include <tty.h>
+#include <string.h>
 #include "console.h"
 
 //#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
@@ -94,9 +95,7 @@ void consoleKeyboardHandler(int code) {
     struct Console *cons = consoleLists[activeConsoleId];
 
     if (code == 91 && !release && cons->activeProcess) {
-        struct Task *tmpTask = cons->activeProcess;
-        cons->activeProcess = NULL;
-        taskKill(tmpTask);
+        taskKill(cons->activeProcess);
         return;
     } else if (code >= 59 && code <= 68 && !release) {
         int consId = code - 59;
@@ -120,7 +119,7 @@ void consoleKeyboardHandler(int code) {
     }
 
     char c = currentKeyMap[code - 2];
-    if (release || c == 0)
+    if (release)
         return;
 
     struct CirBuffer *val = &cons->readBuffer;
@@ -133,7 +132,10 @@ void consoleKeyboardHandler(int code) {
     val->writePtr = (val->writePtr + 1) % CONSOLE_BUFFER_SIZE;
 
     if (cons->mode == ConsoleModeText) {
-        terminalPutchar(cons->tty, 1, c);
+        if (c == 0)
+            terminalPutchar(cons->tty, 1, '@');
+        else
+            terminalPutchar(cons->tty, 1, c);
         terminalUpdateCursor(cons->tty);
     }
 
@@ -201,4 +203,28 @@ s32 consoleWriteStandard(void *entryData, const char *buf, u32 size) {
 
 s32 consoleForceWrite(const char *buf, u32 size) {
     return consoleWriteStandard(consoleLists[activeConsoleId], buf, size);
+}
+
+int consoleSwitchVideoMode(struct Console *console, enum ConsoleMode mode) {
+    if (console->mode == mode)
+        return 0;
+
+    console->mode = mode;
+
+    if (mode == ConsoleModeVideo && console->videoBuffer == NULL)
+        console->videoBuffer = kmalloc(VGA_VIDEO_WIDTH * VGA_VIDEO_HEIGHT, 0, "videobuffer");
+
+    if (console == consoleLists[activeConsoleId])
+        switchVgaMode(mode);
+    return 0;
+}
+
+int consoleSetVgaFrameBuffer(struct Console *console, const void *buffer) {
+    if (console->mode != ConsoleModeVideo)
+        return -1;
+
+    memcpy(console->videoBuffer, buffer, VGA_VIDEO_HEIGHT * VGA_VIDEO_WIDTH);
+    if (console == consoleLists[activeConsoleId])
+        setVgaFrameBuffer(buffer);
+    return 0;
 }

@@ -215,12 +215,11 @@ static void sys_close(struct esp_context *ctx) {
 }
 
 static void sys_setvideo(struct esp_context *ctx) {
-    ctx->eax = (u32) switchVgaMode((enum ConsoleMode) ctx->ebx);
+    ctx->eax = (u32) consoleSwitchVideoMode(currentTask->console, (enum ConsoleMode) ctx->ebx);
 }
 
 static void sys_setVgaFrameBuffer(struct esp_context *ctx) {
-    setVgaFrameBuffer((const void *) ctx->ebx);
-    ctx->eax = 0;
+    ctx->eax = (u32) consoleSetVgaFrameBuffer(currentTask->console, (const void *) ctx->ebx);
 }
 
 static void sys_getMouse(struct esp_context *ctx) {

@@ -265,12 +265,11 @@ int switchVgaMode(enum ConsoleMode mode) {
     }
 
     currentVideoMode = mode;
-    consoleGetActiveConsole()->mode = mode;
     return 0;
 }
 
 void setVgaFrameBuffer(const void *buffer) {
     char *vram = libvga_get_framebuffer();
-    for (u32 i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++)
+    for (u32 i = 0; i < VGA_VIDEO_WIDTH * VGA_VIDEO_HEIGHT; i++)
         vram[i] = ((char*)buffer)[i];
 }

@@ -413,8 +413,10 @@ int taskKill(struct Task *task) {
         LOG("[TASK] destroy path curDir\n");
         fsPathDestroy(task->currentDir);
 
-        if (task->console->activeProcess == task)
+        if (task->console->activeProcess == task) {
             task->console->activeProcess = task->parent;
+            consoleSwitchVideoMode(task->console, ConsoleModeText);
+        }
     } else {
         LOG("[TASK] kill thread\n");
         listDeleteElem(&task->parent->threads, task);

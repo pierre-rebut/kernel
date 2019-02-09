@@ -53,4 +53,7 @@ s32 consoleWriteStandard(void *entryData, const char *buf, u32 size);
 
 s32 consoleForceWrite(const char *buf, u32 size);
 
+int consoleSwitchVideoMode(struct Console *console, enum ConsoleMode mode);
+int consoleSetVgaFrameBuffer(struct Console *console, const void *buffer);
+
 #endif //KERNEL_CONSOLE_H

@@ -2,8 +2,8 @@
 #include "terminal.h"
 #include "io.h"
 
-#define VGA_WIDTH 80
-#define VGA_HEIGHT 24
+#define VGA_VIDEO_WIDTH 80
+#define VGA_VIDEO_HEIGHT 24
 #define VGA_MEMORY 0xB8000
 
 static u16 *terminalBuffer = (void*) VGA_MEMORY;
@@ -13,7 +13,7 @@ struct TerminalBuffer *createTerminal() {
     if (tty == NULL)
         return NULL;
 
-    tty->terminalData = kmalloc(sizeof(u16) * VGA_HEIGHT * VGA_WIDTH, 0, "ttydata");
+    tty->terminalData = kmalloc(sizeof(u16) * VGA_VIDEO_HEIGHT * VGA_VIDEO_WIDTH, 0, "ttydata");
     setTerminalColor(tty, CONS_WHITE, CONS_BLACK);
     clearTerminal(tty);
 
@@ -21,9 +21,9 @@ struct TerminalBuffer *createTerminal() {
 }
 
 void updateTerminal(struct TerminalBuffer *tty) {
-    for (u32 y = 0; y < VGA_HEIGHT; y++)
-        for (u32 x = 0; x < VGA_WIDTH; x++)
-            terminalBuffer[y * VGA_WIDTH + x] = tty->terminalData[y * VGA_WIDTH + x];
+    for (u32 y = 0; y < VGA_VIDEO_HEIGHT; y++)
+        for (u32 x = 0; x < VGA_VIDEO_WIDTH; x++)
+            terminalBuffer[y * VGA_VIDEO_WIDTH + x] = tty->terminalData[y * VGA_VIDEO_WIDTH + x];
 
     terminalUpdateCursor(tty);
 }
@@ -35,18 +35,18 @@ static inline u16 vgaEntry(char uc, u8 color) {
 static void scroll(struct TerminalBuffer *tty, char writing) {
     u16 *buf = tty->terminalData;
 
-    for (u32 y = 1; y < VGA_HEIGHT; y++) {
-        for (u32 x = 0; x < VGA_WIDTH; x++) {
-            u32 index = (y - 1) * VGA_WIDTH + x;
-            buf[index] = buf[y * VGA_WIDTH + x];
+    for (u32 y = 1; y < VGA_VIDEO_HEIGHT; y++) {
+        for (u32 x = 0; x < VGA_VIDEO_WIDTH; x++) {
+            u32 index = (y - 1) * VGA_VIDEO_WIDTH + x;
+            buf[index] = buf[y * VGA_VIDEO_WIDTH + x];
 
             if (writing)
                 terminalBuffer[index] = buf[index];
         }
     }
 
-    for (u32 x = 0; x < VGA_WIDTH; x++) {
-        u32 index = (VGA_HEIGHT - 1) * VGA_WIDTH + x;
+    for (u32 x = 0; x < VGA_VIDEO_WIDTH; x++) {
+        u32 index = (VGA_VIDEO_HEIGHT - 1) * VGA_VIDEO_WIDTH + x;
         buf[index] = vgaEntry(' ', tty->terminalColor);
 
         if (writing)
@@ -56,14 +56,14 @@ static void scroll(struct TerminalBuffer *tty, char writing) {
 
 static void newline(struct TerminalBuffer *tty, char writing) {
     tty->terminalCol = 0;
-    if (tty->terminalRow + 1 == VGA_HEIGHT)
+    if (tty->terminalRow + 1 == VGA_VIDEO_HEIGHT)
         scroll(tty, writing);
     else
         tty->terminalRow++;
 }
 
 void terminalUpdateCursor(struct TerminalBuffer *tty){
-    u16 offset = (tty->terminalRow * (u16)VGA_WIDTH) + tty->terminalCol;
+    u16 offset = (tty->terminalRow * (u16)VGA_VIDEO_WIDTH) + tty->terminalCol;
     outb(0x3D4, 14);
     outb(0x3D5, (u8)(offset >> 8));
     outb(0x3D4, 15);
@@ -71,7 +71,7 @@ void terminalUpdateCursor(struct TerminalBuffer *tty){
 }
 
 void clearTerminal(struct TerminalBuffer *tty) {
-    for (u32 i = 0; i < VGA_HEIGHT * VGA_WIDTH; i++) {
+    for (u32 i = 0; i < VGA_VIDEO_HEIGHT * VGA_VIDEO_WIDTH; i++) {
         terminalBuffer[i] = tty->terminalData[i] = vgaEntry(' ', tty->terminalColor);
     }
 
@@ -99,7 +99,7 @@ void terminalPutchar(struct TerminalBuffer *tty, char writing, char c) {
             break;
 
         default: {
-            const u16 index = tty->terminalRow * (u16)VGA_WIDTH + tty->terminalCol;
+            const u16 index = tty->terminalRow * (u16)VGA_VIDEO_WIDTH + tty->terminalCol;
             tty->terminalData[index] = vgaEntry(c, tty->terminalColor);
             tty->terminalCol++;
 
@@ -108,21 +108,21 @@ void terminalPutchar(struct TerminalBuffer *tty, char writing, char c) {
         }
     }
 
-    if (tty->terminalCol >= VGA_WIDTH)
+    if (tty->terminalCol >= VGA_VIDEO_WIDTH)
         newline(tty, writing);
 }
 
 void terminalRemoveLastChar(struct TerminalBuffer *tty, char writing) {
     if (tty->terminalCol == 0) {
-        tty->terminalCol = VGA_WIDTH;
+        tty->terminalCol = VGA_VIDEO_WIDTH;
 
         if (tty->terminalRow == 0)
-            tty->terminalRow = VGA_HEIGHT;
+            tty->terminalRow = VGA_VIDEO_HEIGHT;
         tty->terminalRow -= 1;
     }
 
     tty->terminalCol -= 1;
-    u16 index = tty->terminalRow * (u16)VGA_WIDTH + tty->terminalCol;
+    u16 index = tty->terminalRow * (u16)VGA_VIDEO_WIDTH + tty->terminalCol;
     tty->terminalData[index] = vgaEntry(' ', tty->terminalColor);
 
     if (writing) {
