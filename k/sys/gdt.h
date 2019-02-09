@@ -5,7 +5,7 @@
 #ifndef KERNEL_EPITA_GDT_H
 #define KERNEL_EPITA_GDT_H
 
-#include <k/types.h>
+#include <k/ktypes.h>
 #include <compiler.h>
 #include <multiboot.h>
 

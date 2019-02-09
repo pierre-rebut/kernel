@@ -13,7 +13,7 @@
 #include <io/pit.h>
 #include "procfilesystem.h"
 
-//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+//#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
 enum ProcPathType {
@@ -148,19 +148,19 @@ static struct dirent *procReaddir(struct FsPath *path, struct dirent *result) {
     if (procPath->data < 0) {
         switch (procPath->data) {
             case -1:
-                ksprintf(result->d_name, "%s", "mounts");
+                sprintf(result->d_name, "%s", "mounts");
                 break;
             case -2:
-                ksprintf(result->d_name, "%s", "meminfo");
+                sprintf(result->d_name, "%s", "meminfo");
                 break;
             case -3:
-                ksprintf(result->d_name, "%s", "time");
+                sprintf(result->d_name, "%s", "time");
                 break;
             case -4:
-                ksprintf(result->d_name, "%s", "uptime");
+                sprintf(result->d_name, "%s", "uptime");
                 break;
             case -5:
-                ksprintf(result->d_name, "%s", "self");
+                sprintf(result->d_name, "%s", "self");
                 break;
             default:
                 return NULL;
@@ -178,7 +178,7 @@ static struct dirent *procReaddir(struct FsPath *path, struct dirent *result) {
         if (!task)
             return NULL;
 
-        ksprintf(result->d_name, "%u", task->pid);
+        sprintf(result->d_name, "%u", task->pid);
         result->d_ino = (u32) procPath->data;
         result->d_type = FT_FILE;
     }
@@ -199,7 +199,7 @@ static int procReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
                 read = 0;
                 struct FsVolume *tmpVolume = fsVolumeList;
                 while (tmpVolume) {
-                    read += ksprintf(buffer + read, "%c:%s,%u,%u\n",
+                    read += sprintf(buffer + read, "%c:%s,%u,%u\n",
                                      tmpVolume->id, tmpVolume->fs->name, tmpVolume->refcount, tmpVolume->blockSize
                     );
                     tmpVolume = tmpVolume->next;
@@ -208,7 +208,7 @@ static int procReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
             case -2: {
                 u32 total, used;
                 kmallocGetInfo(&total, &used);
-                read = ksprintf(buffer, "[PHYSMEM]\nused:%u\ntotal:%u\n\n[KERNEL MEM]\nused:%u\npaged:%u\n",
+                read = sprintf(buffer, "[PHYSMEM]\nused:%u\ntotal:%u\n\n[KERNEL MEM]\nused:%u\npaged:%u\n",
                                 getTotalUsedPhysMemory(), getTotalPhysMemory(), total, used);
                 break;
             }
@@ -218,10 +218,10 @@ static int procReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
                 buffer[read] = '\0';
                 break;
             case -4:
-                read = ksprintf(buffer, "%lu\n", gettick());
+                read = sprintf(buffer, "%lu\n", gettick());
                 break;
             case -5:
-                read = ksprintf(buffer, "pid:%u\ngid:%u\ncmdline:%s\nprivilege:%s\nevent:%d,%lu,%u\n",
+                read = sprintf(buffer, "pid:%u\ngid:%u\ncmdline:%s\nprivilege:%s\nevent:%d,%lu,%u\n",
                                 currentTask->pid,
                                 (currentTask->parent ? currentTask->parent->pid : 0),
                                 (currentTask->cmdline ? currentTask->cmdline : "NONE"),
@@ -237,7 +237,7 @@ static int procReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
         if (!task)
             return -1;
 
-        read = ksprintf(buffer, "pid:%u\ncmdline:%s\nprivilege:%s\nevent:%d,%lu,%u\n",
+        read = sprintf(buffer, "pid:%u\ncmdline:%s\nprivilege:%s\nevent:%d,%lu,%u\n",
                         task->pid,
                         (task->cmdline ? task->cmdline : "NONE"),
                         (task->privilege == TaskPrivilegeKernel ? "KERNEL" : "USER"),

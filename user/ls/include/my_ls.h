@@ -11,7 +11,7 @@
 #ifndef MY_LS_H_
 # define MY_LS_H_
 
-#include <types.h>
+#include "../../../libs/include/types.h"
 
 typedef struct s_option {
     int all;

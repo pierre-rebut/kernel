@@ -8,7 +8,7 @@
 ** Last update Tue Jan 20 16:40:04 2015 rebut_p
 */
 
-#include <kstd.h>
+#include "kstd.h"
 #include <string.h>
 #include <stdio.h>
 #include "mysh.h"

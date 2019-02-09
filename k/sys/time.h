@@ -5,7 +5,7 @@
 #ifndef KERNEL_EPITA_TIME_H
 #define KERNEL_EPITA_TIME_H
 
-#include <k/types.h>
+#include <k/ktypes.h>
 
 struct tm {
     u8 second;

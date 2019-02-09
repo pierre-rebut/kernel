@@ -5,7 +5,7 @@
 #ifndef KERNEL_ALLOCATOR2_H
 #define KERNEL_ALLOCATOR2_H
 
-#include <k/types.h>
+#include <k/ktypes.h>
 #include <multiboot.h>
 
 #define KERNEL_HEAP_START 0xE0000000

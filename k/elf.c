@@ -8,17 +8,17 @@
 #include "sys/physical-memory.h"
 #include "task.h"
 
-#include <stdio.h>
+#include <kstdio.h>
 #include <string.h>
 
-//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+//#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
 u32 loadBinary(struct PageDirectory *pd, const void *data, u32 size) {
 
     const Elf32_Ehdr *binHeader = data;
     if (memcmp(binHeader->e_ident, ELFMAG, SELFMAG) != 0) {
-        kSerialPrintf("bin header: wrong magic code\n");
+        klog("bin header: wrong magic code\n");
         return 0;
     }
 

@@ -24,7 +24,7 @@
 #ifndef LIBVGA_H
 #define LIBVGA_H
 
-#include <k/types.h>
+#include <k/ktypes.h>
 #include <sys/console.h>
 
 extern enum ConsoleMode currentVideoMode;

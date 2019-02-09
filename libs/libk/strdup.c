@@ -17,3 +17,26 @@ char *strdup(const char *s) {
     return (r);
 }
 
+char *strcat(char *begin, char *end) {
+    char *str;
+    int i;
+    int j;
+
+    j = 0;
+    i = 0;
+    str = NULL;
+    if (begin != NULL && end != NULL) {
+        str = malloc(sizeof(char) * (strlen(begin) + strlen(end) + 1));
+        while (begin[i] != '\0') {
+            str[i] = begin[i];
+            i++;
+        }
+        while (end[j] != '\0') {
+            str[i] = end[j];
+            j++;
+            i++;
+        }
+        str[i] = '\0';
+    }
+    return (str);
+}

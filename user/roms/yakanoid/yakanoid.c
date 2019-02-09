@@ -21,9 +21,9 @@
 * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include <graphic.h>
-#include <sound.h>
-#include <stdlib.h>
+#include "../../../libs/include/graphic.h"
+#include "../../../libs/include/sound.h"
+#include "../../../libs/include/stdlib.h"
 
 static void splash_screen(void)
 {

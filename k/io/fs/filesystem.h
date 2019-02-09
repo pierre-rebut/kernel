@@ -5,34 +5,12 @@
 #ifndef KERNEL_FILESYSTEM_H
 #define KERNEL_FILESYSTEM_H
 
-#include <k/types.h>
+#include <k/ktypes.h>
+#include <types.h>
 typedef s32 off_t;
 
 #define MAX_NB_FILE 255
 #define MAX_NB_FOLDER 50
-
-enum FileType {
-    FT_DIRECTORY,
-    FT_FILE
-};
-
-struct stat {
-    u32 inumber;
-    u32 file_sz;
-    u32 idx;
-    u32 blk_cnt;
-    u32 d_blk_cnt;
-    u32 i_blk_cnt;
-    u32 cksum;
-};
-
-struct dirent {
-    u32          d_ino;
-    u32          d_off;       // décalage jusqu'à la dirent suivante
-    unsigned short d_reclen;    // longueur de cet enregistrement
-    enum FileType  d_type;      // type du fichier
-    char           d_name[256]; // nom du fichier
-};
 
 struct FsVolume;
 

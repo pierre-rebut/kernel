@@ -3,14 +3,14 @@
 //
 
 #include <string.h>
-#include <stdio.h>
+#include <kstdio.h>
 #include <include/cpu.h>
 
 #include "paging.h"
 #include "allocator.h"
 #include "physical-memory.h"
 
-//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+//#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
 struct PageDirectory *kernelPageDirectory = NULL;
@@ -144,7 +144,7 @@ void pagingDestroyPageDirectory(struct PageDirectory *pageDirectory) {
         return;
 
     if (pageDirectory == kernelPageDirectory) {
-        kSerialPrintf("Can not free kernel page directory\n");
+        klog("Can not free kernel page directory\n");
         return;
     }
 
@@ -169,7 +169,7 @@ void pagingDestroyPageDirectory(struct PageDirectory *pageDirectory) {
 }
 
 void pagingSwitchPageDirectory(struct PageDirectory *pageDirectory) {
-    //kSerialPrintf("bite je ten merde : %p - %p\n", pageDirectory, currentPageDirectory);
+    //klog("bite je ten merde : %p - %p\n", pageDirectory, currentPageDirectory);
     if (pageDirectory == currentPageDirectory)
         return;
 
@@ -200,14 +200,14 @@ static int allocPages(struct PageDirectory *pd, void *addr, u32 pages) {
             if (pt->pages[pageNumber % NB_PAGE] & MEM_ALLOCATED) {
                 freePages(pd, addr, i);
                 mutexUnlock(&pd->mtx);
-                kSerialPrintf("Page already allocated: %u\n", pageNumber);
+                klog("Page already allocated: %u\n", pageNumber);
                 return 0;
             }
 
             if (checkPageAllowed(pd, pageNumber / NB_TABLE) == 0) {
                 freePages(pd, addr, i);
                 mutexUnlock(&pd->mtx);
-                kSerialPrintf("Alloc page not allowed: %u\n", pageNumber);
+                klog("Alloc page not allowed: %u\n", pageNumber);
                 return 0;
             }
         }
@@ -230,7 +230,7 @@ static void freePages(struct PageDirectory *pd, void *addr, u32 pages) {
 
         if (checkPageAllowed(pd, pageNumber / NB_TABLE) == 0) {
             mutexUnlock(&pd->mtx);
-            kSerialPrintf("Alloc page not allowed: %u\n", pageNumber);
+            klog("Alloc page not allowed: %u\n", pageNumber);
             return;
         }
 
@@ -250,13 +250,13 @@ static int mapPagesToFrames(struct PageDirectory *pd, void *vaddr, u32 paddr, en
 
     if (!pt || !(pt->pages[pageNumber % NB_PAGE] & MEM_ALLOCATED)) {
         mutexUnlock(&pd->mtx);
-        kSerialPrintf("Page not allocated: %u\n", pageNumber);
+        klog("Page not allocated: %u\n", pageNumber);
         return 0;
     }
 
     if (checkPageAllowed(pd, pageNumber / NB_TABLE) == 0) {
         mutexUnlock(&pd->mtx);
-        kSerialPrintf("Alloc page not allowed: %u\n", pageNumber);
+        klog("Alloc page not allowed: %u\n", pageNumber);
         return 0;
     }
 
@@ -277,9 +277,9 @@ static int pagingAllocRec(struct PageDirectory *pd, u32 index, u32 pages, void *
     u32 frame = allocPhysicalMemory();
 
     if (!mapPagesToFrames(pd, addr + index * PAGESIZE, frame, flags)) {
-        kSerialPrintf("mapPagesToFrames(%X, %X, %X, %X) failed.\n", (u32) pd, (u32) (addr + index * PAGESIZE),
+        klog("mapPagesToFrames(%X, %X, %X, %X) failed.\n", (u32) pd, (u32) (addr + index * PAGESIZE),
                       frame, flags);
-        kSerialPrintf("info: %u - %u\n", index, pages);
+        klog("info: %u - %u\n", index, pages);
         freePhysicalMemory(frame);
         return -1;
     }
@@ -297,19 +297,19 @@ int pagingAlloc(struct PageDirectory *pd, void *addr, u32 size, enum MEMFLAGS fl
     LOG("pagingAlloc: %p - %u\n", addr, size);
 
     if (((u32) addr) % PAGESIZE != 0) {
-        kSerialPrintf("addr not page aligned\n");
+        klog("addr not page aligned\n");
         return -1;
     }
 
     if (size % PAGESIZE != 0) {
-        kSerialPrintf("size not page aligned\n");
+        klog("size not page aligned\n");
         return -1;
     }
 
     u32 pages = size / PAGESIZE;
 
     if (!allocPages(pd, addr, pages)) {
-        kSerialPrintf("allocPages(%X, %X, %u) failed.\n", (u32) pd, (u32) addr, (u32) pages);
+        klog("allocPages(%X, %X, %u) failed.\n", (u32) pd, (u32) addr, (u32) pages);
         return -2;
     }
 
@@ -318,7 +318,7 @@ int pagingAlloc(struct PageDirectory *pd, void *addr, u32 size, enum MEMFLAGS fl
 
         if (!mapPagesToFrames(pd, addr + done * PAGESIZE, paddr, flags)) {
             freePhysicalMemory(paddr);
-            kSerialPrintf("pute de merde\n");
+            klog("pute de merde\n");
             return -3;
         }
     }
@@ -335,12 +335,12 @@ void pagingFree(struct PageDirectory *pd, void *virtAddress, u32 size) {
     LOG("pagingFree: %p - %u\n", virtAddress, size);
 
     if (((u32) virtAddress) % PAGESIZE != 0) {
-        kSerialPrintf("addr not page aligned\n");
+        klog("addr not page aligned\n");
         return;
     }
 
     if (size % PAGESIZE != 0) {
-        kSerialPrintf("size must be page aligned\n");
+        klog("size must be page aligned\n");
         return;
     }
 
@@ -362,12 +362,12 @@ void pagingFree(struct PageDirectory *pd, void *virtAddress, u32 size) {
 
 int pagingSetFlags(struct PageDirectory *pd, void *addr, u32 size, enum MEMFLAGS flags) {
     if (((u32) addr) % PAGESIZE != 0) {
-        kSerialPrintf("paging_setFlags: addr not page aligned\n");
+        klog("paging_setFlags: addr not page aligned\n");
         return -1;
     }
 
     if (size % PAGESIZE != 0) {
-        kSerialPrintf("size not page aligned\n");
+        klog("size not page aligned\n");
         return -1;
     }
 
@@ -377,13 +377,13 @@ int pagingSetFlags(struct PageDirectory *pd, void *addr, u32 size, enum MEMFLAGS
         if (!pd->tablesInfo[pageNumber / NB_TABLE] ||
             !(pd->tablesInfo[pageNumber / NB_TABLE]->pages[pageNumber % NB_PAGE] & MEM_ALLOCATED)) {
             mutexUnlock(&pd->mtx);
-            kSerialPrintf("page not init\n");
+            klog("page not init\n");
             return -2;
         }
 
         if (checkPageAllowed(pd, pageNumber / NB_PAGE) == 0) {
             mutexUnlock(&pd->mtx);
-            kSerialPrintf("Alloc page not allowed: %u\n", pageNumber);
+            klog("Alloc page not allowed: %u\n", pageNumber);
             return 0;
         }
 

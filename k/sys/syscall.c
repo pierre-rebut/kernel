@@ -8,10 +8,10 @@
 #include "syscall.h"
 #include "io/libvga.h"
 
-#include <stdio.h>
+#include <kstdio.h>
 #include <io/pipe.h>
 
-//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+//#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
 #define NB_SYSCALL 29
@@ -120,7 +120,7 @@ static void syscall_handler(struct esp_context *ctx) {
 
     syscall_t fct = syscall[ctx->eax];
     if (fct == NULL) {
-        kSerialPrintf("unhandled syscall %d\n", ctx->eax);
+        klog("unhandled syscall %d\n", ctx->eax);
         ctx->eax = 0;
         return;
     }
@@ -351,7 +351,7 @@ static void sys_mount(struct esp_context *ctx) {
     return;
 
     failure:
-    kSerialPrintf("mount: failure\n");
+    klog("mount: failure\n");
     ctx->eax = (u32) -1;
 }
 
@@ -372,7 +372,7 @@ static void sys_umount(struct esp_context *ctx) {
     return;
 
     failure:
-    kSerialPrintf("umount: failed\n");
+    klog("umount: failed\n");
     ctx->eax = (u32) -1;
 }
 
@@ -396,7 +396,7 @@ static void sys_pipe(struct esp_context *ctx) {
     fd[1] = pipe2;
 
     failure:
-    kSerialPrintf("pipe: failed\n");
+    klog("pipe: failed\n");
     ctx->eax = (u32) -1;
 }
 
@@ -421,7 +421,7 @@ static void sys_dup2(struct esp_context *ctx) {
     return;
 
     failure:
-    kSerialPrintf("dup2: failed\n");
+    klog("dup2: failed\n");
     ctx->eax = (u32) -1;
 }
 

@@ -23,6 +23,7 @@
 */
 #include <graphic.h>
 #include <stdlib.h>
+#include <syscallw.h>
 
 /*
  * offscreen buffer (for double buffering).

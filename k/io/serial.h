@@ -1,7 +1,7 @@
 #ifndef KERNEL_EPITA_SERIAL_H
 # define KERNEL_EPITA_SERIAL_H
 
-#include <k/types.h>
+#include <k/ktypes.h>
 
 void initSerial(int);
 int writeSerial(const void *str, u32 length);

@@ -15,8 +15,9 @@
  *
  */
 
+#include <types.h>
+
 #include <stdarg.h>
-#include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -157,6 +158,8 @@ int vsprintf(char *buf, const char *fmt, va_list args) {
             case '0':
                 flags |= ZEROPAD;
                 goto repeat;
+            default:
+                ;
         }
 
         /* get field width */
@@ -252,8 +255,6 @@ int vsprintf(char *buf, const char *fmt, va_list args) {
 
             case 'x':
                 flags |= SMALL;
-                base = 16;
-                break;
             case 'X':
                 base = 16;
                 break;
@@ -298,30 +299,3 @@ int sprintf(char *buf, const char *fmt, ...) {
     return i;
 }
 
-int printf(const char *fmt, ...) {
-    char printf_buf[1024];
-    va_list args;
-    int printed;
-
-    va_start(args, fmt);
-    printed = vsprintf(printf_buf, fmt, args);
-    va_end(args);
-
-    puts(printf_buf);
-
-    return printed;
-}
-
-int printfErr(const char *fmt, ...) {
-    char printf_buf[1024];
-    va_list args;
-    int printed;
-
-    va_start(args, fmt);
-    printed = vsprintf(printf_buf, fmt, args);
-    va_end(args);
-
-    putErrors(printf_buf);
-
-    return printed;
-}

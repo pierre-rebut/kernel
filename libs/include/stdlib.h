@@ -21,31 +21,22 @@
 * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef STRING_H_
-#define STRING_H_
+#ifndef STDLIB_H_
+#define STDLIB_H_
 
-#include <k/types.h>
+#include <stddef.h>
+#include <kstd.h>
+#include <syscallw.h>
 
-#define MAX(a, b) ((a) > (b) ? (a): (b))
-#define MIN(a, b) ((a) < (b) ? (a): (b))
+int atoi(const char *str);
+long atol(const char *str);
 
-int memcmp(const void *s1, const void *s2, u32 n);
-void *memcpy(void *dest, const void *src, u32 n);
-void *memmove(void *dest, const void *src, register u32 n);
-void *memset(void *s, int c, u32 n);
-int strcmp(const char *s1, const char *s2);
-char *strcpy(char *dest, const char *src);
-char *strdup(const char *s);
-u32 strlen(const char *s);
-u32 strnlen(const char *s, u32 maxlen);
-char *strncpy(char *dest, const char *src, u32 n);
-int strncmp(const char *s1, const char *s2, u32 n);
-char *strdup(const char *str);
-char *strchr(const char *p, int ch);
-char *strtok(char *s, const char *delim);
-u32 strcspn(const char *s1, register const char *s2);
-char isspace(char c);
+void *malloc(size_t size);
 
-void strtoupper(char *str);
+void *realloc(void *ptr, size_t size);
 
-#endif				/* !STRING_H_ */
+void free(const void *ptr);
+
+void *calloc(size_t nmemb, size_t size);
+
+#endif				/* !STDLIB_H_ */

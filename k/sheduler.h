@@ -5,7 +5,7 @@
 #ifndef KERNEL_SHEDULER_H
 #define KERNEL_SHEDULER_H
 
-#include <k/types.h>
+#include <k/ktypes.h>
 #include "task.h"
 
 void schedulerDoNothing();

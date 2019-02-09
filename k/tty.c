@@ -3,8 +3,8 @@
 //
 
 #include <sys/paging.h>
-#include <include/stdio.h>
-#include <include/string.h>
+#include <include/kstdio.h>
+#include <string.h>
 #include <sys/console.h>
 #include <io/terminal.h>
 #include "tty.h"

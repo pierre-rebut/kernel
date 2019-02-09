@@ -1,7 +1,7 @@
 #ifndef K_KFS_H
 #define K_KFS_H
 
-#include <k/types.h>
+#include <k/ktypes.h>
 
 #define KFS_MAGIC 0xd35f9caa
 

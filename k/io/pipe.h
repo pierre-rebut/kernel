@@ -5,7 +5,7 @@
 #ifndef KERNEL_PIPE_H
 #define KERNEL_PIPE_H
 
-#include <k/types.h>
+#include <k/ktypes.h>
 #include <sys/mutex.h>
 
 struct Pipe {

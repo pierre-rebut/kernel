@@ -3,9 +3,9 @@
 //
 
 #include <stdio.h>
-#include <kstd.h>
+#include "kstd.h"
 #include <string.h>
-#include <stdlib.h>
+#include "../../libs/include/stdlib.h"
 
 void help() {
     printf("mount <mounttype> <fs type> <mount point> <arg>\n");

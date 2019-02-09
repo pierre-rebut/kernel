@@ -5,7 +5,7 @@
 #ifndef KERNEL_EPITA_PHYSICAL_MEMORY_H
 #define KERNEL_EPITA_PHYSICAL_MEMORY_H
 
-#include <k/types.h>
+#include <k/ktypes.h>
 #include <multiboot.h>
 
 #define MAX_MEMORY 0x100000000ull

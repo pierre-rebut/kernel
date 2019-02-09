@@ -22,8 +22,7 @@
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <kstd.h>
-#include <stddef.h>
-#include <stdio.h>
+#include <syscallw.h>
 
 static inline u32 syscall0(int syscall_nb) {
     u32 res;

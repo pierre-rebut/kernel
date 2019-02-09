@@ -5,7 +5,7 @@
 #ifndef KERNEL_EPITA_PAGGING_H
 #define KERNEL_EPITA_PAGGING_H
 
-#include <k/types.h>
+#include <k/ktypes.h>
 #include <compiler.h>
 #include "mutex.h"
 

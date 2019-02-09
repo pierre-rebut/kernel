@@ -5,10 +5,10 @@
 
 #include <sys/allocator.h>
 #include <string.h>
-#include <stdio.h>
+#include <kstdio.h>
 #include "device.h"
 
-//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+//#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
 static struct DeviceDriver *deviceList = NULL;

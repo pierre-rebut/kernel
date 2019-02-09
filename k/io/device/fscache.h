@@ -7,7 +7,7 @@
 
 #define FSCACHE_NB_BLOCK_LIMIT 2000
 
-#include <k/types.h>
+#include <k/ktypes.h>
 #include "device.h"
 
 struct FsCacheBlock {

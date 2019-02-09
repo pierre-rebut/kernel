@@ -2,7 +2,7 @@
 // Created by rebut_p on 15/12/18.
 //
 
-#include <include/stdio.h>
+#include <include/kstdio.h>
 #include <include/cpu.h>
 #include <sys/paging.h>
 #include <io/pit.h>
@@ -11,7 +11,7 @@
 #include "sheduler.h"
 #include "sys/console.h"
 
-//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+//#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
 static struct List activeTaskLists = CREATE_LIST();

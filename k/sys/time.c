@@ -36,9 +36,9 @@ static u8 calculateWeekday(u16 year, u8 month, int day) {
 
 static void writeInt(u16 val, char *dest) {
     if (val < 10)
-        ksprintf(dest, "0%u", val);
+        sprintf(dest, "0%u", val);
     else
-        ksprintf(dest, "%u", val);
+        sprintf(dest, "%u", val);
 }
 
 static const char *const weekdays[] = {
@@ -67,7 +67,7 @@ int getCurrentDateAndTime(char *buf) {
     writeInt(pct.minute, minute);
     writeInt(pct.second, second);
 
-    int read = ksprintf(buf, "%s %s %s %u, %s:%s:%s", weekdays[pct.weekday - 1], dayofmonth, months[pct.month - 1],
+    int read = sprintf(buf, "%s %s %s %u, %s:%s:%s", weekdays[pct.weekday - 1], dayofmonth, months[pct.month - 1],
                         pct.century * 100 + pct.year, hour, minute, second);
 
     buf[read] = '\0';

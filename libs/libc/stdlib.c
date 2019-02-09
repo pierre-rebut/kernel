@@ -4,18 +4,6 @@
 
 #include <string.h>
 
-char isspace(char c) {
-    if (c == ' '
-        || c == '\f'
-        || c == '\n'
-        || c == '\r'
-        || c == '\t'
-        || c == '\v')
-        return 1;
-
-    return 0;
-}
-
 int atoi(const char *string) {
     int result = 0;
     unsigned int digit;

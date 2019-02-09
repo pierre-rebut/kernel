@@ -4,14 +4,14 @@
 
 #include <io/device/device.h>
 #include <string.h>
-#include <stdio.h>
+#include <kstdio.h>
 #include <sys/allocator.h>
 #include <io/device/fscache.h>
 
 #include "ext2filesystem.h"
 #include "filesystem.h"
 
-//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+//#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
 static int ext2DeviceReadBlock(void *buf, u32 block, struct Ext2PrivData *priv) {
@@ -123,7 +123,7 @@ static int ext2ReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
         }
 
         if (b > priv->sb.blocks) {
-            kSerialPrintf("[ext2] readblock: block %d outside range (max: %d)!\n", b, priv->sb.blocks);
+            klog("[ext2] readblock: block %d outside range (max: %d)!\n", b, priv->sb.blocks);
             return -1;
         }
 
@@ -237,7 +237,7 @@ static struct FsPath *ext2Lookup(struct FsPath *path, const char *name) {
         u32 b = pathInode->dbp[i];
         LOG("test loop %d: %u\n", i, b);
         if (b == 0) {
-            kSerialPrintf("[ext2] invalid dbp: %s\n", name);
+            klog("[ext2] invalid dbp: %s\n", name);
             goto ext2LookupFaillure;
         }
 
@@ -303,7 +303,7 @@ static struct FsPath *ext2Root(struct FsVolume *volume) {
 
     ext2ReadInode(rootInode, 2, priv);
     if ((rootInode->type & 0xF000) != INODE_TYPE_DIRECTORY) {
-        kSerialPrintf("FATAL: Root directory is not a directory! (%X)\n", (rootInode->type & 0xF000));
+        klog("FATAL: Root directory is not a directory! (%X)\n", (rootInode->type & 0xF000));
         goto ext2RootFaillure;
     }
 
@@ -316,7 +316,7 @@ static struct FsPath *ext2Root(struct FsVolume *volume) {
     return rootPath;
 
     ext2RootFaillure:
-    kSerialPrintf("[ext2] get root dir faillure\n");
+    klog("[ext2] get root dir faillure\n");
     kfree(rootInode);
     return NULL;
 }
@@ -336,7 +336,7 @@ static struct FsVolume *ext2Mount(u32 unit) {
     deviceRead(device, buf, 2, 2);
     struct Ext2Superblock *sb = (struct Ext2Superblock *) buf;
     if (sb->ext2_sig != EXT2_SIGNATURE) {
-        kSerialPrintf("Invalid EXT2 signature, have: 0x%x!\n", sb->ext2_sig);
+        klog("Invalid EXT2 signature, have: 0x%x!\n", sb->ext2_sig);
         goto ext2MountFaillure;
     }
 
@@ -381,7 +381,7 @@ static struct FsVolume *ext2Mount(u32 unit) {
     return ext2Volume;
 
     ext2MountFaillure:
-    kSerialPrintf("[ext2] failure\n");
+    klog("[ext2] failure\n");
     deviceDestroy(device);
     kfree(buf);
     kfree(priv);

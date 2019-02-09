@@ -4,10 +4,10 @@
 
 #include <sys/allocator.h>
 #include <string.h>
-#include <include/stdio.h>
+#include <include/kstdio.h>
 #include "fscache.h"
 
-//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+//#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
 struct FsCache *fsCacheList = NULL;

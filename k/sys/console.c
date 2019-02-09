@@ -2,7 +2,7 @@
 // Created by rebut_p on 16/12/18.
 //
 
-#include <stdio.h>
+#include <kstdio.h>
 #include <sys/allocator.h>
 #include <io/libvga.h>
 #include <io/terminal.h>
@@ -10,7 +10,7 @@
 #include <string.h>
 #include "console.h"
 
-//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+//#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
 static char *currentKeyMap = NULL;

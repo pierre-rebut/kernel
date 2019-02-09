@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <kstdio.h>
 #include <cpu.h>
 #include <multiboot.h>
 #include <io/device/ata.h>
@@ -24,7 +24,7 @@
 #include "sys/console.h"
 #include "tty.h"
 
-//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+//#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
 static int k_init(const multiboot_info_t *info) {
@@ -106,7 +106,7 @@ static int k_init(const multiboot_info_t *info) {
             kprintf("Mounting unit %d on %c: %s\n", i, mountId, longname);
             kvolume = fsVolumeOpen(mountId, extfs, i);
             if (kvolume == NULL)
-                kSerialPrintf("Mounting failed\n");
+                klog("Mounting failed\n");
             else
                 mountId++;
         }
@@ -163,7 +163,7 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
     ttyTaskLoop();
 
     error:
-    kSerialPrintf("An error occurred, kernel panic\n");
+    klog("An error occurred, kernel panic\n");
     cli();
     hlt();
 }

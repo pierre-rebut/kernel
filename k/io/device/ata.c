@@ -2,7 +2,7 @@
 // Created by rebut_p on 16/12/18.
 //
 
-#include <stdio.h>
+#include <kstdio.h>
 #include <sys/idt.h>
 #include <string.h>
 #include <task.h>
@@ -13,7 +13,7 @@
 #include "io/pit.h"
 #include "device.h"
 
-//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+//#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
 #define ATA_IRQ0    46
@@ -105,7 +105,7 @@ static int ataWait(int id, int mask, int state) {
             return 1;
         }
         if (t & ATA_STATUS_ERR) {
-            kSerialPrintf("ata: error\n");
+            klog("ata: error\n");
             ataReset(id);
             return 0;
         }
@@ -113,7 +113,7 @@ static int ataWait(int id, int mask, int state) {
         elapsed = gettick() - start;
         if (elapsed > timeout_millis) {
             if (!identify_in_progress) {
-                kSerialPrintf("ata: timeout\n");
+                klog("ata: timeout\n");
             }
             ataReset(id);
             LOG("[ata] wait end\n");

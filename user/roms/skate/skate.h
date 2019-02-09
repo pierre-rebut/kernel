@@ -24,9 +24,9 @@
 #ifndef SKATE_H_
 #define SKATE_H_
 
-#include <graphic.h>
-#include <sound.h>
-#include <stdlib.h>
+#include "../../../libs/include/graphic.h"
+#include "../../../libs/include/sound.h"
+#include "../../../libs/include/stdlib.h"
 
 enum e_gfx {
 	TRICK_NONE = 0,

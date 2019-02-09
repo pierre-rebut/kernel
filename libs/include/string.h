@@ -21,16 +21,32 @@
 * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef STDIO_H_
-#define STDIO_H_
+#ifndef STRING_H_
+#define STRING_H_
 
-#include <stdarg.h>
+#include <types.h>
 
-int kputs(const char *s);
-int kprintf(const char *format, ...);
-int kSerialPrintf(const char *format, ...);
-int ksprintf(char *buf, const char *format, ...);
-int kvsprintf(char *buf, const char *format, va_list args);
-int klog(const char *fmt, ...);
+#define MAX(a, b) ((a) > (b) ? (a): (b))
+#define MIN(a, b) ((a) < (b) ? (a): (b))
 
-#endif				/* !STDLIB_H_ */
+int memcmp(const void *s1, const void *s2, u32 n);
+void *memcpy(void *dest, const void *src, u32 n);
+void *memmove(void *dest, const void *src, register u32 n);
+void *memset(void *s, int c, u32 n);
+int strcmp(const char *s1, const char *s2);
+char *strcpy(char *dest, const char *src);
+char *strdup(const char *s);
+char *strcat(char *begin, char *end);
+u32 strlen(const char *s);
+u32 strnlen(const char *s, u32 maxlen);
+char *strncpy(char *dest, const char *src, u32 n);
+int strncmp(const char *s1, const char *s2, u32 n);
+char *strdup(const char *str);
+char *strchr(const char *p, int ch);
+char *strtok(char *s, const char *delim);
+u32 strcspn(const char *s1, register const char *s2);
+char isspace(char c);
+
+void strtoupper(char *str);
+
+#endif				/* !STRING_H_ */

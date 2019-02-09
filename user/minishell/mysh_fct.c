@@ -8,7 +8,7 @@
 ** Last update Thu Jan 22 14:57:36 2015 rebut_p
 */
 
-#include    <stdlib.h>
+#include    "../../libs/include/stdlib.h"
 #include    <unistd.h>
 #include    "mysh.h"
 

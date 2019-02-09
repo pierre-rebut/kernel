@@ -9,7 +9,7 @@
 */
 
 #include    <fcntl.h>
-#include    <stdlib.h>
+#include    "../../libs/include/stdlib.h"
 #include    <unistd.h>
 #include    <stdio.h>
 #include    "mysh.h"

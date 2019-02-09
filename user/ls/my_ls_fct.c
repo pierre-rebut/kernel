@@ -8,8 +8,8 @@
 ** Last update Sun Nov 30 15:25:33 2014 rebut_p
 */
 
-#include <kstd.h>
-#include <stdlib.h>
+#include "kstd.h"
+#include "../../libs/include/stdlib.h"
 #include <stdio.h>
 #include <string.h>
 

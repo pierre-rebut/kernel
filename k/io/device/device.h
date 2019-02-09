@@ -5,7 +5,7 @@
 #ifndef KERNEL_DEVICE_H
 #define KERNEL_DEVICE_H
 
-#include <k/types.h>
+#include <k/ktypes.h>
 
 struct DeviceDriver {
     char *name;

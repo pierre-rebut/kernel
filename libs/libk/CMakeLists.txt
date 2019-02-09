@@ -1,5 +1,4 @@
-include_directories(include)
-include_directories(../libc/include)
+include_directories(../include)
 
 set(SOURCE
         calloc.c

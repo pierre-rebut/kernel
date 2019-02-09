@@ -5,7 +5,7 @@
 #ifndef KERNEL_CMOS_H
 #define KERNEL_CMOS_H
 
-#include <k/types.h>
+#include <k/ktypes.h>
 
 #define CMOS_SECOND      0x00
 #define CMOS_ALARMSECOND 0x01

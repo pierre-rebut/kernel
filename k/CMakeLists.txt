@@ -32,10 +32,11 @@ set(K_FILES
         io/cmos.c io/cmos.h
         sys/time.c sys/time.h sys/mutex.c sys/mutex.h io/device/device.c io/device/device.h io/fs/devfilesystem.c io/fs/devfilesystem.h io/fs/ext2filesystem.c io/fs/ext2filesystem.h io/device/fscache.c io/device/fscache.h io/pipe.c io/pipe.h tty.c tty.h)
 
-set(K_LIBS
+set(K_UTILS
         utils/kprintf.c
-        utils/kputs.c
-        utils/memmove.c utils/string.c utils/mem.c utils/stringn.c utils/stdlib.c include/stdlib.h)
+        utils/list.c
+        utils/string.c
+        )
 
 set_property(SOURCE crt0.S PROPERTY LANGUAGE C)
 set_property(SOURCE sys/interrupt-entry.S PROPERTY LANGUAGE C)
@@ -44,4 +45,5 @@ set(K_ASM
         crt0.S
         sys/interrupt-entry.S)
 
-add_executable(kernel_epita ${K_FILES} ${K_ASM} ${K_LIBS})
+add_executable(kernel_epita ${K_FILES} ${K_ASM} ${K_UTILS})
+target_link_libraries(kernel_epita c)

@@ -3,7 +3,7 @@
 //
 
 #include <stdio.h>
-#include <kstd.h>
+#include "kstd.h"
 
 int main(int ac, char **av) {
     if (ac != 2) {

@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.8)
 project(kernel)
 
+include_directories(libs/include)
+
 set(CMAKE_C_FLAGS "-std=gnu99 -Os -Wall -Wextra -fno-builtin -ffreestanding -g")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m32 -fno-asynchronous-unwind-tables -fno-common -static -fno-stack-protector")
 

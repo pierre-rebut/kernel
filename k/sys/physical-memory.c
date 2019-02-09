@@ -3,14 +3,14 @@
 //
 
 #include <string.h>
-#include <stdio.h>
+#include <kstdio.h>
 #include <include/multiboot.h>
 
 #include "physical-memory.h"
 #include "allocator.h"
 #include "mutex.h"
 
-//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+//#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
 static u32 *physicalMemTable = NULL;

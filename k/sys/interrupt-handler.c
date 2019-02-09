@@ -10,11 +10,11 @@
 #include "task.h"
 #include "allocator.h"
 
-#include <stdio.h>
+#include <kstdio.h>
 #include <sheduler.h>
 #include <include/cpu.h>
 
-//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+//#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
 struct InterruptList {
@@ -56,26 +56,26 @@ static void quitTask(void) {
         return;
 
     if (currentTask->pid == 0) {
-        kSerialPrintf("<KERNEL PANIC> !!!!!!!\n\n");
+        klog("<KERNEL PANIC> !!!!!!!\n\n");
         cli();
         hlt();
     }
 
-    kSerialPrintf("<TASK ERROR>: %u\n\n", currentTask->pid);
+    klog("<TASK ERROR>: %u\n\n", currentTask->pid);
     taskExit();
 }
 
 static void isr_exception_handler(struct esp_context *r) {
     if (r->int_no > 20)
-        kSerialPrintf("[INT] %s\n", exceptionList[15]);
+        klog("[INT] %s\n", exceptionList[15]);
     else
-        kSerialPrintf("[INT] %s\n", exceptionList[r->int_no]);
+        klog("[INT] %s\n", exceptionList[r->int_no]);
 
-    kSerialPrintf("[INT] err code: %u eip: %X\n", r->err_code, r->eip);
-    kSerialPrintf("[INT] edi: %X esi: %X ebp: %X eax: %X ebx: %X ecx: %X edx: %X\n", r->edi, r->esi, r->ebp, r->eax,
+    klog("[INT] err code: %u eip: %X\n", r->err_code, r->eip);
+    klog("[INT] edi: %X esi: %X ebp: %X eax: %X ebx: %X ecx: %X edx: %X\n", r->edi, r->esi, r->ebp, r->eax,
                   r->ebx, r->ecx, r->edx);
-    kSerialPrintf("[INT] cs: %x  ds: %x  es: %x  Fs: %x  gs: %x  ss: %x\n", r->cs, r->ds, r->es, r->fs, r->gs, r->ss);
-    kSerialPrintf("[INT] eflags: %X  useresp: %X\n", r->eflags, r->useresp);
+    klog("[INT] cs: %x  ds: %x  es: %x  Fs: %x  gs: %x  ss: %x\n", r->cs, r->ds, r->es, r->fs, r->gs, r->ss);
+    klog("[INT] eflags: %X  useresp: %X\n", r->eflags, r->useresp);
 
     kprintf("Task %u: %s\n", currentTask->pid, r->int_no > 20 ? exceptionList[15] : exceptionList[r->int_no]);
     quitTask();
@@ -102,7 +102,7 @@ static void executeInterruptFromLis(struct esp_context *ctx) {
         }
         elem = elem->next;
     }
-    kSerialPrintf("Interrupt not found: %u\n", ctx->int_no);
+    klog("Interrupt not found: %u\n", ctx->int_no);
 }
 
 u32 interrupt_handler(u32 esp) {

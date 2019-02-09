@@ -2,11 +2,11 @@
 // Created by rebut_p on 22/09/18.
 //
 
-#include <stdio.h>
+#include <kstdio.h>
 #include "pic.h"
 #include "io.h"
 
-//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+//#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
 #define PIC_MASK_ALL 0xFF

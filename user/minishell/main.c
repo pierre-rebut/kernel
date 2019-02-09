@@ -10,7 +10,7 @@
 
 #include    <stdio.h>
 #include    <string.h>
-#include    <stdlib.h>
+#include    "../../libs/include/stdlib.h"
 #include    "mysh.h"
 
 int do_free_tab(const char **tab) {

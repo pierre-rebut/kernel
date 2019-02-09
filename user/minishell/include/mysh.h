@@ -12,7 +12,7 @@
 # define    MYSH_H_
 # define    BUFFER_SIZE 4096
 
-# include    <stdlib.h>
+# include    "../../../libs/include/stdlib.h"
 
 typedef struct s_tab {
     char **tab;

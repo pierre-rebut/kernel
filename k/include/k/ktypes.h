@@ -1,5 +1,5 @@
-#ifndef K_TYPES_H
-#define K_TYPES_H
+#ifndef K_KTYPES_H
+#define K_KTYPES_H
 
 #include <stddef.h>
 

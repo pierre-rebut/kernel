@@ -2,11 +2,11 @@
 // Created by rebut_p on 24/12/18.
 //
 
-#include <include/stdio.h>
+#include <include/kstdio.h>
 #include "mutex.h"
 #include "allocator.h"
 
-//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+//#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
 void mutexReset(struct Mutex *mtx) {

@@ -10,13 +10,13 @@
 #include "sheduler.h"
 #include "sys/console.h"
 
-#include <stdio.h>
+#include <kstdio.h>
 #include <sys/physical-memory.h>
 #include <cpu.h>
 #include <string.h>
 #include <io/pit.h>
 
-#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 //#define LOG(x, ...)
 
 char taskSwitching = 0;
@@ -250,14 +250,14 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
     LOG("[TASK] openfile\n");
     struct FsPath *file = fsResolvePath(cmdline);
     if (!file) {
-        kSerialPrintf("[TASK] Can not open file: %s\n", cmdline);
+        klog("[TASK] Can not open file: %s\n", cmdline);
         return 0;
     }
 
     LOG("[TASK] get file stat\n");
     struct stat fileStat;
     if (fsStat(file, &fileStat) == -1) {
-        kSerialPrintf("[TASK] Can not get file info: %s\n", cmdline);
+        klog("[TASK] Can not get file info: %s\n", cmdline);
         return 0;
     }
 
@@ -267,7 +267,7 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
     char *data = kmalloc(sizeof(char) * fileSize, 0, "data bin file");
     if (data == NULL) {
         fsPathDestroy(file);
-        kSerialPrintf("[TASK] Can not alloc memory\n");
+        klog("[TASK] Can not alloc memory\n");
         return 0;
     }
 
@@ -277,7 +277,7 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
 
     if (readSize != (s32) fileSize) {
         kfree(data);
-        kSerialPrintf("[TASK] Can not read bin data: %d\n", readSize);
+        klog("[TASK] Can not read bin data: %d\n", readSize);
         return 0;
     }
 
@@ -285,7 +285,7 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
     struct PageDirectory *pageDirectory = pagingCreatePageDirectory();
     if (pageDirectory == NULL) {
         kfree(data);
-        kSerialPrintf("[TASK] Can not alloc new page directory\n");
+        klog("[TASK] Can not alloc new page directory\n");
         return 0;
     }
 
@@ -294,7 +294,7 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
     kfree(data);
 
     if (entryPrg == 0) {
-        kSerialPrintf("[TASK] Can not load binary: %s\n", cmdline);
+        klog("[TASK] Can not load binary: %s\n", cmdline);
         return 0;
     }
 
@@ -382,7 +382,7 @@ int taskKill(struct Task *task) {
     LOG("[TASK] Killing %u\n", task->pid);
 
     if (task->privilege == TaskPrivilegeKernel) {
-        kSerialPrintf("[TASK] can not kill kernel tasks !!\n");
+        klog("[TASK] can not kill kernel tasks !!\n");
         return -1;
     }
 
@@ -486,7 +486,7 @@ u32 taskSwitch(struct Task *newTask) {
     pagingSwitchPageDirectory(newTask->pageDirectory);
 
     taskSwitching = 1;
-    // kSerialPrintf("Task switch to pid %u\n", newTask->pid);
+    // klog("Task switch to pid %u\n", newTask->pid);
     return newTask->esp;
 }
 

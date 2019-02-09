@@ -8,7 +8,7 @@
 ** Last update Thu Jan 22 15:51:36 2015 rebut_p
 */
 
-#include <stdlib.h>
+#include "../../libs/include/stdlib.h"
 #include <stdio.h>
 #include <string.h>
 #include "mysh.h"

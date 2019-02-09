@@ -46,7 +46,7 @@
  *	http://www.sco.com/developer/gabi/latest/ch4.eheader.html
  */
 
-#include <k/types.h>
+#include <k/ktypes.h>
 #include <multiboot.h>
 
 #include "sys/paging.h"

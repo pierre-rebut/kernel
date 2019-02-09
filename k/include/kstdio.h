@@ -21,17 +21,14 @@
 * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef STDLIB_H_
-#define STDLIB_H_
+#ifndef KSTDIO_H_
+#define KSTDIO_H_
 
-#include <stddef.h>
+#include <stdarg.h>
+#include <stdio.h>
 
-void *malloc(size_t size);
-
-void *realloc(void *ptr, size_t size);
-
-void free(const void *ptr);
-
-void *calloc(size_t nmemb, size_t size);
+int kputs(const char *s);
+int kprintf(const char *format, ...);
+int klog(const char *fmt, ...);
 
 #endif				/* !STDLIB_H_ */

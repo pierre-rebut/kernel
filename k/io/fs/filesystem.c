@@ -6,12 +6,12 @@
 #include <sys/allocator.h>
 #include <sys/physical-memory.h>
 #include <task.h>
-#include <include/stdio.h>
+#include <include/kstdio.h>
 
 static struct Fs *fsList = NULL;
 struct FsVolume *fsVolumeList = NULL;
 
-//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+//#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
 struct FsPath *fsResolvePath(const char *path) {
@@ -338,6 +338,9 @@ int fsWriteFile(struct FsPath *file, const char *buffer, u32 length, u32 offset)
 }
 
 int fsStat(struct FsPath *path, struct stat *result) {
+    if (result == NULL)
+        return 0;
+
     if (!path || !path->volume->fs->stat)
         return -1;
 

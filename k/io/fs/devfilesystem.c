@@ -3,14 +3,14 @@
 //
 
 #include <sys/allocator.h>
-#include <stdio.h>
+#include <kstdio.h>
 #include <string.h>
 #include <io/device/device.h>
 
 #include "devfilesystem.h"
 #include "filesystem.h"
 
-//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+//#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
 static struct FsPath *devRoot(struct FsVolume *volume) {
@@ -70,7 +70,7 @@ static struct dirent *devReaddir(struct FsPath *path, struct dirent *result) {
     if (driver == NULL)
         return NULL;
 
-    ksprintf(result->d_name, "%s", driver->name);
+    sprintf(result->d_name, "%s", driver->name);
     result->d_ino = (u32) path->privateData;
     result->d_type = FT_FILE;
 

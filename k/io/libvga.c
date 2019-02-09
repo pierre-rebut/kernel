@@ -21,7 +21,7 @@
 * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include <k/kstd.h>
+#include <kstd.h>
 #include <compiler.h>
 #include "libvga.h"
 #include "io.h"

@@ -5,7 +5,7 @@
 #include "allocator.h"
 #include "paging.h"
 #include "physical-memory.h"
-#include <stdio.h>
+#include <kstdio.h>
 #include <string.h>
 
 typedef struct {
@@ -82,10 +82,10 @@ void *kmalloc(size_t size, u32 alignment, const char *comment) {
 
     size_t within = 0xFFFFFFFF;
     if (alignment & HEAP_WITHIN_PAGE) {
-        kSerialPrintf("[kmalloc] invalid alignment (set pagesize)\n");
+        klog("[kmalloc] invalid alignment (set pagesize)\n");
         within = PAGESIZE;
     } else if (alignment & HEAP_WITHIN_64K) {
-        kSerialPrintf("[kmalloc] alignment heap within 64k warning\n");
+        klog("[kmalloc] alignment heap within 64k warning\n");
         within = 0x10000;
     }
     char continuous = alignment & HEAP_CONTINUOUS;
@@ -184,7 +184,7 @@ void *kmalloc(size_t size, u32 alignment, const char *comment) {
     mutexUnlock(&mutex);
 
     if (!success) {
-        kSerialPrintf("[kmalloc] failed: %s, heap could not be expanded!\n", comment);
+        klog("[kmalloc] failed: %s, heap could not be expanded!\n", comment);
         return (0);
     }
 
@@ -231,7 +231,7 @@ void kfree(void *addr) {
 
     mutexUnlock(&mutex);
 
-    kSerialPrintf("[kfree] Broken free: %Xh\n", addr);
+    klog("[kfree] Broken free: %Xh\n", addr);
 }
 
 void kmallocGetInfo(u32 *total, u32 *used) {

@@ -5,7 +5,7 @@
 #ifndef KERNEL_EPITA_INTERRUPT_H
 #define KERNEL_EPITA_INTERRUPT_H
 
-#include <k/types.h>
+#include <k/ktypes.h>
 #include <compiler.h>
 
 struct idt_entry {

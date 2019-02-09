@@ -4,9 +4,9 @@
 #ifndef KERNEL_EPITA_USERLAND_H
 #define KERNEL_EPITA_USERLAND_H
 
-#include <k/types.h>
-#include <k/kstd.h>
-#include <include/list.h>
+#include <k/ktypes.h>
+#include <kstd.h>
+#include <list.h>
 
 #include "io/fs/filesystem.h"
 #include "sys/kobject.h"

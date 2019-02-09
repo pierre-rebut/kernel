@@ -21,21 +21,16 @@
 * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef STRING_H_
-#define STRING_H_
+#ifndef STDIO_H_
+#define STDIO_H_
 
-#include <stddef.h>
+#include <stdarg.h>
 
-int memcmp(const void *s1, const void *s2, size_t n);
-void *memcpy(void *dest, const void *src, size_t n);
-void *memset(void *s, int c, size_t n);
-int strcmp(const char *s1, const char *s2);
-char *strcpy(char *dest, const char *src);
-char *strdup(const char *s);
-size_t strlen(const char *s);
-char *strncpy(char *dest, const char *src, size_t n);
-size_t strnlen(const char *s, size_t maxlen);
-int strncmp(const char *s1, const char *s2, size_t n);
-char *strcat(char *str1, const char *str2);
+int puts(const char *s);
+int printf(const char *format, ...);
+int sprintf(char *buf, const char *format, ...);
+int vsprintf(char *buf, const char *format, va_list args);
 
-#endif				/* !STRING_H_ */
+int printfErr(const char *fmt, ...);
+
+#endif				/* !STDLIB_H_ */

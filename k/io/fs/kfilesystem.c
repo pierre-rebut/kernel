@@ -6,14 +6,14 @@
 #include "filesystem.h"
 
 #include <k/kfs.h>
-#include <stdio.h>
+#include <kstdio.h>
 #include <string.h>
 #include <cpu.h>
 #include <sys/paging.h>
 #include <sys/allocator.h>
 #include <sys/physical-memory.h>
 
-//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+//#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
 #define KFS_MEM_POS 0x1400000
@@ -70,14 +70,14 @@ static struct FsVolume *kfsMount(u32 data) {
 
     struct FsPath *file = fsResolvePath((const char *) data);
     if (!file) {
-        kSerialPrintf("[KFS] Can not open file: %s\n", (const char *) data);
+        klog("[KFS] Can not open file: %s\n", (const char *) data);
         return NULL;
     }
 
     LOG("[KFS] get file stat\n");
     struct stat fileStat;
     if (fsStat(file, &fileStat) == -1) {
-        kSerialPrintf("[KFS] Can not get file info: %s\n", (const char *) data);
+        klog("[KFS] Can not get file info: %s\n", (const char *) data);
         goto kfsMountFailure;
     }
 
@@ -130,7 +130,7 @@ static struct FsVolume *kfsMount(u32 data) {
     sti();
 
     if (res) {
-        kSerialPrintf("KFS - Bad superblock\n");
+        klog("KFS - Bad superblock\n");
         goto kfsMountFailure;
     }
 
@@ -255,7 +255,7 @@ static int kfsReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
 
         struct kfs_iblock *iblock = ((void *) kfs) + (node->i_blks[iblockIndex] * KFS_BLK_SZ);
         if (kfs_checksum(iblock, sizeof(struct kfs_iblock) - 4) != iblock->cksum) {
-            kSerialPrintf("[KFS] iblock - Bad checksum\n");
+            klog("[KFS] iblock - Bad checksum\n");
             goto failure;
         }
 
@@ -270,7 +270,7 @@ static int kfsReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
 
     struct kfs_block *block = ((void *) kfs) + (blockIndex[blocknum] * KFS_BLK_SZ);
     if (checkBlockChecksum(block) == 0) {
-        kSerialPrintf("[KFS] block - Bad checksum\n");
+        klog("[KFS] block - Bad checksum\n");
         goto failure;
     }
     memcpy(buffer, block->data, block->usage);
@@ -283,7 +283,7 @@ static int kfsReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
     failure:
     pagingSwitchPageDirectory(currentTask->pageDirectory);
     sti();
-    kSerialPrintf("[KFS] readblock failure\n");
+    klog("[KFS] readblock failure\n");
     return -1;
 }
 
