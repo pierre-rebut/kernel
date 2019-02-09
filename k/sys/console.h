@@ -33,7 +33,7 @@ struct Console {
     struct Mutex mtx;
 
     struct Task *activeProcess;
-};
+} __attribute__((packed));
 
 void initConsole();
 

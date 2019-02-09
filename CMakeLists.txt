@@ -15,8 +15,3 @@ add_subdirectory(tools/mkkfs)
 add_subdirectory(tools/mkksf)
 
 add_subdirectory(user)
-
-add_custom_target(k.iso ALL
-        COMMAND ${CMAKE_SOURCE_DIR}/tools/create-iso.sh k.iso kernel_epita .
-        DEPENDS kernel_epita hunter skate pong vaders yakanoid perrodlauncher mysh
-        )

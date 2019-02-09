@@ -221,8 +221,9 @@ static int procReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
                 read = ksprintf(buffer, "%lu\n", gettick());
                 break;
             case -5:
-                read = ksprintf(buffer, "pid:%u\ncmdline:%s\nprivilege:%s\nevent:%d,%lu,%u\n",
+                read = ksprintf(buffer, "pid:%u\ngid:%u\ncmdline:%s\nprivilege:%s\nevent:%d,%lu,%u\n",
                                 currentTask->pid,
+                                (currentTask->parent ? currentTask->parent->pid : 0),
                                 (currentTask->cmdline ? currentTask->cmdline : "NONE"),
                                 (currentTask->privilege == TaskPrivilegeKernel ? "KERNEL" : "USER"),
                                 currentTask->event.type, currentTask->event.timer, currentTask->event.arg

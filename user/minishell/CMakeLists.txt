@@ -25,10 +25,3 @@ set(FILES
 
 add_executable(mysh ${SOURCE})
 target_link_libraries(mysh k c bin-entry)
-
-add_custom_command(TARGET mysh
-        POST_BUILD
-        DEPENDS mkkfs hunter ls mount umount cat
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMENT "Creating mysh rom"
-        COMMAND ${CMAKE_BINARY_DIR}/tools/mkkfs/mkkfs -o ${CMAKE_CURRENT_BINARY_DIR}/mysh.rom -n mysh ${FILES})
