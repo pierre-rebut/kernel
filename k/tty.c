@@ -50,5 +50,5 @@ void createNewTTY() {
     task->currentDir = currentTask->currentDir;
     task->currentDir->refcount += 1;
 
-    schedulerAddTask(task);
+    schedulerAddActiveTask(task);
 }

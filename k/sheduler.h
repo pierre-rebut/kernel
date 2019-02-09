@@ -13,12 +13,10 @@ void schedulerDoNothing();
 u32 schedulerSwitchTask(u32 esp);
 void schedulerForceSwitchTask();
 
-void schedulerAddTask(struct Task *task);
-void schedulerRemoveTask(struct Task *task);
+void schedulerAddActiveTask(struct Task *task);
+void schedulerRemoveActiveTask(struct Task *task);
 
-void schedulerAddTaskWaiting(struct Task *task);
-void schedulerRemoveTaskWaiting(struct Task *task);
-
-extern struct List activeTaskLists;
+void schedulerAddWaitingTask(struct Task *task);
+void schedulerRemoveWaitingTask(struct Task *task);
 
 #endif //KERNEL_SHEDULER_H

@@ -56,7 +56,7 @@ void initTasking() {
     freeTimeTask = createTask(&taskInfo);
 
     currentTask = &kernelTask;
-    schedulerAddTask(&kernelTask);
+    schedulerAddActiveTask(&kernelTask);
 
     taskSwitching = 1;
 }
@@ -328,13 +328,16 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
     task->currentDir = currentTask->currentDir;
     task->currentDir->refcount++;
 
-    void *cons = consoleGetActiveConsole();
+    struct Console *cons = consoleGetActiveConsole();
     task->objectList[0] = koCreate(KO_CONS_STD, cons, O_RDONLY);
     task->objectList[1] = koCreate(KO_CONS_STD, cons, O_WRONLY);
     task->objectList[2] = koCreate(KO_CONS_ERROR, cons, O_WRONLY);
 
+    cons->activeProcess = task;
+    task->console = cons;
+
     LOG("[TASK] push into scheduler\n");
-    schedulerAddTask(task);
+    schedulerAddActiveTask(task);
 
     LOG("[TASK] end\n");
     return task->pid;
@@ -364,10 +367,11 @@ u32 createThread(u32 entryPrg) {
         return 0;
 
     task->currentDir = procTask->currentDir;
+    task->console = procTask->console;
 
     listAddElem(&procTask->threads, task);
 
-    schedulerAddTask(task);
+    schedulerAddActiveTask(task);
     return task->pid;
 }
 
@@ -387,7 +391,15 @@ int taskKill(struct Task *task) {
 
     tasksTable[task->pid] = NULL;
 
+    if (task == task->console->readingTask) {
+        task->console->readingTask = NULL;
+        mutexUnlock(&task->console->mtx);
+    }
+
     if (task->type == T_PROCESS) {
+        for (struct ListElem *tmp = task->threads.begin; tmp != NULL; tmp = tmp->next)
+            taskKill(tmp->data);
+
         LOG("[TASK] kill process\n");
         for (int fd = 0; fd < MAX_NB_FILE; fd++) {
             struct Kobject *obj = task->objectList[fd];
@@ -400,6 +412,9 @@ int taskKill(struct Task *task) {
 
         LOG("[TASK] destroy path curDir\n");
         fsPathDestroy(task->currentDir);
+
+        if (task->console->activeProcess == task)
+            task->console->activeProcess = task->parent;
     } else {
         LOG("[TASK] kill thread\n");
         listDeleteElem(&task->parent->threads, task);
@@ -407,7 +422,7 @@ int taskKill(struct Task *task) {
 
     kfree(task->kernelStack - KERNEL_STACK_SIZE);
 
-    schedulerRemoveTask(task);
+    schedulerRemoveActiveTask(task);
 
     kfree(task);
     taskSwitching = tmpTaskSwitching;
@@ -443,8 +458,8 @@ void taskWaitEvent(enum TaskEventType event, u32 arg) {
     currentTask->event.timer = gettick();
     currentTask->event.arg = arg;
 
-    schedulerRemoveTask(currentTask);
-    schedulerAddTaskWaiting(currentTask);
+    schedulerRemoveActiveTask(currentTask);
+    schedulerAddWaitingTask(currentTask);
     schedulerForceSwitchTask();
 }
 
@@ -453,8 +468,8 @@ void taskResetEvent(struct Task *task) {
         return;
 
     task->event.type = TaskEventNone;
-    schedulerRemoveTaskWaiting(task);
-    schedulerAddTask(task);
+    schedulerRemoveWaitingTask(task);
+    schedulerAddActiveTask(task);
 }
 
 void taskSaveState(u32 esp) {

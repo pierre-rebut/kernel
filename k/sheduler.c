@@ -14,22 +14,29 @@
 //#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
-struct List activeTaskLists = CREATE_LIST();
-struct List taskListsWaiting = CREATE_LIST();
+static struct List activeTaskLists = CREATE_LIST();
+static struct List activeTaskListsLowPriority = CREATE_LIST();
+static struct List taskListsWaiting = CREATE_LIST();
 
-void schedulerAddTask(struct Task *task) {
-    listAddElem(&activeTaskLists, task);
+void schedulerAddActiveTask(struct Task *task) {
+    if (task->privilege == TaskPrivilegeKernel)
+        listAddElem(&activeTaskLists, task);
+    else
+        listAddElem(&activeTaskListsLowPriority, task);
 }
 
-void schedulerRemoveTask(struct Task *task) {
-    listDeleteElem(&activeTaskLists, task);
+void schedulerRemoveActiveTask(struct Task *task) {
+    if (task->privilege == TaskPrivilegeKernel)
+        listDeleteElem(&activeTaskLists, task);
+    else
+        listDeleteElem(&activeTaskListsLowPriority, task);
 }
 
-void schedulerAddTaskWaiting(struct Task *task) {
+void schedulerAddWaitingTask(struct Task *task) {
     listAddElem(&taskListsWaiting, task);
 }
 
-void schedulerRemoveTaskWaiting(struct Task *task) {
+void schedulerRemoveWaitingTask(struct Task *task) {
     listDeleteElem(&taskListsWaiting, task);
 }
 
@@ -61,9 +68,14 @@ static struct Task *schedulerGetNextTask() {
     checkTaskEvent();
 
     u32 nbTask = listCountElem(&activeTaskLists);
-    if (nbTask == 0)
-        return freeTimeTask;
-    return listGetNextElem(&activeTaskLists);
+    if (nbTask > 0)
+        return listGetNextElem(&activeTaskLists);
+
+    nbTask = listCountElem(&activeTaskListsLowPriority);
+    if (nbTask > 0)
+        return listGetNextElem(&activeTaskListsLowPriority);
+
+    return freeTimeTask;
 }
 
 u32 schedulerSwitchTask(u32 esp) {

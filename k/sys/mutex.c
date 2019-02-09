@@ -69,13 +69,8 @@ int mutexTryLock(struct Mutex *mtx) {
     return value;
 }
 
-int mutexUnlock(struct Mutex *mtx) {
+int mutexForceUnlock(struct Mutex *mtx) {
     LOG("[MTX] unlock\n");
-    if (mtx->currentTask != currentTask) {
-        LOG("[MTX] unlock failed\n");
-        return -1;
-    }
-
     char tmpTaskswitching = taskSwitching;
     taskSwitching = 0;
 
@@ -94,4 +89,13 @@ int mutexUnlock(struct Mutex *mtx) {
     taskSwitching = tmpTaskswitching;
     LOG("[MTX] unlock end\n");
     return 0;
+}
+
+int mutexUnlock(struct Mutex *mtx) {
+    if (mtx->currentTask != currentTask) {
+        LOG("[MTX] unlock failed\n");
+        return -1;
+    }
+
+    return mutexForceUnlock(mtx);
 }

@@ -31,6 +31,8 @@ struct Console {
 
     struct Task *readingTask;
     struct Mutex mtx;
+
+    struct Task *activeProcess;
 };
 
 void initConsole();

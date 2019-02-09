@@ -23,5 +23,6 @@ void mutexReset(struct Mutex *mtx);
 int mutexLock(struct Mutex *mtx);
 int mutexTryLock(struct Mutex *mtx);
 int mutexUnlock(struct Mutex *mtx);
+int mutexForceUnlock(struct Mutex *mtx);
 
 #endif //KERNEL_MUTEX_H

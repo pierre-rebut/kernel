@@ -40,6 +40,7 @@ static struct Console *createConsole() {
 
     mutexReset(&newConsole->mtx);
     newConsole->readingTask = NULL;
+    newConsole->activeProcess = NULL;
 
     return newConsole;
 }
@@ -92,9 +93,9 @@ void consoleKeyboardHandler(int code) {
 
     struct Console *cons = consoleLists[activeConsoleId];
 
-    if (code == 91 && !release && cons->readingTask) {
-        struct Task *tmpTask = cons->readingTask;
-        cons->readingTask = NULL;
+    if (code == 91 && !release && cons->activeProcess) {
+        struct Task *tmpTask = cons->activeProcess;
+        cons->activeProcess = NULL;
         taskKill(tmpTask);
         return;
     } else if (code >= 59 && code <= 68 && !release) {
