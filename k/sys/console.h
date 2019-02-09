@@ -29,7 +29,7 @@ struct Console {
     void *videoBuffer;
     struct TerminalBuffer *tty;
 
-    struct Task *task;
+    struct Task *readingTask;
     struct Mutex mtx;
 };
 

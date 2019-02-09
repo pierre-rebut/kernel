@@ -39,7 +39,7 @@ static struct Console *createConsole() {
     newConsole->tty = createTerminal();
 
     mutexReset(&newConsole->mtx);
-    newConsole->task = NULL;
+    newConsole->readingTask = NULL;
 
     return newConsole;
 }
@@ -92,9 +92,9 @@ void consoleKeyboardHandler(int code) {
 
     struct Console *cons = consoleLists[activeConsoleId];
 
-    if (code == 91 && !release && cons->task) {
-        struct Task *tmpTask = cons->task;
-        cons->task = NULL;
+    if (code == 91 && !release && cons->readingTask) {
+        struct Task *tmpTask = cons->readingTask;
+        cons->readingTask = NULL;
         taskKill(tmpTask);
         return;
     } else if (code >= 59 && code <= 68 && !release) {
@@ -137,7 +137,7 @@ void consoleKeyboardHandler(int code) {
     }
 
     if (c == '\n')
-        taskResetEvent(cons->task);
+        taskResetEvent(cons->readingTask);
 }
 
 char consoleGetkey(struct Console *console) {
@@ -166,7 +166,7 @@ s32 consoleReadKeyboard(void *entryData, void *buf, u32 size) {
     struct Console *console = (struct Console *) entryData;
 
     mutexLock(&console->mtx);
-    console->task = currentTask;
+    console->readingTask = currentTask;
     taskWaitEvent(TaskEventKeyboard, 0);
 
     LOG("keyboard event end\n");
@@ -180,7 +180,7 @@ s32 consoleReadKeyboard(void *entryData, void *buf, u32 size) {
         read++;
     }
 
-    console->task = NULL;
+    console->readingTask = NULL;
     mutexUnlock(&console->mtx);
     return read;
 }
