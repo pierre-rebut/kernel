@@ -62,10 +62,10 @@ void initTasking() {
 }
 
 static u32 getNextPid() {
-    static u32 last = 0;
+    static u32 last = 1;
 
     u32 i;
-    for (i = last + 1; i < TASK_MAX_PID; i++) {
+    for (i = last; i < TASK_MAX_PID; i++) {
         if (!tasksTable[i]) {
             last = i;
             return i;
@@ -95,6 +95,7 @@ struct Task *createTask(struct TaskCreator *info) {
     task->privilege = info->privilege;
     task->parent = info->parent;
     listReset(&task->threads);
+    listReset(&task->childs);
 
     task->pageDirectory = info->pageDirectory;
     stack = (void *) ((u32) stack + KERNEL_STACK_SIZE);
@@ -246,19 +247,19 @@ int forkProcess() {
     return -1;
 }*/
 
-u32 createProcess(const char *cmdline, const char **av, const char **env) {
+pid_t createProcess(const struct ExceveInfo *info) {
     LOG("[TASK] openfile\n");
-    struct FsPath *file = fsResolvePath(cmdline);
+    struct FsPath *file = fsResolvePath(info->cmdline);
     if (!file) {
-        klog("[TASK] Can not open file: %s\n", cmdline);
-        return 0;
+        klog("[TASK] Can not open file: %s\n", info->cmdline);
+        return -1;
     }
 
     LOG("[TASK] get file stat\n");
     struct stat fileStat;
     if (fsStat(file, &fileStat) == -1) {
-        klog("[TASK] Can not get file info: %s\n", cmdline);
-        return 0;
+        klog("[TASK] Can not get file info: %s\n", info->cmdline);
+        return -1;
     }
 
     s32 fileSize = fileStat.file_sz;
@@ -268,7 +269,7 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
     if (data == NULL) {
         fsPathDestroy(file);
         klog("[TASK] Can not alloc memory\n");
-        return 0;
+        return -1;
     }
 
     LOG("[TASK] read\n");
@@ -278,7 +279,7 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
     if (readSize != (s32) fileSize) {
         kfree(data);
         klog("[TASK] Can not read bin data: %d\n", readSize);
-        return 0;
+        return -1;
     }
 
     LOG("[TASK] alloc pagedirec\n");
@@ -286,7 +287,7 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
     if (pageDirectory == NULL) {
         kfree(data);
         klog("[TASK] Can not alloc new page directory\n");
-        return 0;
+        return -1;
     }
 
     LOG("[TASK] loadbin\n");
@@ -294,18 +295,22 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
     kfree(data);
 
     if (entryPrg == 0) {
-        klog("[TASK] Can not load binary: %s\n", cmdline);
-        return 0;
+        klog("[TASK] Can not load binary: %s\n", info->cmdline);
+        return -1;
     }
 
+    struct Task *progParent = currentTask;
+    if (currentTask->type == T_THREAD)
+        progParent = currentTask->parent;
+
     u32 ac;
-    for (ac = 0; av[ac] != NULL; ac++);
+    for (ac = 0; info->av[ac] != NULL; ac++);
     u32 envc;
-    for (envc = 0; env[envc] != NULL; envc++);
+    for (envc = 0; info->env[envc] != NULL; envc++);
 
     pagingAlloc(pageDirectory, (void *) USER_STACK, (u32) USER_HEAP_START - (u32) USER_STACK, MEM_USER | MEM_WRITE);
-    const char **newAv = copyArrayIntoUserland(pageDirectory, USER_ARG_BUFFER, ac, av);
-    const char **newEnv = copyArrayIntoUserland(pageDirectory, USER_ENV_BUFFER, envc, env);
+    const char **newAv = copyArrayIntoUserland(pageDirectory, USER_ARG_BUFFER, ac, (const char **) info->av);
+    const char **newEnv = copyArrayIntoUserland(pageDirectory, USER_ENV_BUFFER, envc, (const char **) info->env);
 
     LOG("[TASK] add task (entry: %X)\n", entryPrg);
     struct TaskCreator taskInfo = {
@@ -316,21 +321,34 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
             .ac = ac,
             .av = newAv,
             .env = newEnv,
-            .cmdline = strdup(av[0]),
-            .parent = currentTask
+            .cmdline = strdup(info->cmdline),
+            .parent = progParent
     };
 
     struct Task *task = createTask(&taskInfo);
     if (!task)
-        return 0;
+        return -1;
+
+    LOG("[TASK] adding task to parent\n");
+    listAddElem(&progParent->childs, task);
 
     LOG("[TASK] setting data\n");
-    task->currentDir = currentTask->currentDir;
+    task->currentDir = progParent->currentDir;
     task->currentDir->refcount++;
 
     struct Console *cons = consoleGetActiveConsole();
-    task->objectList[0] = koCreate(KO_CONS_STD, cons, O_RDONLY);
-    task->objectList[1] = koCreate(KO_CONS_STD, cons, O_WRONLY);
+
+    if (info->fd_in == -1)
+        task->objectList[0] = koCreate(KO_CONS_STD, cons, O_RDONLY);
+    else
+        task->objectList[0] = koDupplicate(taskGetKObjectByFd(info->fd_in));
+
+    if (info->fd_out == -1)
+        task->objectList[1] = koCreate(KO_CONS_STD, cons, O_WRONLY);
+    else
+        task->objectList[1] = koDupplicate(taskGetKObjectByFd(info->fd_out));
+
+
     task->objectList[2] = koCreate(KO_CONS_ERROR, cons, O_WRONLY);
 
     cons->activeProcess = task;
@@ -343,7 +361,7 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
     return task->pid;
 }
 
-u32 createThread(u32 entryPrg) {
+pid_t createThread(u32 entryPrg) {
     LOG("[TASK] add task thread (entry: %X)\n", entryPrg);
 
     struct Task *procTask = currentTask;
@@ -364,7 +382,7 @@ u32 createThread(u32 entryPrg) {
 
     struct Task *task = createTask(&taskInfo);
     if (!task)
-        return 0;
+        return -1;
 
     task->currentDir = procTask->currentDir;
     task->console = procTask->console;
@@ -417,6 +435,9 @@ int taskKill(struct Task *task) {
             task->console->activeProcess = task->parent;
             consoleSwitchVideoMode(task->console, ConsoleModeText);
         }
+
+        LOG("[TASK] remove task from parent\n");
+        listDeleteElem(&task->parent->childs, task);
     } else {
         LOG("[TASK] kill thread\n");
         listDeleteElem(&task->parent->threads, task);
@@ -438,14 +459,14 @@ int taskKill(struct Task *task) {
     return 0;
 }
 
-u32 taskGetpid() {
+pid_t taskGetpid() {
     return currentTask->pid;
 }
 
-u32 taskKillByPid(u32 pid) {
+pid_t taskKillByPid(pid_t pid) {
     struct Task *task = getTaskByPid(pid);
     if (task == NULL)
-        return 0;
+        return -1;
 
     taskKill(task);
     return pid;
@@ -523,8 +544,8 @@ u32 taskSetHeapInc(s32 inc) {
     return heap->start + brk;
 }
 
-struct Task *getTaskByPid(u32 pid) {
-    if (pid > TASK_MAX_PID)
+struct Task *getTaskByPid(pid_t pid) {
+    if (pid > TASK_MAX_PID || pid < 0)
         return NULL;
 
     return tasksTable[pid];

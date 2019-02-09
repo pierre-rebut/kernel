@@ -15,13 +15,27 @@ static const char **args;
 static const char **env;
 
 void ttyTaskLoop() {
+    struct ExceveInfo execInfo = {
+            .cmdline = cmdline,
+            .env = env,
+            .av = args,
+            .fd_in = -1,
+            .fd_out = -1
+    };
+
     while (1) {
         clearTerminal(consoleGetActiveConsole()->tty);
-        u32 pid = createProcess(cmdline, args, env);
-        taskWaitEvent(TaskEventWaitPid, pid);
-        kprintf("Resetting terminal (kill: %u)\n", pid);
+        pid_t pid = createProcess(&execInfo);
+        if (pid == -1)
+            break;
+
+        taskWaitEvent(TaskEventWaitPid, (u32) pid);
+        kprintf("Resetting terminal (kill: %d)\n", pid);
         taskWaitEvent(TaskEventTimer, 1000);
     }
+
+    kprintf("An error occured\n");
+    taskExit();
 }
 
 void initTTY(const char *c, const char **av, const char **e) {

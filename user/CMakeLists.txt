@@ -4,7 +4,6 @@ set_property(SOURCE bin-entry.S PROPERTY LANGUAGE C)
 add_library(bin-entry bin-entry.S)
 
 add_subdirectory(42sh)
-add_subdirectory(roms)
-add_subdirectory(minishell)
+#add_subdirectory(roms)
 add_subdirectory(ls)
 add_subdirectory(utils)

@@ -10,6 +10,7 @@
 
 #include "kstd.h"
 #include <stdio.h>
+#include <syscallw.h>
 #include "include/my_ls.h"
 
 int set_zero(t_option *opt) {

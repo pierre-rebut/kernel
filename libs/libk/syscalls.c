@@ -116,12 +116,12 @@ int usleep(u32 duration) {
     return ((int) syscall1(SYSCALL_USLEEP, duration));
 }
 
-u32 kill(u32 pid) {
-    return syscall1(SYSCALL_KILL, pid);
+u32 kill(pid_t pid) {
+    return syscall1(SYSCALL_KILL, (u32) pid);
 }
 
-int waitpid(u32 pid) {
-    return ((int) syscall1(SYSCALL_WAITPID, pid));
+int waitpid(pid_t pid) {
+    return ((int) syscall1(SYSCALL_WAITPID, (u32) pid));
 }
 
 u32 getpid() {
@@ -132,8 +132,8 @@ int sleep(u32 duration) {
     return usleep(duration * 1000);
 }
 
-u32 execve(const char *prg, const char **av, const char **env) {
-    return syscall3(SYSCALL_EXECVE, (u32) prg, (u32) av, (u32) env);
+u32 execve(const struct ExceveInfo *info) {
+    return syscall1(SYSCALL_EXECVE, (u32) info);
 }
 
 int stat(const char *pathname, struct stat *data) {
@@ -158,7 +158,7 @@ int closedir(int repertoire) {
 
 struct dirent *readdir(int repertoire) {
     static struct dirent data = {0};
-    return  (struct dirent *) syscall2(SYSCALL_READDIR, (u32) repertoire, (u32) &data);
+    return (struct dirent *) syscall2(SYSCALL_READDIR, (u32) repertoire, (u32) &data);
 }
 
 int mount(char id, const char *fstype, u32 arg) {
@@ -169,14 +169,14 @@ int umount(char id) {
     return syscall1(SYSCALL_UMOUNT, (u32) id);
 }
 
-int fork() {
-    return syscall0(SYSCALL_FORK);
-}
-
 int pipe(int fd[2]) {
     return syscall1(SYSCALL_PIPE, (u32) fd);
 }
 
 int dup2(int o, int n) {
-    return syscall2(SYSCALL_DUP2, o, n);
+    return syscall2(SYSCALL_DUP2, (u32) o, (u32) n);
+}
+
+char *getcwd(char *buf, u32 size) {
+    return (char *) syscall2(SYSCALL_GETCWD, (u32) buf, size);
 }

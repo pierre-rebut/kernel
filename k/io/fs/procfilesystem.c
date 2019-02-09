@@ -115,7 +115,7 @@ static struct FsPath *procLookup(struct FsPath *path, const char *name) {
         if (pid == 0)
             task = &kernelTask;
         else
-            task = getTaskByPid((u32) pid);
+            task = getTaskByPid(pid);
 
         if (task == NULL) {
             kfree(procPath);
@@ -171,7 +171,7 @@ static struct dirent *procReaddir(struct FsPath *path, struct dirent *result) {
     } else {
         struct Task *task = NULL;
         while ((u32) procPath->data < 1024 && task == NULL) {
-            task = getTaskByPid((u32) procPath->data);
+            task = getTaskByPid((pid_t) procPath->data);
             procPath->data += 1;
         }
 
@@ -233,7 +233,7 @@ static int procReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
                 read = -1;
         }
     } else {
-        struct Task *task = getTaskByPid((u32) procPath->data);
+        struct Task *task = getTaskByPid((pid_t) procPath->data);
         if (!task)
             return -1;
 

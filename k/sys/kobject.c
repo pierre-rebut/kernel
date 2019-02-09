@@ -74,6 +74,9 @@ s32 koWrite(struct Kobject *obj, void *buffer, u32 size) {
 }
 
 struct Kobject *koDupplicate(struct Kobject *obj) {
+    if (obj == NULL)
+        return NULL;
+
     obj->refcount += 1;
     return obj;
 }

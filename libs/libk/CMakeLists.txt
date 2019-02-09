@@ -7,6 +7,7 @@ set(SOURCE
         realloc.c
         sound.c
         strdup.c
-        syscalls.c)
+        syscalls.c
+        puts.c)
 
 add_library(k STATIC ${SOURCE})

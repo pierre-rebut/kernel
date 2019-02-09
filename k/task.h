@@ -78,6 +78,8 @@ struct Task {
 
     struct FsPath *currentDir;
     struct Console *console;
+
+    struct List childs;
 };
 
 extern char taskSwitching;
@@ -89,16 +91,17 @@ void taskSaveState(u32 esp);
 u32 taskSwitch(struct Task *newTask);
 
 struct Task *createTask(struct TaskCreator *info);
-u32 createProcess(const char *cmdline, const char **av, const char **env);
+pid_t createProcess(const struct ExceveInfo *info);
+pid_t createThread(u32 entryPrg);
 void initTasking();
 
 int taskKill(struct Task *);
 int taskExit();
 void taskWaitEvent(enum TaskEventType event, u32 arg);
 void taskResetEvent(struct Task *task);
-u32 taskGetpid();
-u32 taskKillByPid(u32 pid);
-struct Task *getTaskByPid(u32 pid);
+pid_t taskGetpid();
+pid_t taskKillByPid(pid_t pid);
+struct Task *getTaskByPid(pid_t pid);
 
 u32 taskSetHeapInc(s32 size);
 

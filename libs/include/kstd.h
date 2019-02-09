@@ -94,13 +94,27 @@ enum e_mouse_codes {
 };
 
 /* misc */
-#define O_RDONLY	0
-#define O_WRONLY    1
+#define O_RDONLY	1
+#define O_WRONLY    2
+#define O_RDWR      3
+#define O_APPEND    4
+#define O_CREAT    8
 
 #define SEEK_SET	0
 #define SEEK_CUR	1
 #define SEEK_END	2
 #define VIDEO_GRAPHIC	0
 #define VIDEO_TEXT	1
+
+struct ExceveInfo {
+    const char *cmdline;
+    const char **av;
+    const char **env;
+
+    int fd_in;
+    int fd_out;
+};
+
+#define INIT_EXECINFO() {0, 0, 0, -1, -1}
 
 #endif

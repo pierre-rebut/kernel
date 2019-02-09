@@ -14,7 +14,7 @@
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
-#define NB_SYSCALL 29
+#define NB_SYSCALL 30
 
 static void sys_write(struct esp_context *ctx);
 
@@ -74,6 +74,8 @@ static void sys_pipe(struct esp_context *ctx);
 
 static void sys_dup2(struct esp_context *ctx);
 
+static void sys_getcwd(struct esp_context *ctx);
+
 typedef void (*syscall_t)(struct esp_context *);
 
 static syscall_t syscall[] = {
@@ -105,7 +107,8 @@ static syscall_t syscall[] = {
         sys_mount,
         sys_umount,
         sys_pipe,
-        sys_dup2
+        sys_dup2,
+        sys_getcwd
 };
 
 static void syscall_handler(struct esp_context *ctx);
@@ -245,22 +248,22 @@ static void sys_waitPid(struct esp_context *ctx) {
 }
 
 static void sys_kill(struct esp_context *ctx) {
-    ctx->eax = taskKillByPid(ctx->ebx);
+    ctx->eax = (u32) taskKillByPid((pid_t) ctx->ebx);
 }
 
 static void sys_getPid(struct esp_context *ctx) {
-    ctx->eax = taskGetpid();
+    ctx->eax = (u32) taskGetpid();
 }
 
 static void sys_execve(struct esp_context *ctx) {
 
-    if (ctx->ebx == 0 || ctx->ecx == 0 || ctx->edx == 0) {
+    if (ctx->ebx == 0) {
         ctx->eax = 0;
         return;
     }
 
-    LOG("execve: %s\n", (char *) ctx->ebx);
-    ctx->eax = createProcess((const char *) ctx->ebx, (const char **) ctx->ecx, (const char **) ctx->edx);
+    LOG("execve\n");
+    ctx->eax = (u32) createProcess((const struct ExceveInfo *) ctx->ebx);
 }
 
 static void sys_stat(struct esp_context *ctx) {
@@ -423,5 +426,10 @@ static void sys_dup2(struct esp_context *ctx) {
     failure:
     klog("dup2: failed\n");
     ctx->eax = (u32) -1;
+}
+
+static void sys_getcwd(struct esp_context *ctx) {
+    LOG("getcwd: %u\n", ctx->ecx);
+    ctx->eax = 0;
 }
 

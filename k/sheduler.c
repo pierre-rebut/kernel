@@ -56,7 +56,10 @@ static void checkTaskEvent() {
                     taskResetEvent(task);
                 break;
             case TaskEventWaitPid:
-                if (getTaskByPid(task->event.arg) == NULL)
+                if ((pid_t) task->event.arg == -1) {
+                    if (listGetNextElem(&task->childs) == NULL)
+                        taskResetEvent(task);
+                } else if (getTaskByPid(task->event.arg) == NULL)
                     taskResetEvent(task);
                 break;
             default:;

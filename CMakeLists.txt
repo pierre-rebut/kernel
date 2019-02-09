@@ -13,7 +13,7 @@ add_subdirectory(k)
 add_subdirectory(libs/libc)
 add_subdirectory(libs/libk)
 
-add_subdirectory(tools/mkkfs)
-add_subdirectory(tools/mkksf)
+#add_subdirectory(tools/mkkfs)
+#add_subdirectory(tools/mkksf)
 
 add_subdirectory(user)
