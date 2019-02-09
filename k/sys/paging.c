@@ -4,13 +4,14 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <include/cpu.h>
 
 #include "paging.h"
 #include "allocator.h"
 #include "physical-memory.h"
 
-//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
-#define LOG(x, ...)
+#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+//#define LOG(x, ...)
 
 struct PageDirectory *kernelPageDirectory = NULL;
 static struct PageDirectory *currentPageDirectory = NULL;
@@ -73,8 +74,13 @@ u32 pagingGetPhysAddr(const void *vaddr) {
     if (!pt)
         return 0;
 
-    LOG("GetPhysAddr: virt-->phys: pageNb: %u, pt: %Xh\n", pageNumber, (u32) pt);
+    //LOG("GetPhysAddr: virt-->phys: pageNb: %u, pt: %Xh\n", pageNumber, (u32) pt);
     return ((pt->pages[pageNumber % NB_PAGE] & 0xFFFFF000) + ((u32) vaddr & 0x00000FFF));
+}
+
+static int checkPageAllowed(struct PageDirectory *pageDirectory, u32 index) {
+    return kernelPageDirectory == pageDirectory ||
+           (pageDirectory->tablesAddr[index] != kernelPageDirectory->tablesAddr[index]);
 }
 
 struct PageDirectory *pagingCreatePageDirectory() {
@@ -87,11 +93,51 @@ struct PageDirectory *pagingCreatePageDirectory() {
     mutexReset(&pageDirectory->mtx);
     return pageDirectory;
 }
+/*
+struct PageDirectory *pagingDuplicatePageDirectory(struct PageDirectory *oldPd) {
+    if (oldPd == NULL)
+        return NULL;
 
-static int checkPageAllowed(struct PageDirectory *pageDirectory, u32 index) {
-    return kernelPageDirectory == pageDirectory ||
-           (pageDirectory->tablesAddr[index] != kernelPageDirectory->tablesAddr[index]);
-}
+    struct PageDirectory *newPd = pagingCreatePageDirectory();
+    if (!newPd)
+        return NULL;
+
+    mutexLock(&oldPd->mtx);
+
+    LOG("[PAGING] cpy old to new page directory\n");
+
+    for(u32 i = 0; i < NB_TABLE; i++) {
+        if (oldPd->tablesInfo[i] != NULL && checkPageAllowed(oldPd, i)) {
+            struct TableDirectory *pt = kmalloc(sizeof(struct TableDirectory), PAGESIZE, "newTableDirectory");
+            if (!pt)
+                goto failure_mtx;
+
+            u32 flags = oldPd->tablesAddr[i] & 0xFFF;
+
+            newPd->tablesInfo[i] = pt;
+            newPd->tablesAddr[i] = pagingGetPhysAddr(pt) | flags;
+            memset(pt, 0, sizeof(struct TableDirectory));
+
+            for (u32 y = 0; y < NB_PAGE; y++) {
+                if (oldPd->tablesInfo[i]->pages[y]) {
+                    u32 physAddress = oldPd->tablesInfo[i]->pages[y] & 0xFFFFF000;
+                    newPd->tablesInfo[i]->pages[y] = physAddress | MEM_PRESENT;
+                }
+            }
+        }
+    }
+
+    mutexUnlock(&oldPd->mtx);
+    return newPd;
+
+    failure_mtx:
+    mutexUnlock(&oldPd->mtx);
+
+    failure:
+    LOG("[PAGING] duplicate page directory failed\n");
+    pagingDestroyPageDirectory(newPd);
+    return NULL;
+}*/
 
 void pagingDestroyPageDirectory(struct PageDirectory *pageDirectory) {
     if (pageDirectory == NULL)
@@ -110,9 +156,10 @@ void pagingDestroyPageDirectory(struct PageDirectory *pageDirectory) {
     for (u32 i = 0; i < NB_TABLE; i++) {
         if (pageDirectory->tablesInfo[i] && checkPageAllowed(pageDirectory, i)) {
             for (u32 j = 0; j < NB_PAGE; j++) {
-                u32 physAddress = pageDirectory->tablesInfo[i]->pages[j] & 0xFFFFF000;
+                u32 tmp = pageDirectory->tablesInfo[i]->pages[j];
+                u32 physAddress = tmp & 0xFFFFF000;
 
-                if (physAddress)
+                if (physAddress && tmp & MEM_ALLOCATED)
                     freePhysicalMemory(physAddress);
             }
             kfree(pageDirectory->tablesInfo[i]);
@@ -126,7 +173,7 @@ void pagingSwitchPageDirectory(struct PageDirectory *pageDirectory) {
     if (pageDirectory == currentPageDirectory)
         return;
 
-    LOG("Switching page directory\n");
+    //LOG("Switching page directory\n");
     currentPageDirectory = pageDirectory;
     asm volatile("mov %0, %%cr3" : : "r" (pageDirectory->physAddr));
 }
@@ -285,7 +332,7 @@ int pagingAlloc(struct PageDirectory *pd, void *addr, u32 size, enum MEMFLAGS fl
 }
 
 void pagingFree(struct PageDirectory *pd, void *virtAddress, u32 size) {
-    LOG("pagingFree: %p - %u\n", addr, size);
+    LOG("pagingFree: %p - %u\n", virtAddress, size);
 
     if (((u32) virtAddress) % PAGESIZE != 0) {
         kSerialPrintf("addr not page aligned\n");

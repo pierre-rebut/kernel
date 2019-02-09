@@ -169,3 +169,15 @@ int mount(char id, const char *fstype, u32 arg) {
 int umount(char id) {
     return syscall1(SYSCALL_UMOUNT, (u32) id);
 }
+
+int fork() {
+    return syscall0(SYSCALL_FORK);
+}
+
+int pipe(int fd[2]) {
+    return syscall1(SYSCALL_PIPE, (u32) fd);
+}
+
+int dup2(int o, int n) {
+    return syscall2(SYSCALL_DUP2, o, n);
+}

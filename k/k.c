@@ -16,7 +16,6 @@
 #include "io/keyboard.h"
 #include "io/pit.h"
 #include "io/fs/kfilesystem.h"
-#include "io/terminal.h"
 #include "task.h"
 #include "sys/allocator.h"
 #include "sys/physical-memory.h"
@@ -32,7 +31,7 @@ static int k_init(const multiboot_info_t *info) {
     LOG("Init Serial\n");
 
     LOG("Init Terminal\n");
-    initTerminal();
+    initConsole();
 
     LOG("Init memory\n");
     kprintf("Init Memory\n");
@@ -154,21 +153,21 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
     const char *env[] = {
             "PATH=A:/bin",
             "HOME=A:/home",
-            "PWD=A:",
+            "PWD=A:/",
             NULL
     };
 
     while (1) {
-        clearTerminal();
+        //clearTerminal();
         u32 pid = createProcess((char*)info->cmdline, av, env);
         taskWaitEvent(TaskEventWaitPid, pid);
-        kprintf("Resetting terminal\n");
+        kprintf("Resetting terminal (kill: %u)\n", pid);
         taskWaitEvent(TaskEventTimer, 1000);
     }
 
 
     error:
-    kSerialPrintf("An error occurred\n");
+    kSerialPrintf("An error occurred, kernel panic\n");
     cli();
     hlt();
 }

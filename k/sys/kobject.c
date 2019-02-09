@@ -4,8 +4,10 @@
 
 #include <io/terminal.h>
 #include <io/serial.h>
+#include <io/pipe.h>
 #include "kobject.h"
 #include "allocator.h"
+#include "console.h"
 
 struct Kobject *koCreate(enum KObjectType type, void *data, int mode) {
     struct Kobject *obj = kmalloc(sizeof(struct Kobject), 0, "newKobject");
@@ -16,6 +18,7 @@ struct Kobject *koCreate(enum KObjectType type, void *data, int mode) {
     obj->type = type;
     obj->mode = mode;
     obj->offset = 0;
+    obj->refcount = 1;
     return obj;
 }
 
@@ -23,56 +26,80 @@ s32 koRead(struct Kobject *obj, void *buffer, u32 size) {
     if (obj->mode == O_WRONLY)
         return -1;
 
+    int actual;
+
     switch (obj->type) {
-        case KO_FS: {
-            int actual = fsReadFile(obj->data, (char *) buffer, size, obj->offset);
-            if (actual > 0)
-                obj->offset += actual;
-            return actual;
-        }
-        case KO_CONS:
-            return readKeyboardFromConsole(obj->data, buffer, size);
+        case KO_FS_FILE:
+            actual = fsReadFile(obj->data, (char *) buffer, size, obj->offset);
+            break;
+        case KO_CONS_STD:
+            return consoleReadKeyboard(obj->data, buffer, size);
+        case KO_PIPE:
+            actual = pipeRead(obj->data, buffer, size);
+            break;
         default:
             return -1;
     }
+
+    if (actual > 0)
+        obj->offset += actual;
+
+    return actual;
 }
 
 s32 koWrite(struct Kobject *obj, void *buffer, u32 size) {
     if (obj->mode == O_RDONLY)
         return -1;
 
+    int actual;
+
     switch (obj->type) {
-        case KO_FS: {
-            int actual = fsReadFile(obj->data, (char *) buffer, size, obj->offset);
-            if (actual > 0)
-                obj->offset += actual;
-            return actual;
-        }
-        case KO_CONS:
-            return writeStringTerminal(buffer, size);
-        case KO_ERROR:
+        case KO_FS_FILE:
+            actual = fsReadFile(obj->data, (char *) buffer, size, obj->offset);
+            break;
+        case KO_CONS_STD:
+            return consoleWriteStandard(obj->data, buffer, size);
+        case KO_CONS_ERROR:
             return writeSerial(buffer, size);
+        case KO_PIPE:
+            actual = pipeWrite(obj->data, buffer, size);
+            break;
         default:
             return -1;
     }
+
+    if (actual > 0)
+        obj->offset += actual;
+    return actual;
+}
+
+struct Kobject *koDupplicate(struct Kobject *obj) {
+    obj->refcount += 1;
+    return obj;
 }
 
 int koDestroy(struct Kobject *obj) {
-    switch (obj->type) {
-        case KO_FS_FOLDER:
-        case KO_FS:
-            fsPathDestroy(obj->data);
-            break;
-        default:
-            ;
-    }
+    obj->refcount -= 1;
 
-    kfree(obj);
+    if (obj->refcount == 0) {
+        switch (obj->type) {
+            case KO_FS_FOLDER:
+            case KO_FS_FILE:
+                fsPathDestroy(obj->data);
+                break;
+            case KO_PIPE:
+                pipeDelete(obj->data);
+                break;
+            default:;
+        }
+
+        kfree(obj);
+    }
     return 0;
 }
 
 off_t koSeek(struct Kobject *obj, off_t offset, int whence) {
-    if (obj->type != KO_FS)
+    if (obj->type != KO_FS_FILE)
         return -1;
 
     u32 fileSize = ((struct FsPath*)obj->data)->size;

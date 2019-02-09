@@ -8,7 +8,6 @@
 #include <string.h>
 #include <task.h>
 #include <stdlib.h>
-#include <sheduler.h>
 #include <sys/physical-memory.h>
 #include <sys/time.h>
 #include <io/pit.h>
@@ -168,8 +167,14 @@ static struct dirent *procReaddir(struct FsPath *path, struct dirent *result) {
         }
         result->d_type = FT_FILE;
         result->d_ino = (u32) procPath->data;
+        procPath->data++;
     } else {
-        struct Task *task = schedulerGetTaskByIndex((u32) procPath->data);
+        struct Task *task = NULL;
+        while ((u32) procPath->data < 1024 && task == NULL) {
+            task = getTaskByPid((u32) procPath->data);
+            procPath->data += 1;
+        }
+
         if (!task)
             return NULL;
 
@@ -178,7 +183,6 @@ static struct dirent *procReaddir(struct FsPath *path, struct dirent *result) {
         result->d_type = FT_FILE;
     }
 
-    procPath->data++;
     return result;
 }
 

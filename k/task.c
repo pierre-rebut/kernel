@@ -12,54 +12,74 @@
 
 #include <stdio.h>
 #include <sys/physical-memory.h>
-#include <io/fs/kfilesystem.h>
 #include <cpu.h>
 #include <string.h>
-#include <io/terminal.h>
-#include <io/serial.h>
 #include <io/pit.h>
-#include <io/keyboard.h>
-#include <include/list.h>
 
-//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
-#define LOG(x, ...)
-
-static u32 nextPid = 0;
+#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+//#define LOG(x, ...)
 
 char taskSwitching = 0;
 struct Task *currentTask = NULL;
 struct Task *freeTimeTask = NULL;
 struct Task kernelTask = {0};
 
+#define TASK_MAX_PID 1024
+static struct Task *tasksTable[TASK_MAX_PID] = {0};
+
 void initTasking() {
+    kernelTask.type = T_PROCESS;
     kernelTask.pid = 0;
+    tasksTable[0] = &kernelTask;
     kernelTask.ss = 0x10;
     kernelTask.event.type = TaskEventNone;
     kernelTask.pageDirectory = kernelPageDirectory;
     kernelTask.privilege = TaskPrivilegeKernel;
-    kernelTask.console = kernelConsole;
     kernelTask.cmdline = strdup("kernelTask");
-    kernelConsole->task = &kernelTask;
+    kernelTask.parent = NULL;
 
     for (int i = 0; i < MAX_NB_FILE; i++)
         kernelTask.objectList[i] = NULL;
 
     struct TaskCreator taskInfo = {
+            .type = T_PROCESS,
             .pageDirectory = kernelPageDirectory,
-            .entryPoint = (u32)&schedulerDoNothing,
+            .entryPoint = (u32) &schedulerDoNothing,
             .privilege = TaskPrivilegeKernel,
             .ac = 0,
             .av = NULL,
             .env = NULL,
-            .console = kernelConsole,
-            .cmdline = "kernelTask"
+            .cmdline = kernelTask.cmdline,
+            .parent = &kernelTask
     };
 
     freeTimeTask = createTask(&taskInfo);
+
     currentTask = &kernelTask;
     schedulerAddTask(&kernelTask);
 
     taskSwitching = 1;
+}
+
+static u32 getNextPid() {
+    static u32 last = 0;
+
+    u32 i;
+    for (i = last + 1; i < TASK_MAX_PID; i++) {
+        if (!tasksTable[i]) {
+            last = i;
+            return i;
+        }
+    }
+
+    for (i = 1; i < last; i++) {
+        if (!tasksTable[i]) {
+            last = i;
+            return i;
+        }
+    }
+
+    return 0;
 }
 
 struct Task *createTask(struct TaskCreator *info) {
@@ -68,17 +88,22 @@ struct Task *createTask(struct TaskCreator *info) {
     if (!task || !stack)
         return NULL;
 
-    task->pid = nextPid++;
+    task->pid = getNextPid();
+    tasksTable[task->pid] = task;
+
+    task->type = info->type;
     task->privilege = info->privilege;
+    task->parent = info->parent;
+    listReset(&task->threads);
+
     task->pageDirectory = info->pageDirectory;
     stack = (void *) ((u32) stack + KERNEL_STACK_SIZE);
     task->kernelStack = stack;
     task->event.type = TaskEventNone;
     task->heap.start = USER_HEAP_START;
     task->heap.pos = task->heap.nbPage = 0;
-    task->console = info->console;
 
-    task->cmdline = strdup(info->cmdline);
+    task->cmdline = info->cmdline;
 
     for (int i = 0; i < MAX_NB_FILE; i++)
         task->objectList[i] = NULL;
@@ -150,8 +175,76 @@ static const char **copyArrayIntoUserland(struct PageDirectory *pd, u32 position
     for (size_t index = 0; index < ac; index++)
         kfree(nArgv[index]);
 
-    return (const char **)nnArgv;
+    return (const char **) nnArgv;
 }
+
+/*
+int forkProcess() {
+    LOG("[TASK] fork start\n");
+    struct Task *parrent = currentTask;
+
+    struct Task *task = kmalloc(sizeof(struct Task), 0, "task");
+
+    LOG("[TASK] create new stack\n");
+    u32 *stack = kmalloc(KERNEL_STACK_SIZE, 0, "stack");
+    if (!task || !stack)
+        goto failure;
+
+    memcpy(stack, currentTask->kernelStack - KERNEL_STACK_SIZE, KERNEL_STACK_SIZE);
+    task->kernelStack = (void *) ((u32) stack + KERNEL_STACK_SIZE);
+
+    LOG("stack = %u, kernelStack = %u, SIZE = %u\n", stack, task->kernelStack, KERNEL_STACK_SIZE);
+    LOG("cur esp: %u, cur kerneltask: %u\n", currentTask->esp, currentTask->kernelStack);
+
+    LOG("[TASK] duplicate page directory\n");
+    task->pageDirectory = pagingDuplicatePageDirectory(currentTask->pageDirectory);
+    if (task->pageDirectory == NULL)
+        goto failure;
+
+    LOG("[TASK] copy info from currentTask\n");
+    if (currentTask->kernelStack > task->kernelStack) {
+        task->esp = currentTask->esp - (currentTask->kernelStack - task->kernelStack);
+        task->ss = currentTask->ss;
+    } else {
+        task->esp = currentTask->esp + (task->kernelStack - currentTask->kernelStack);
+        task->ss = currentTask->ss;
+    }
+
+    task->event.type = TaskEventNone;
+    task->pid = nextPid++;
+    task->cmdline = strdup(currentTask->cmdline);
+    task->currentDir = currentTask->currentDir;
+    task->currentDir->refcount += 1;
+    task->privilege = currentTask->privilege;
+
+    task->console = currentTask->console;
+    task->heap.start = currentTask->heap.start;
+    task->heap.pos = currentTask->heap.pos;
+    task->heap.nbPage = currentTask->heap.nbPage;
+
+    for (int i = 0; i < MAX_NB_FILE; i++) {
+        if (currentTask->objectList[i] != NULL)
+            task->objectList[i] = koDupplicate(currentTask->objectList[i]);
+        else
+            task->objectList[i] = NULL;
+    }
+
+    schedulerAddTask(task);
+    LOG("[TASK] fork end\n");
+
+    if (currentTask == parrent) {
+        LOG("papa\n");
+        return task->pid;
+    }
+    LOG("child\n");
+    return 0;
+
+    failure:
+    LOG("[TASK] fork failed\n");
+    kfree(stack);
+    kfree(task);
+    return -1;
+}*/
 
 u32 createProcess(const char *cmdline, const char **av, const char **env) {
     LOG("[TASK] openfile\n");
@@ -214,45 +307,72 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
     const char **newAv = copyArrayIntoUserland(pageDirectory, USER_ARG_BUFFER, ac, av);
     const char **newEnv = copyArrayIntoUserland(pageDirectory, USER_ENV_BUFFER, envc, env);
 
-    LOG("[TASK] create new console\n");
-    struct Console *console = createConsole();
-    if (!console)
-        return 0;
-
     LOG("[TASK] add task (entry: %X)\n", entryPrg);
     struct TaskCreator taskInfo = {
+            .type = T_PROCESS,
             .pageDirectory = pageDirectory,
             .entryPoint = entryPrg,
             .privilege = TaskPrivilegeUser,
             .ac = ac,
             .av = newAv,
             .env = newEnv,
-            .console = console,
-            .cmdline = av[0]
+            .cmdline = strdup(av[0]),
+            .parent = currentTask
     };
 
     struct Task *task = createTask(&taskInfo);
     if (!task)
         return 0;
 
-    console->task = task;
-
     task->currentDir = currentTask->currentDir;
     task->currentDir->refcount++;
 
-    task->objectList[0] = koCreate(KO_CONS, console, O_RDONLY);
-    task->objectList[1] = koCreate(KO_CONS, console, O_WRONLY);
-    task->objectList[2] = koCreate(KO_ERROR, console, O_WRONLY);
+    void *cons = consoleGetActiveConsole();
+    task->objectList[0] = koCreate(KO_CONS_STD, cons, O_RDONLY);
+    task->objectList[1] = koCreate(KO_CONS_STD, cons, O_WRONLY);
+    task->objectList[2] = koCreate(KO_CONS_ERROR, cons, O_WRONLY);
 
     schedulerAddTask(task);
-
-    setActiveConsole(console);
 
     LOG("[TASK] end\n");
     return task->pid;
 }
 
+u32 createThread(u32 entryPrg) {
+    LOG("[TASK] add task thread (entry: %X)\n", entryPrg);
+
+    struct Task *procTask = currentTask;
+    if (currentTask->type == T_THREAD)
+        procTask = currentTask->parent;
+
+    struct TaskCreator taskInfo = {
+            .type = T_THREAD,
+            .pageDirectory = procTask->pageDirectory,
+            .entryPoint = entryPrg,
+            .privilege = procTask->privilege,
+            .ac = 0,
+            .av = 0,
+            .env = 0,
+            .cmdline = procTask->cmdline,
+            .parent = procTask
+    };
+
+    struct Task *task = createTask(&taskInfo);
+    if (!task)
+        return 0;
+
+    task->currentDir = procTask->currentDir;
+
+    listAddElem(&procTask->threads, task);
+
+    schedulerAddTask(task);
+    return task->pid;
+}
+
 int taskKill(struct Task *task) {
+    if (task == NULL)
+        return -1;
+
     LOG("[TASK] Killing %u\n", task->pid);
 
     if (task->pid == 0) {
@@ -263,21 +383,28 @@ int taskKill(struct Task *task) {
     char tmpTaskSwitching = taskSwitching;
     taskSwitching = 0;
 
-    for (int fd = 0; fd < MAX_NB_FILE; fd++) {
-        struct Kobject *obj = task->objectList[fd];
-        if (obj)
-            koDestroy(obj);
+    tasksTable[task->pid] = NULL;
+
+    if (task->type == T_PROCESS) {
+        LOG("[TASK] kill process\n");
+        for (int fd = 0; fd < MAX_NB_FILE; fd++) {
+            struct Kobject *obj = task->objectList[fd];
+            if (obj)
+                koDestroy(obj);
+        }
+
+        kfree((void *) task->cmdline);
+        pagingDestroyPageDirectory(task->pageDirectory);
+
+        LOG("[TASK] destroy path curDir\n");
+        fsPathDestroy(task->currentDir);
+    } else {
+        LOG("[TASK] kill thread\n");
+        listDeleteElem(&task->parent->threads, task);
     }
 
-    kfree((void*)task->cmdline);
     kfree(task->kernelStack - KERNEL_STACK_SIZE);
 
-    LOG("[TASK] destroy path curDir\n");
-    fsPathDestroy(task->currentDir);
-
-    pagingDestroyPageDirectory(task->pageDirectory);
-
-    destroyConsole(task->console);
     schedulerRemoveTask(task);
 
     kfree(task);
@@ -313,7 +440,19 @@ void taskWaitEvent(enum TaskEventType event, u32 arg) {
     currentTask->event.type = event;
     currentTask->event.timer = gettick();
     currentTask->event.arg = arg;
+
+    schedulerRemoveTask(currentTask);
+    schedulerAddTaskWaiting(currentTask);
     schedulerForceSwitchTask();
+}
+
+void taskResetEvent(struct Task *task) {
+    if (task == NULL || task->event.type == TaskEventNone)
+        return;
+
+    task->event.type = TaskEventNone;
+    schedulerRemoveTaskWaiting(task);
+    schedulerAddTask(task);
 }
 
 void taskSaveState(u32 esp) {
@@ -366,17 +505,10 @@ u32 taskSetHeapInc(s32 inc) {
 }
 
 struct Task *getTaskByPid(u32 pid) {
-    if (taskLists.begin == NULL)
+    if (pid > TASK_MAX_PID)
         return NULL;
 
-    struct ListElem *elem = taskLists.begin;
-    while (elem != NULL) {
-        struct Task *task = (struct Task *)elem->data;
-        if (task->pid == pid)
-            return task;
-        elem = elem->next;
-    }
-    return NULL;
+    return tasksTable[pid];
 }
 
 int taskChangeDirectory(const char *directory) {
@@ -390,13 +522,37 @@ int taskChangeDirectory(const char *directory) {
 }
 
 int taskGetAvailableFd(struct Task *task) {
+    struct Kobject **tmp = task->objectList;
+    if (task->type == T_THREAD)
+        tmp = task->parent->objectList;
+
     int id;
     for (id = 0; id < MAX_NB_FILE; id++)
-        if (task->objectList[id] == NULL)
+        if (tmp[id] == NULL)
             break;
 
     if (id >= MAX_NB_FILE)
         return -1;
 
     return id;
+}
+
+struct Kobject *taskGetKObjectByFd(int fd) {
+    if (fd >= MAX_NB_FILE || fd < 0)
+        return NULL;
+
+    if (currentTask->type == T_THREAD)
+        return currentTask->parent->objectList[fd];
+    return currentTask->objectList[fd];
+}
+
+int taskSetKObjectByFd(int fd, struct Kobject *obj) {
+    if (fd >= MAX_NB_FILE || fd < 0)
+        return -1;
+
+    if (currentTask->type == T_THREAD)
+        currentTask->parent->objectList[fd] = obj;
+    else
+        currentTask->objectList[fd] = obj;
+    return 0;
 }

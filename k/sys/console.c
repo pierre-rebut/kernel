@@ -15,63 +15,59 @@ static char *currentKeyMap = NULL;
 static char keyMap[] = "&\0\"'(-\0_\0\0)=\0\tazertyuiop^$\n\0qsdfghjklm\0\0\0*wxcvbn,;:!\0\0\0 ";
 static char keyMapShift[] = "1234567890\0+\0\tAZERTYUIOP\0\0\n\0QSDFGHJKLM%\0\0\0WXCVBN?./\0";
 
-static struct Console *consoleLists = NULL;
-struct Console *activeConsole = NULL;
-struct Console *kernelConsole = NULL;
+static struct Console *consoleLists[12] = {0};
+static int activeConsoleId = -1;
+
+static struct Console *createConsole();
 
 void initConsole() {
     currentKeyMap = keyMap;
-    kernelConsole = createConsole();
-    activeConsole = kernelConsole;
+    consoleSwitchById(0);
 }
 
-struct Console *createConsole() {
+static struct Console *createConsole() {
     struct Console *newConsole = kmalloc(sizeof(struct Console), 0, "newConsole");
     if (!newConsole)
         return NULL;
-
-    if (consoleLists)
-        consoleLists->next = newConsole;
 
     newConsole->readBuffer.readPtr = 0;
     newConsole->readBuffer.writePtr = 0;
 
     newConsole->mode = ConsoleModeText;
-    newConsole->prev = consoleLists;
-    newConsole->next = NULL;
-    consoleLists = newConsole;
+    newConsole->videoBuffer = NULL;
+    newConsole->tty = createTerminal();
+
+    mutexReset(&newConsole->mtx);
+    newConsole->task = NULL;
+
     return newConsole;
 }
 
-void destroyConsole(struct Console *console) {
-    if (console == kernelConsole)
-        return;
+int consoleSwitchById(int id) {
+    if (id < 0 || id > 11)
+        return -1;
 
-    if (console == activeConsole)
-        setActiveConsole(console->prev);
+    if (id == activeConsoleId)
+        return 0;
 
-    struct Console *tmp = consoleLists;
+    if (consoleLists[id] == NULL)
+        consoleLists[id] = createConsole();
 
-    while (tmp != NULL) {
-        if (tmp == console) {
-            if (tmp->next)
-                tmp->next->prev = tmp->prev;
-            else
-                consoleLists = tmp->prev;
-            if (tmp->prev)
-                tmp->prev->next = tmp->next;
-            return;
-        }
-        tmp = tmp->prev;
-    }
+    struct Console *cons = consoleLists[id];
+
+    switchVgaMode(cons->mode);
+
+    if (cons->mode == ConsoleModeText)
+        updateTerminal(cons->tty);
+    else
+        setVgaFrameBuffer(cons->videoBuffer);
+
+    activeConsoleId = id;
+    return 0;
 }
 
-void setActiveConsole(struct Console *console) {
-    if (console == activeConsole)
-        return;
-
-    switchVgaMode(console->mode);
-    activeConsole = console;
+struct Console *consoleGetActiveConsole() {
+    return consoleLists[activeConsoleId];
 }
 
 void consoleKeyboardHandler(int code) {
@@ -80,8 +76,10 @@ void consoleKeyboardHandler(int code) {
     int release = code >> 7;
     code &= ~(1 << 7);
 
+    struct Console *cons = consoleLists[activeConsoleId];
+
     if (code == 91 && !release) {
-        taskKill(activeConsole->task);
+        taskKill(cons->task);
         return;
     }
 
@@ -93,7 +91,7 @@ void consoleKeyboardHandler(int code) {
     if (release)
         return;
 
-    struct CirBuffer *val = &activeConsole->readBuffer;
+    struct CirBuffer *val = &cons->readBuffer;
 
     if ((val->writePtr + 1) % CONSOLE_BUFFER_SIZE == val->readPtr)
         val->readPtr = (val->readPtr + 1) % CONSOLE_BUFFER_SIZE;
@@ -103,27 +101,13 @@ void consoleKeyboardHandler(int code) {
     val->tmpBuffer[val->writePtr] = code;
     val->writePtr = (val->writePtr + 1) % CONSOLE_BUFFER_SIZE;
 
-    if (activeConsole->mode == ConsoleModeText) {
-        if (c == 0)
-            writeStringTerminal("^@", 2);
-        else
-            writeTerminal(c);
+    if (cons->mode == ConsoleModeText) {
+        terminalPutchar(cons->tty, 1, c);
+        terminalUpdateCursor(cons->tty);
     }
 
-    if (isConsoleReadReady(activeConsole) == 1)
-        activeConsole->task->event.type = TaskEventNone;
-}
-
-char isConsoleReadReady(struct Console *console) {
-    struct CirBuffer *val = &console->readBuffer;
-
-    int tmp = val->readPtr;
-    while (tmp != val->writePtr) {
-        if (val->buffer[tmp] == '\n')
-            return 1;
-        tmp = (tmp + 1) % CONSOLE_BUFFER_SIZE;
-    }
-    return 0;
+    if (c == '\n')
+        taskResetEvent(cons->task);
 }
 
 char consoleGetkey(struct Console *console) {
@@ -148,12 +132,14 @@ int consoleGetkey2(struct Console *console) {
     return tmp;
 }
 
-s32 readKeyboardFromConsole(void *entryData, void *buf, u32 size) {
+s32 consoleReadKeyboard(void *entryData, void *buf, u32 size) {
+    struct Console *console = (struct Console *) entryData;
+
+    mutexLock(&console->mtx);
+    console->task = currentTask;
     taskWaitEvent(TaskEventKeyboard, 0);
 
     LOG("keyboard event end\n");
-
-    struct Console *console = (struct Console *) entryData;
 
     char *str = (char *) buf;
     u32 read = 0;
@@ -164,6 +150,23 @@ s32 readKeyboardFromConsole(void *entryData, void *buf, u32 size) {
         read++;
     }
 
+    console->task = NULL;
+    mutexUnlock(&console->mtx);
     return read;
+}
 
+s32 consoleWriteStandard(void *entryData, const char *buf, u32 size) {
+    struct Console *cons = entryData;
+    char writing = (cons->mode == ConsoleModeText && consoleLists[activeConsoleId] == cons);
+
+    for (u32 i = 0; i < size; i++) {
+        terminalPutchar(cons->tty, writing, buf[i]);
+    }
+
+    terminalUpdateCursor(cons->tty);
+    return size;
+}
+
+s32 consoleForceWrite(const char *buf, u32 size) {
+    return consoleWriteStandard(consoleLists[activeConsoleId], buf, size);
 }

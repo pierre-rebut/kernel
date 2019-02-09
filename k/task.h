@@ -6,6 +6,7 @@
 
 #include <k/types.h>
 #include <k/kstd.h>
+#include <include/list.h>
 
 #include "io/fs/filesystem.h"
 #include "sys/kobject.h"
@@ -22,7 +23,8 @@ enum TaskEventType {
     TaskEventKeyboard,
     TaskEventTimer,
     TaskEventWaitPid,
-    TaskEventMutex
+    TaskEventMutex,
+    TaskEventPipe
 };
 
 struct Heap {
@@ -37,7 +39,13 @@ struct TaskEvent {
     u32 arg;
 };
 
+enum TaskType {
+    T_PROCESS,
+    T_THREAD
+};
+
 struct TaskCreator {
+    enum TaskType type;
     struct PageDirectory *pageDirectory;
     u32 entryPoint;
     enum TaskPrivilege privilege;
@@ -46,20 +54,22 @@ struct TaskCreator {
     u32 ac;
     const char **av;
     const char **env;
-    struct Console *console;
+    void *parent;
 };
 
 struct Task {
+    enum TaskType type;
     u32 pid;
 
     const char *cmdline;
     enum TaskPrivilege privilege;
+    struct Task *parent;
+    struct List threads;
 
     u32 esp;
     u32 ss;
     void *kernelStack;
     struct Heap heap;
-    struct Console *console;
 
     struct TaskEvent event;
 
@@ -84,6 +94,7 @@ void initTasking();
 int taskKill(struct Task *);
 int taskExit();
 void taskWaitEvent(enum TaskEventType event, u32 arg);
+void taskResetEvent(struct Task *task);
 u32 taskGetpid();
 u32 taskKillByPid(u32 pid);
 struct Task *getTaskByPid(u32 pid);
@@ -93,5 +104,7 @@ u32 taskSetHeapInc(s32 size);
 int taskChangeDirectory(const char *directory);
 
 int taskGetAvailableFd(struct Task *task);
+struct Kobject *taskGetKObjectByFd(int fd);
+int taskSetKObjectByFd(int fd, struct Kobject *obj);
 
 #endif //KERNEL_EPITA_USERLAND_H

@@ -6,6 +6,7 @@
 #define KERNEL_CONSOLE_H
 
 #include "task.h"
+#include <sys/mutex.h>
 
 #define CONSOLE_BUFFER_SIZE 255
 
@@ -22,33 +23,32 @@ struct CirBuffer {
 };
 
 struct Console {
-    struct CirBuffer readBuffer;
-    struct Task *task;
     enum ConsoleMode mode;
+    struct CirBuffer readBuffer;
 
-    struct Console *next;
-    struct Console *prev;
+    void *videoBuffer;
+    struct TerminalBuffer *tty;
+
+    struct Task *task;
+    struct Mutex mtx;
 };
-
-extern struct Console *activeConsole;
-extern struct Console *kernelConsole;
 
 void initConsole();
 
-struct Console *createConsole();
+int consoleSwitchById(int id);
 
-void destroyConsole(struct Console *console);
-
-void setActiveConsole(struct Console *console);
+struct Console *consoleGetActiveConsole();
 
 void consoleKeyboardHandler(int code);
-
-char isConsoleReadReady(struct Console *console);
 
 char consoleGetkey(struct Console *console);
 
 int consoleGetkey2(struct Console *console);
 
-s32 readKeyboardFromConsole(void *entryData, void *buf, u32 size);
+s32 consoleReadKeyboard(void *entryData, void *buf, u32 size);
+
+s32 consoleWriteStandard(void *entryData, const char *buf, u32 size);
+
+s32 consoleForceWrite(const char *buf, u32 size);
 
 #endif //KERNEL_CONSOLE_H

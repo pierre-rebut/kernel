@@ -16,6 +16,11 @@ static struct ListElem *createElem(void *data, struct ListElem *n, struct ListEl
     return elem;
 }
 
+void listReset(struct List *lst) {
+    lst->begin = NULL;
+    lst->cur = NULL;
+}
+
 void listAddElem(struct List *lst, void *data) {
     if (lst->begin == NULL) {
         lst->begin = createElem(data, NULL, NULL);

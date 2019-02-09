@@ -14,14 +14,23 @@
 //#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
-struct List taskLists = CREATE_LIST();
+struct List activeTaskLists = CREATE_LIST();
+struct List taskListsWaiting = CREATE_LIST();
 
 void schedulerAddTask(struct Task *task) {
-    listAddElem(&taskLists, task);
+    listAddElem(&activeTaskLists, task);
 }
 
 void schedulerRemoveTask(struct Task *task) {
-    listDeleteElem(&taskLists, task);
+    listDeleteElem(&activeTaskLists, task);
+}
+
+void schedulerAddTaskWaiting(struct Task *task) {
+    listAddElem(&taskListsWaiting, task);
+}
+
+void schedulerRemoveTaskWaiting(struct Task *task) {
+    listDeleteElem(&taskListsWaiting, task);
 }
 
 void schedulerDoNothing() {
@@ -29,38 +38,32 @@ void schedulerDoNothing() {
         hlt();
 }
 
-static char checkTaskEvent(struct Task *task) {
-    LOG("[scheduler] Check task event for: %X\n", task);
-    switch (task->event.type) {
-        case TaskEventNone:
-            return 1;
-        case TaskEventTimer:
-            if (gettick() - task->event.timer >= task->event.arg) {
-                task->event.type = TaskEventNone;
-                return 1;
-            }
-            return 0;
-        case TaskEventWaitPid:
-            if (getTaskByPid(task->event.arg) == NULL) {
-                task->event.type = TaskEventNone;
-                return 1;
-            }
-            return 0;
-        default:
-            return 0;
+static void checkTaskEvent() {
+    for (struct ListElem *tmp = taskListsWaiting.begin; tmp != NULL; tmp = tmp->next) {
+        struct Task *task = tmp->data;
+
+        LOG("[scheduler] Check task event for: %u\n", task->pid);
+        switch (task->event.type) {
+            case TaskEventTimer:
+                if (gettick() - task->event.timer >= task->event.arg)
+                    taskResetEvent(task);
+                break;
+            case TaskEventWaitPid:
+                if (getTaskByPid(task->event.arg) == NULL)
+                    taskResetEvent(task);
+                break;
+            default:;
+        }
     }
 }
 
 static struct Task *schedulerGetNextTask() {
-    u32 nbTask = listCountElem(&taskLists);
+    checkTaskEvent();
 
-    for (u32 i = 0; i < nbTask; i++) {
-        struct Task *newTask = listGetNextElem(&taskLists);
-        if (checkTaskEvent(newTask))
-            return newTask;
-    }
-
-    return freeTimeTask;
+    u32 nbTask = listCountElem(&activeTaskLists);
+    if (nbTask == 0)
+        return freeTimeTask;
+    return listGetNextElem(&activeTaskLists);
 }
 
 u32 schedulerSwitchTask(u32 esp) {
@@ -79,8 +82,4 @@ u32 schedulerSwitchTask(u32 esp) {
 void schedulerForceSwitchTask() {
     LOG("[scheduler] force switch task\n");
     asm volatile("int $126");
-}
-
-struct Task *schedulerGetTaskByIndex(u32 index) {
-    return listGetElemByIndex(&taskLists, index);
 }

@@ -17,6 +17,7 @@ struct List {
 };
 
 #define CREATE_LIST() {0, 0}
+void listReset(struct List *lst);
 void listAddElem(struct List *lst, void *data);
 void listDeleteElem(struct List *lst, void *data);
 void *listGetNextElem(struct List *lst);

@@ -265,7 +265,7 @@ int switchVgaMode(enum ConsoleMode mode) {
     }
 
     currentVideoMode = mode;
-    activeConsole->mode = mode;
+    consoleGetActiveConsole()->mode = mode;
     return 0;
 }
 

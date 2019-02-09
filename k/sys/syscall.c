@@ -3,21 +3,18 @@
 //
 
 #include "io/serial.h"
-#include "io/keyboard.h"
 #include "io/pit.h"
-#include "io/fs/kfilesystem.h"
 #include "io/terminal.h"
 #include "syscall.h"
 #include "io/libvga.h"
-#include "task.h"
-#include "allocator.h"
 
 #include <stdio.h>
+#include <io/pipe.h>
 
 //#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
-#define NB_SYSCALL 28
+#define NB_SYSCALL 29
 
 static void sys_write(struct esp_context *ctx);
 
@@ -73,6 +70,10 @@ static void sys_mount(struct esp_context *ctx);
 
 static void sys_umount(struct esp_context *ctx);
 
+static void sys_pipe(struct esp_context *ctx);
+
+static void sys_dup2(struct esp_context *ctx);
+
 typedef void (*syscall_t)(struct esp_context *);
 
 static syscall_t syscall[] = {
@@ -102,7 +103,9 @@ static syscall_t syscall[] = {
         sys_closedir,
         sys_readdir,
         sys_mount,
-        sys_umount
+        sys_umount,
+        sys_pipe,
+        sys_dup2
 };
 
 static void syscall_handler(struct esp_context *ctx);
@@ -136,7 +139,13 @@ static void sys_sbrk(struct esp_context *ctx) {
 }
 
 static void sys_getkey(struct esp_context *ctx) {
-    int tmp = consoleGetkey2(currentTask->console);
+    struct Kobject *kobject = taskGetKObjectByFd(0);
+    if (kobject == NULL) {
+        ctx->eax = (u32) -1;
+        return;
+    }
+
+    int tmp = consoleGetkey2(kobject->data);
     ctx->eax = (u32) tmp;
 }
 
@@ -158,13 +167,13 @@ static void sys_open(struct esp_context *ctx) {
         return;
     }
 
-    currentTask->objectList[fd] = koCreate(KO_FS, path, ctx->ecx);
+    taskSetKObjectByFd(fd, koCreate(KO_FS_FILE, path, ctx->ecx));
     ctx->eax = (u32) fd;
     LOG("open: %s (%d)\n", (char *) ctx->ebx, fd);
 }
 
 static void sys_read(struct esp_context *ctx) {
-    struct Kobject *obj = currentTask->objectList[ctx->ebx];
+    struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
 
     if (!obj) {
         ctx->eax = (u32) -1;
@@ -174,7 +183,7 @@ static void sys_read(struct esp_context *ctx) {
 }
 
 static void sys_write(struct esp_context *ctx) {
-    struct Kobject *obj = currentTask->objectList[ctx->ebx];
+    struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
 
     if (!obj) {
         ctx->eax = (u32) -1;
@@ -184,18 +193,18 @@ static void sys_write(struct esp_context *ctx) {
 }
 
 static void sys_seek(struct esp_context *ctx) {
-    struct Kobject *obj = currentTask->objectList[ctx->ebx];
+    struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
 
     if (!obj) {
         ctx->eax = (u32) -1;
         return;
     }
 
-    ctx->eax = (u32) koSeek(obj, (off_t)ctx->ecx, (int)ctx->edx);
+    ctx->eax = (u32) koSeek(obj, (off_t) ctx->ecx, (int) ctx->edx);
 }
 
 static void sys_close(struct esp_context *ctx) {
-    struct Kobject *obj = currentTask->objectList[ctx->ebx];
+    struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
 
     if (!obj) {
         ctx->eax = (u32) -1;
@@ -267,7 +276,7 @@ static void sys_stat(struct esp_context *ctx) {
 }
 
 static void sys_fstat(struct esp_context *ctx) {
-    struct Kobject *obj = currentTask->objectList[ctx->ebx];
+    struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
 
     if (!obj) {
         ctx->eax = (u32) -1;
@@ -293,14 +302,14 @@ static void sys_opendir(struct esp_context *ctx) {
         return;
     }
 
-    currentTask->objectList[fd] = koCreate(KO_FS_FOLDER, path, 0);
+    taskSetKObjectByFd(fd, koCreate(KO_FS_FOLDER, path, 0));
     LOG("opendir: %s (%d) refcount: %u\n", (char *) ctx->ebx, fd, path->refcount);
     ctx->eax = (u32) fd;
 }
 
 static void sys_readdir(struct esp_context *ctx) {
     LOG("readdir: %d\n", ctx->ebx);
-    struct Kobject *obj = currentTask->objectList[ctx->ebx];
+    struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
     if (!obj) {
         ctx->eax = 0;
         return;
@@ -310,7 +319,7 @@ static void sys_readdir(struct esp_context *ctx) {
 }
 
 static void sys_closedir(struct esp_context *ctx) {
-    struct Kobject *obj = currentTask->objectList[ctx->ebx];
+    struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
 
     if (!obj) {
         ctx->eax = (u32) -1;
@@ -325,7 +334,7 @@ static void sys_closedir(struct esp_context *ctx) {
 static void sys_mount(struct esp_context *ctx) {
     LOG("mount: %c (%s)\n", ctx->ebx, (char *) ctx->ecx);
 
-    if (fsGetVolumeById((char)ctx->ebx))
+    if (fsGetVolumeById((char) ctx->ebx))
         goto failure;
 
     LOG("mount: get fs by name\n");
@@ -334,7 +343,7 @@ static void sys_mount(struct esp_context *ctx) {
         goto failure;
 
     LOG("mount: create new volume\n");
-    struct FsVolume *volume = fsVolumeOpen((char)ctx->ebx, fs, ctx->edx);
+    struct FsVolume *volume = fsVolumeOpen((char) ctx->ebx, fs, ctx->edx);
     if (!volume)
         goto failure;
 
@@ -350,7 +359,7 @@ static void sys_mount(struct esp_context *ctx) {
 static void sys_umount(struct esp_context *ctx) {
     LOG("umount: %c\n", ctx->ebx);
 
-    struct FsVolume *volume = fsGetVolumeById((char)ctx->ebx);
+    struct FsVolume *volume = fsGetVolumeById((char) ctx->ebx);
     if (!volume)
         goto failure;
 
@@ -365,6 +374,55 @@ static void sys_umount(struct esp_context *ctx) {
 
     failure:
     kSerialPrintf("umount: failed\n");
+    ctx->eax = (u32) -1;
+}
+
+static void sys_pipe(struct esp_context *ctx) {
+    LOG("pipe\n");
+
+    int pipe1 = taskGetAvailableFd(currentTask);
+    int pipe2 = taskGetAvailableFd(currentTask);
+    if (pipe1 == -1 || pipe2 == -1)
+        goto failure;
+
+    int *fd = (int *) ctx->ebx;
+    struct Pipe *pipe = pipeCreate();
+    if (pipe == NULL)
+        goto failure;
+
+    taskSetKObjectByFd(pipe1, koCreate(KO_PIPE, pipeAddref(pipe), O_RDONLY));
+    taskSetKObjectByFd(pipe2, koCreate(KO_PIPE, pipeAddref(pipe), O_WRONLY));
+
+    fd[0] = pipe1;
+    fd[1] = pipe2;
+
+    failure:
+    kSerialPrintf("pipe: failed\n");
+    ctx->eax = (u32) -1;
+}
+
+static void sys_dup2(struct esp_context *ctx) {
+    LOG("dup2: %u -> %u\n", ctx->ebx, ctx->ecx);
+
+    if (ctx->ebx >= MAX_NB_FILE || ctx->ecx >= MAX_NB_FILE)
+        goto failure;
+
+    struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
+
+    if (obj == NULL)
+        goto failure;
+
+    struct Kobject *obj2 = taskGetKObjectByFd(ctx->ecx);
+
+    if (obj2 != NULL)
+        koDestroy(obj2);
+
+    taskSetKObjectByFd(ctx->ecx, koDupplicate(obj));
+    ctx->eax = 0;
+    return;
+
+    failure:
+    kSerialPrintf("dup2: failed\n");
     ctx->eax = (u32) -1;
 }
 

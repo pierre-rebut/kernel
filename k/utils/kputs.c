@@ -3,8 +3,9 @@
 //
 
 #include <string.h>
+#include <sys/console.h>
 #include "io/terminal.h"
 
 int kputs(const char *s) {
-    return writeStringTerminal(s, strlen(s));
+    return consoleForceWrite(s, strlen(s));
 }

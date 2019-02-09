@@ -4,14 +4,18 @@
 #include <k/types.h>
 #include <k/kstd.h>
 
-void initTerminal();
-void clearTerminal();
-void updateTerminalCursor();
-void setTerminalX(u16 x);
-void setTerminalY(u16 y);
-void setTerminalColor(enum e_cons_codes fg, enum e_cons_codes bg);
-void writeTerminal(char c);
-void writeTerminalAt(char c, u8 color, u16 x, u16 y);
-int writeStringTerminal(const char *data, u32 size);
+struct TerminalBuffer {
+    u16 *terminalData;
+    u16 terminalRow;
+    u16 terminalCol;
+    u8 terminalColor;
+};
+
+struct TerminalBuffer *createTerminal();
+void clearTerminal(struct TerminalBuffer *tty);
+void updateTerminal(struct TerminalBuffer *tty);
+void setTerminalColor(struct TerminalBuffer *tty, enum e_cons_codes fg, enum e_cons_codes bg);
+void terminalUpdateCursor(struct TerminalBuffer *tty);
+void terminalPutchar(struct TerminalBuffer *tty, char writing, char c);
 
 #endif //KERNEL_EPITA_TERMINAL_H
