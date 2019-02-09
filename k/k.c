@@ -22,6 +22,7 @@
 #include "sys/paging.h"
 #include "sheduler.h"
 #include "sys/console.h"
+#include "tty.h"
 
 //#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
 #define LOG(x, ...)
@@ -150,6 +151,7 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
             (char*)info->cmdline,
             NULL
     };
+
     const char *env[] = {
             "PATH=A:/bin",
             "HOME=A:/home",
@@ -157,14 +159,8 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
             NULL
     };
 
-    while (1) {
-        //clearTerminal();
-        u32 pid = createProcess((char*)info->cmdline, av, env);
-        taskWaitEvent(TaskEventWaitPid, pid);
-        kprintf("Resetting terminal (kill: %u)\n", pid);
-        taskWaitEvent(TaskEventTimer, 1000);
-    }
-
+    initTTY((char *) info->cmdline, av, env);
+    ttyTaskLoop();
 
     error:
     kSerialPrintf("An error occurred, kernel panic\n");

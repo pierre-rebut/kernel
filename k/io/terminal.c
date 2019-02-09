@@ -13,8 +13,6 @@ struct TerminalBuffer *createTerminal() {
     if (tty == NULL)
         return NULL;
 
-    tty->terminalCol = 0;
-    tty->terminalRow = 0;
     tty->terminalData = kmalloc(sizeof(u16) * VGA_HEIGHT * VGA_WIDTH, 0, "ttydata");
     setTerminalColor(tty, CONS_WHITE, CONS_BLACK);
     clearTerminal(tty);
@@ -23,9 +21,11 @@ struct TerminalBuffer *createTerminal() {
 }
 
 void updateTerminal(struct TerminalBuffer *tty) {
-    for (u32 y = 0; y < tty->terminalRow; y++)
-        for (u32 x = 0; x < tty->terminalCol; x++)
+    for (u32 y = 0; y < VGA_HEIGHT; y++)
+        for (u32 x = 0; x < VGA_WIDTH; x++)
             terminalBuffer[y * VGA_WIDTH + x] = tty->terminalData[y * VGA_WIDTH + x];
+
+    terminalUpdateCursor(tty);
 }
 
 static inline u16 vgaEntry(char uc, u8 color) {
@@ -77,6 +77,7 @@ void clearTerminal(struct TerminalBuffer *tty) {
 
     tty->terminalCol = 0;
     tty->terminalRow = 0;
+    terminalUpdateCursor(tty);
 }
 
 void setTerminalColor(struct TerminalBuffer *tty, enum e_cons_codes fg, enum e_cons_codes bg) {
@@ -109,4 +110,23 @@ void terminalPutchar(struct TerminalBuffer *tty, char writing, char c) {
 
     if (tty->terminalCol >= VGA_WIDTH)
         newline(tty, writing);
+}
+
+void terminalRemoveLastChar(struct TerminalBuffer *tty, char writing) {
+    if (tty->terminalCol == 0) {
+        tty->terminalCol = VGA_WIDTH;
+
+        if (tty->terminalRow == 0)
+            tty->terminalRow = VGA_HEIGHT;
+        tty->terminalRow -= 1;
+    }
+
+    tty->terminalCol -= 1;
+    u16 index = tty->terminalRow * (u16)VGA_WIDTH + tty->terminalCol;
+    tty->terminalData[index] = vgaEntry(' ', tty->terminalColor);
+
+    if (writing) {
+        terminalBuffer[index] = tty->terminalData[index];
+        terminalUpdateCursor(tty);
+    }
 }

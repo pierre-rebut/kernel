@@ -10,8 +10,8 @@
 #include "allocator.h"
 #include "physical-memory.h"
 
-#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
-//#define LOG(x, ...)
+//#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
+#define LOG(x, ...)
 
 struct PageDirectory *kernelPageDirectory = NULL;
 static struct PageDirectory *currentPageDirectory = NULL;

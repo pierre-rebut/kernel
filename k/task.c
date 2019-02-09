@@ -324,6 +324,7 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
     if (!task)
         return 0;
 
+    LOG("[TASK] setting data\n");
     task->currentDir = currentTask->currentDir;
     task->currentDir->refcount++;
 
@@ -332,6 +333,7 @@ u32 createProcess(const char *cmdline, const char **av, const char **env) {
     task->objectList[1] = koCreate(KO_CONS_STD, cons, O_WRONLY);
     task->objectList[2] = koCreate(KO_CONS_ERROR, cons, O_WRONLY);
 
+    LOG("[TASK] push into scheduler\n");
     schedulerAddTask(task);
 
     LOG("[TASK] end\n");
@@ -375,8 +377,8 @@ int taskKill(struct Task *task) {
 
     LOG("[TASK] Killing %u\n", task->pid);
 
-    if (task->pid == 0) {
-        kSerialPrintf("[TASK] can not kill kernel task !!\n");
+    if (task->privilege == TaskPrivilegeKernel) {
+        kSerialPrintf("[TASK] can not kill kernel tasks !!\n");
         return -1;
     }
 

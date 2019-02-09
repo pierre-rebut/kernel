@@ -6,6 +6,7 @@
 #include <sys/allocator.h>
 #include <io/libvga.h>
 #include <io/terminal.h>
+#include <tty.h>
 #include "console.h"
 
 //#define LOG(x, ...) kSerialPrintf((x), ##__VA_ARGS__)
@@ -70,6 +71,19 @@ struct Console *consoleGetActiveConsole() {
     return consoleLists[activeConsoleId];
 }
 
+char consoleGetLastkey(struct Console *console) {
+    struct CirBuffer *val = &console->readBuffer;
+
+    if (val->readPtr == val->writePtr)
+        return -1;
+
+    if (val->writePtr == 0)
+        val->writePtr = CONSOLE_BUFFER_SIZE - 1;
+    else
+        val->writePtr -= 1;
+    return val->buffer[val->writePtr];
+}
+
 void consoleKeyboardHandler(int code) {
     LOG("keyboard: %d\n", code);
 
@@ -78,8 +92,24 @@ void consoleKeyboardHandler(int code) {
 
     struct Console *cons = consoleLists[activeConsoleId];
 
-    if (code == 91 && !release) {
-        taskKill(cons->task);
+    if (code == 91 && !release && cons->task) {
+        struct Task *tmpTask = cons->task;
+        cons->task = NULL;
+        taskKill(tmpTask);
+        return;
+    } else if (code >= 59 && code <= 68 && !release) {
+        int consId = code - 59;
+        char isNotReady = (consoleLists[consId] == NULL);
+        consoleSwitchById(consId);
+        if (isNotReady)
+            createNewTTY();
+
+        return;
+    } else if (code == 14 && !release) {
+        char c = consoleGetLastkey(cons);
+        if (c != -1)
+            terminalRemoveLastChar(cons->tty, cons->mode == ConsoleModeText);
+
         return;
     }
 
@@ -88,7 +118,8 @@ void consoleKeyboardHandler(int code) {
         return;
     }
 
-    if (release)
+    char c = currentKeyMap[code - 2];
+    if (release || c == 0)
         return;
 
     struct CirBuffer *val = &cons->readBuffer;
@@ -96,7 +127,6 @@ void consoleKeyboardHandler(int code) {
     if ((val->writePtr + 1) % CONSOLE_BUFFER_SIZE == val->readPtr)
         val->readPtr = (val->readPtr + 1) % CONSOLE_BUFFER_SIZE;
 
-    char c = currentKeyMap[code - 2];
     val->buffer[val->writePtr] = c;
     val->tmpBuffer[val->writePtr] = code;
     val->writePtr = (val->writePtr + 1) % CONSOLE_BUFFER_SIZE;
@@ -163,7 +193,8 @@ s32 consoleWriteStandard(void *entryData, const char *buf, u32 size) {
         terminalPutchar(cons->tty, writing, buf[i]);
     }
 
-    terminalUpdateCursor(cons->tty);
+    if (writing)
+        terminalUpdateCursor(cons->tty);
     return size;
 }
 
