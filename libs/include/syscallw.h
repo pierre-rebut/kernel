@@ -38,10 +38,9 @@
 #define SYSCALL_READDIR         24
 #define SYSCALL_MOUNT           25
 #define SYSCALL_UMOUNT          26
-#define SYSCALL_FORK            27
-#define SYSCALL_PIPE            28
-#define SYSCALL_DUP2            29
-#define SYSCALL_GETCWD          30
+#define SYSCALL_PIPE            27
+#define SYSCALL_DUP2            28
+#define SYSCALL_GETCWD          29
 
 int exit(int value);
 void *sbrk(ssize_t increment);

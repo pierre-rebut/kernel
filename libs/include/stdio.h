@@ -26,11 +26,16 @@
 
 #include <stdarg.h>
 
+#define stdin 0
+#define stdout 1
+#define stderr 2
+
 int puts(const char *s);
 int printf(const char *format, ...);
 int sprintf(char *buf, const char *format, ...);
 int vsprintf(char *buf, const char *format, va_list args);
 
 int printfErr(const char *fmt, ...);
+int fprintf(int fd, const char *fmt, ...);
 
 #endif				/* !STDLIB_H_ */

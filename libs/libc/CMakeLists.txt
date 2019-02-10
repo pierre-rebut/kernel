@@ -6,6 +6,6 @@ set(LIBC_SOURCE
         stdlib.c
         string.c
         stringn.c
-        printf.c)
+        printf.c getopt.c)
 
 add_library(stdc STATIC ${LIBC_SOURCE})

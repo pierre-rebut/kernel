@@ -399,6 +399,9 @@ static void sys_pipe(struct esp_context *ctx) {
     fd[0] = pipe1;
     fd[1] = pipe2;
 
+    ctx->eax = 0;
+    return;
+
     failure:
     klog("pipe: failed\n");
     ctx->eax = (u32) -1;

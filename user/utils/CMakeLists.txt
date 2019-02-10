@@ -4,5 +4,5 @@ target_link_libraries(mount stdk stdc bin-entry)
 add_executable(umount umount.c)
 target_link_libraries(umount stdk stdc bin-entry)
 
-add_executable(cat cat.c)
+add_executable(cat cat2.c)
 target_link_libraries(cat stdk stdc bin-entry)

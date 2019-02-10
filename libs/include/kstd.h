@@ -117,4 +117,6 @@ struct ExceveInfo {
 
 #define INIT_EXECINFO() {0, 0, 0, -1, -1}
 
+#define STDIN_FILENO 0
+
 #endif
