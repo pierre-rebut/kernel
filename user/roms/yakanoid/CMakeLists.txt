@@ -9,7 +9,7 @@ set(FILES
         yaka.bmp)
 
 add_executable(yakanoid ${SOURCE})
-target_link_libraries(yakanoid k c bin-entry)
+target_link_libraries(yakanoid stdk stdc bin-entry)
 
 add_custom_command(TARGET yakanoid
         POST_BUILD

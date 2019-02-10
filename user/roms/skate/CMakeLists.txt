@@ -27,7 +27,7 @@ set(FILES
         slide2.bmp)
 
 add_executable(skate ${SOURCE})
-target_link_libraries(skate k c bin-entry)
+target_link_libraries(skate stdk stdc bin-entry)
 
 add_custom_command(TARGET skate
         POST_BUILD

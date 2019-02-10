@@ -1,5 +1,6 @@
 include_directories(.)
 include_directories(include)
+include_directories(${CMAKE_SOURCE_DIR}/libs/include)
 
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-T${CMAKE_CURRENT_SOURCE_DIR}/k.lds")
 
@@ -46,4 +47,4 @@ set(K_ASM
         sys/interrupt-entry.S)
 
 add_executable(kernel_epita ${K_FILES} ${K_ASM} ${K_UTILS})
-target_link_libraries(kernel_epita c)
+target_link_libraries(kernel_epita stdc)

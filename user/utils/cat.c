@@ -3,6 +3,7 @@
 //
 
 #include <stdio.h>
+#include <syscallw.h>
 #include "kstd.h"
 
 int main(int ac, char **av) {
@@ -23,7 +24,7 @@ int main(int ac, char **av) {
     while ((size = read(fd, buffer, 4095)) > 0) {
         //printf("test: %d\n", size);
         buffer[size] = '\0';
-        write(1, buffer, size);
+        write(1, buffer, (u32) size);
     }
 
     close(fd);

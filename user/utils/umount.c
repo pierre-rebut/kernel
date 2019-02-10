@@ -3,6 +3,7 @@
 //
 
 #include <stdio.h>
+#include <syscallw.h>
 #include "kstd.h"
 
 void help() {

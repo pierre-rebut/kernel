@@ -1,4 +1,4 @@
-include_directories(../include)
+include_directories(${CMAKE_SOURCE_DIR}/libs/include)
 
 set(SOURCE
         calloc.c
@@ -10,4 +10,4 @@ set(SOURCE
         syscalls.c
         puts.c)
 
-add_library(k STATIC ${SOURCE})
+add_library(stdk STATIC ${SOURCE})

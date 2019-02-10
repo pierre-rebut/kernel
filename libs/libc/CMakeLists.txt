@@ -1,4 +1,4 @@
-include_directories(../include)
+include_directories(${CMAKE_SOURCE_DIR}/libs/include)
 
 set(LIBC_SOURCE
         mem.c
@@ -8,4 +8,4 @@ set(LIBC_SOURCE
         stringn.c
         printf.c)
 
-add_library(c STATIC ${LIBC_SOURCE})
+add_library(stdc STATIC ${LIBC_SOURCE})

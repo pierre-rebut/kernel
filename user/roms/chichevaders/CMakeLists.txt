@@ -11,7 +11,7 @@ set(FILES
         seine_w.bmp)
 
 add_executable(vaders ${SOURCE})
-target_link_libraries(vaders k c bin-entry)
+target_link_libraries(vaders stdk stdc bin-entry)
 
 add_custom_command(TARGET vaders
         POST_BUILD
