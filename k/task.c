@@ -336,6 +336,9 @@ pid_t createProcess(const struct ExceveInfo *info) {
     task->currentDir = progParent->currentDir;
     task->currentDir->refcount++;
 
+    task->rootDir = progParent->rootDir;
+    task->rootDir->refcount++;
+
     struct Console *cons = consoleGetActiveConsole();
 
     if (info->fd_in == -1)
@@ -385,6 +388,7 @@ pid_t createThread(u32 entryPrg) {
         return -1;
 
     task->currentDir = procTask->currentDir;
+    task->rootDir = procTask->rootDir;
     task->console = procTask->console;
 
     listAddElem(&procTask->threads, task);
@@ -430,6 +434,7 @@ int taskKill(struct Task *task) {
 
         LOG("[TASK] destroy path curDir\n");
         fsPathDestroy(task->currentDir);
+        fsPathDestroy(task->rootDir);
 
         if (task->console->activeProcess == task) {
             task->console->activeProcess = task->parent;

@@ -77,6 +77,7 @@ struct Task {
     struct Kobject *objectList[MAX_NB_FILE];
 
     struct FsPath *currentDir;
+    struct FsPath *rootDir;
     struct Console *console;
 
     struct List childs;

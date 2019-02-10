@@ -10,7 +10,6 @@
 #include <stdlib.h>
 #include <sys/physical-memory.h>
 #include <sys/time.h>
-#include <io/pit.h>
 #include "procfilesystem.h"
 
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
@@ -41,6 +40,7 @@ static struct FsPath *procRoot(struct FsVolume *volume) {
     procPath->type = PP_FOLDER;
     procPath->data = -1;
     rootPath->privateData = procPath;
+    rootPath->inode = 0;
     return rootPath;
 }
 
@@ -135,6 +135,7 @@ static struct FsPath *procLookup(struct FsPath *path, const char *name) {
 
     file->privateData = procPath;
     file->size = 0;
+    file->inode = 0;
     return file;
 }
 
@@ -196,20 +197,22 @@ static int procReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
     if (procPath->data < 0) {
         switch (procPath->data) {
             case -1:
-                read = 0;
-                struct FsVolume *tmpVolume = fsVolumeList;
-                while (tmpVolume) {
-                    read += sprintf(buffer + read, "%c:%s,%u,%u\n",
-                                     tmpVolume->id, tmpVolume->fs->name, tmpVolume->refcount, tmpVolume->blockSize
+                read = sprintf(buffer, "%s,%u,%u\n", fsRootVolume->fs->name, fsRootVolume->refcount,
+                               fsRootVolume->blockSize);
+                struct FsMountVolume *tmpMntVolume = fsMountedVolumeList;
+                while (tmpMntVolume) {
+                    struct FsVolume *tmpVolume = tmpMntVolume->mountedVolume;
+                    read += sprintf(buffer + read, "%s,%u,%u\n",
+                                    tmpVolume->fs->name, tmpVolume->refcount, tmpVolume->blockSize
                     );
-                    tmpVolume = tmpVolume->next;
+                    tmpMntVolume = tmpMntVolume->next;
                 }
                 break;
             case -2: {
                 u32 total, used;
                 kmallocGetInfo(&total, &used);
                 read = sprintf(buffer, "[PHYSMEM]\nused:%u\ntotal:%u\n\n[KERNEL MEM]\nused:%u\npaged:%u\n",
-                                getTotalUsedPhysMemory(), getTotalPhysMemory(), total, used);
+                               getTotalUsedPhysMemory(), getTotalPhysMemory(), total, used);
                 break;
             }
             case -3:
@@ -222,11 +225,11 @@ static int procReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
                 break;
             case -5:
                 read = sprintf(buffer, "pid:%u\ngid:%u\ncmdline:%s\nprivilege:%s\nevent:%d,%lu,%u\n",
-                                currentTask->pid,
-                                (currentTask->parent ? currentTask->parent->pid : 0),
-                                (currentTask->cmdline ? currentTask->cmdline : "NONE"),
-                                (currentTask->privilege == TaskPrivilegeKernel ? "KERNEL" : "USER"),
-                                currentTask->event.type, currentTask->event.timer, currentTask->event.arg
+                               currentTask->pid,
+                               (currentTask->parent ? currentTask->parent->pid : 0),
+                               (currentTask->cmdline ? currentTask->cmdline : "NONE"),
+                               (currentTask->privilege == TaskPrivilegeKernel ? "KERNEL" : "USER"),
+                               currentTask->event.type, currentTask->event.timer, currentTask->event.arg
                 );
                 break;
             default:
@@ -238,10 +241,10 @@ static int procReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
             return -1;
 
         read = sprintf(buffer, "pid:%u\ncmdline:%s\nprivilege:%s\nevent:%d,%lu,%u\n",
-                        task->pid,
-                        (task->cmdline ? task->cmdline : "NONE"),
-                        (task->privilege == TaskPrivilegeKernel ? "KERNEL" : "USER"),
-                        task->event.type, task->event.timer, task->event.arg
+                       task->pid,
+                       (task->cmdline ? task->cmdline : "NONE"),
+                       (task->privilege == TaskPrivilegeKernel ? "KERNEL" : "USER"),
+                       task->event.type, task->event.timer, task->event.arg
         );
     }
 

@@ -94,7 +94,6 @@ static int k_init(const multiboot_info_t *info) {
 
     kprintf("Mount available ATA device\n");
     LOG("Mount available ATA device\n");
-    char mountId = 'A';
     struct Fs *extfs = fsGetFileSystemByName("ext2fs");
     for (u32 i = 0; i < 4; i++) {
         u32 nblocks = 0;
@@ -102,23 +101,29 @@ static int k_init(const multiboot_info_t *info) {
         char longname[256];
 
         if (driverAta->probe(i, &nblocks, &blocksize, longname) == 1) {
-            LOG("Mounting unit %d on %c: %s\n", i, mountId, longname);
-            kprintf("Mounting unit %d on %c: %s\n", i, mountId, longname);
-            kvolume = fsVolumeOpen(mountId, extfs, i);
-            if (kvolume == NULL)
+            LOG("Mounting unit %d on /: %s\n", i, longname);
+            kprintf("Mounting unit %d on /: %s\n", i, longname);
+            kvolume = fsVolumeOpen(extfs, i);
+            if (kvolume == NULL) {
                 klog("Mounting failed\n");
-            else
-                mountId++;
+                return -1;
+            }
+
+            break;
         }
     }
 
     if (kvolume == NULL)
         return -1;
 
-    kernelTask.currentDir = freeTimeTask->currentDir = fsVolumeRoot(kvolume);
-    freeTimeTask->currentDir->refcount++;
+    fsRootVolume = kvolume;
+    kernelTask.rootDir = kernelTask.currentDir = fsVolumeRoot(kvolume);
+    freeTimeTask->rootDir = freeTimeTask->currentDir = kernelTask.rootDir;
 
-    kprintf("Mount procfs on %c\n", mountId);
+    freeTimeTask->currentDir->refcount += 2;
+    kernelTask.currentDir->refcount += 2;
+
+    /*kprintf("Mount procfs on %c\n", mountId);
     LOG("Mount procfs on %c\n", mountId);
     struct Fs *procfs = fsGetFileSystemByName("procfs");
     struct FsVolume *pvolume = fsVolumeOpen(mountId++, procfs, 0);
@@ -131,6 +136,7 @@ static int k_init(const multiboot_info_t *info) {
     struct FsVolume *dvolume = fsVolumeOpen(mountId, devfs, 0);
     if (!dvolume)
         return -1;
+        */
 
     return 0;
 }
@@ -153,9 +159,9 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
     };
 
     const char *env[] = {
-            "PATH=A:/bin",
-            "HOME=A:/home",
-            "PWD=A:/",
+            "PATH=/bin",
+            "HOME=/home",
+            "PWD=/",
             NULL
     };
 

@@ -334,23 +334,26 @@ static void sys_closedir(struct esp_context *ctx) {
 }
 
 static void sys_mount(struct esp_context *ctx) {
-    LOG("mount: %c (%s)\n", ctx->ebx, (char *) ctx->ecx);
-
-    if (fsGetVolumeById((char) ctx->ebx))
-        goto failure;
-
-    LOG("mount: get fs by name\n");
+    klog("mount: %s (%s)\n", (char *)ctx->ebx, (char *) ctx->ecx);
+    klog("mount: get fs by name\n");
     struct Fs *fs = fsGetFileSystemByName((const char *) ctx->ecx);
     if (!fs)
         goto failure;
 
-    LOG("mount: create new volume\n");
-    struct FsVolume *volume = fsVolumeOpen((char) ctx->ebx, fs, ctx->edx);
-    if (!volume)
+    klog("mount: get fspath\n");
+    struct FsPath *path = fsResolvePath((char *) ctx->ebx);
+    if (!path)
+        goto failure;
+
+    klog("mount: create new volume\n");
+    void *tmp = fsMountVolumeOn(path, fs, ctx->edx);
+    fsPathDestroy(path);
+
+    if (tmp == NULL)
         goto failure;
 
     ctx->eax = 0;
-    LOG("mount: end\n");
+    klog("mount: end\n");
     return;
 
     failure:
@@ -359,19 +362,17 @@ static void sys_mount(struct esp_context *ctx) {
 }
 
 static void sys_umount(struct esp_context *ctx) {
-    LOG("umount: %c\n", ctx->ebx);
+    LOG("umount: %s\n", (char *) ctx->ebx);
 
-    struct FsVolume *volume = fsGetVolumeById((char) ctx->ebx);
-    if (!volume)
+    struct FsPath *path = fsResolvePath((char *) ctx->ebx);
+    if (!path)
         goto failure;
 
     LOG("umount: destroy volume\n");
-
-    if (fsVolumeClose(volume) == -1)
-        goto failure;
+    ctx->eax = (u32) fsUmountVolume(path);
+    fsPathDestroy(path);
 
     LOG("umount end\n");
-    ctx->eax = 0;
     return;
 
     failure:

@@ -9,7 +9,8 @@
 #include <include/kstdio.h>
 
 static struct Fs *fsList = NULL;
-struct FsVolume *fsVolumeList = NULL;
+struct FsMountVolume *fsMountedVolumeList = NULL;
+struct FsVolume *fsRootVolume = NULL;
 
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
@@ -19,23 +20,15 @@ struct FsPath *fsResolvePath(const char *path) {
         LOG("[FS] resolve path 1\n");
         return fsGetPathByName(currentTask->currentDir->volume->root, &path[1]);
     }
-    if (strlen(path) < 3 || path[1] != ':') {
-        LOG("[FS] resolve path 2\n");
-        return fsGetPathByName(currentTask->currentDir, path);
-    }
 
-    LOG("[FS] resolve path 3\n");
-    struct FsVolume *volume = fsGetVolumeById(path[0]);
-    if (volume == NULL)
-        return NULL;
-    LOG("[FS] volume found: %c\n", volume->id);
-    return fsGetPathByName(volume->root, &path[3]);
+    LOG("[FS] resolve path 2\n");
+    return fsGetPathByName(currentTask->currentDir, path);
 }
 
-struct FsVolume *fsGetVolumeById(char mountPoint) {
-    struct FsVolume *tmpVolume = fsVolumeList;
+struct FsMountVolume *fsGetMountedVolumeByNode(struct FsVolume *v, u32 inode) {
+    struct FsMountVolume *tmpVolume = fsMountedVolumeList;
     while (tmpVolume != NULL) {
-        if (tmpVolume->id == mountPoint)
+        if (tmpVolume->volumeId == v && tmpVolume->inodeId == inode)
             return tmpVolume;
         tmpVolume = tmpVolume->next;
     }
@@ -58,19 +51,13 @@ struct Fs *fsGetFileSystemByName(const char *name) {
     return NULL;
 }
 
-struct FsVolume *fsVolumeOpen(char id, struct Fs *fs, u32 data) {
-    LOG("[FS] check if %c is used\n", id);
-    if (!fs || !fs->mount)
-        return NULL;
-
+struct FsVolume *fsVolumeOpen(struct Fs *fs, u32 data) {
     LOG("[FS] utils with fs fct\n");
     struct FsVolume *volume = fs->mount(data);
     if (volume == NULL)
         return NULL;
 
     LOG("[FS] init volume\n");
-
-    volume->id = id;
     volume->fs = fs;
     volume->refcount = 0;
 
@@ -80,34 +67,59 @@ struct FsVolume *fsVolumeOpen(char id, struct Fs *fs, u32 data) {
         return NULL;
     }
 
-    if (fsVolumeList == NULL) {
-        fsVolumeList = volume;
-        volume->prev = NULL;
-    }
-    else {
-        struct FsVolume *tmpVolume = fsVolumeList;
-        while (tmpVolume->next != NULL)
-            tmpVolume = tmpVolume->next;
-        tmpVolume->next = volume;
-        volume->prev = tmpVolume;
+    return volume;
+}
+
+struct FsMountVolume *fsMountVolumeOn(struct FsPath *mntPoint, struct Fs *fs, u32 data) {
+    if (mntPoint->inode == 0 || fsGetMountedVolumeByNode(mntPoint->volume, mntPoint->inode) != NULL)
+        return NULL;
+
+    struct FsMountVolume *mntVolume = kmalloc(sizeof(struct FsMountVolume), 0, "FsMountVol");
+    if (mntVolume == NULL)
+        return NULL;
+
+    mntVolume->mountedVolume = fsVolumeOpen(fs, data);
+    if (mntVolume->mountedVolume == NULL) {
+        kfree(mntVolume);
+        return NULL;
     }
 
-    volume->next = NULL;
-    return volume;
+    mntVolume->volumeId = mntPoint->volume;
+    mntVolume->volumeId->refcount += 1;
+    mntVolume->inodeId = mntPoint->inode;
+
+    mntVolume->prev = NULL;
+    mntVolume->next = fsMountedVolumeList;
+    fsMountedVolumeList = mntVolume;
+
+    return mntVolume;
 }
 
 int fsVolumeClose(struct FsVolume *v) {
     if (!v || !v->fs->umount || v->refcount > 1)
         return -1;
 
-    if (v->next)
-        v->next->prev = v->prev;
-    if (v->prev)
-        v->prev->next = v->next;
-    else
-        fsVolumeList = v->next;
-
     return v->fs->umount(v);
+}
+
+int fsUmountVolume(struct FsPath *mntPoint) {
+    struct FsMountVolume *mntVolume = fsGetMountedVolumeByNode(mntPoint->volume, mntPoint->inode);
+    if (mntVolume == NULL)
+        return 0;
+
+    if (fsVolumeClose(mntVolume->mountedVolume) == -1)
+        return -1;
+
+    mntVolume->volumeId->refcount -= 1;
+    if (mntVolume->prev)
+        mntVolume->prev->next = mntVolume->next;
+    else
+        fsMountedVolumeList = mntVolume->next;
+
+    if (mntVolume->next)
+        mntVolume->next->prev = mntVolume->prev;
+    kfree(mntVolume);
+    return 0;
 }
 
 struct FsPath *fsVolumeRoot(struct FsVolume *volume) {
@@ -132,17 +144,28 @@ struct dirent *fsPathReaddir(struct FsPath *path, struct dirent *result) {
 }
 
 static struct FsPath *fsPathLookup(struct FsPath *path, const char *name) {
-    if (!path || !path->volume->fs->lookup)
+    if (!path)
         return NULL;
 
+    struct FsPath *curPath = path;
+    struct FsMountVolume *mntVol = fsGetMountedVolumeByNode(curPath->volume, curPath->inode);
+    if (mntVol != NULL)
+        curPath = mntVol->mountedVolume->root;
+
+    if (!curPath->volume->fs->lookup)
+        return NULL;
+
+    if (strcmp(name, "..") == 0) {
+        curPath = path;
+    }
+
     LOG("[FS] lookup fct\n");
-    struct FsPath *newPath = path->volume->fs->lookup(path, name);
+    struct FsPath *newPath = curPath->volume->fs->lookup(curPath, name);
     if (!newPath)
         return NULL;
 
     LOG("[FS] lookup path not null\n");
-
-    newPath->volume = path->volume;
+    newPath->volume = curPath->volume;
     newPath->volume->refcount++;
     newPath->refcount = 1;
     return newPath;
@@ -154,7 +177,7 @@ struct FsPath *fsGetPathByName(struct FsPath *d, const char *path) {
         return NULL;
 
     if (*path == 0) {
-        return fsPathLookup(d, path);
+        return fsPathLookup(d, ".");
     }
 
     LOG("[FS] kmalloc %s\n", path);

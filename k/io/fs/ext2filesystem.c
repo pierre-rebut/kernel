@@ -266,6 +266,7 @@ static struct FsPath *ext2Lookup(struct FsPath *path, const char *name) {
 
     newPath->privateData = inode;
     newPath->size = inode->size;
+    newPath->inode = fileInode;
 
     kfree(buf);
     return newPath;

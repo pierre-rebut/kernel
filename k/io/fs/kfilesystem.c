@@ -57,6 +57,7 @@ static struct FsPath *kfsRoot(struct FsVolume *volume) {
     cli();
     pagingSwitchPageDirectory(volume->privateData);
     rootPath->privateData = ((void *) kfs + (kfs->inode_idx * KFS_BLK_SZ));
+    rootPath->inode = 0;
     pagingSwitchPageDirectory(currentTask->pageDirectory);
     sti();
     return rootPath;
@@ -184,6 +185,7 @@ static struct FsPath *kfsLookup(struct FsPath *path, const char *name) {
     LOG("[KFS] lookup fct\n");
     struct kfs_inode *node;
     u32 filesize = 0;
+    u32 inode = 0;
 
     if (*name == 0 || strcmp(name, ".") == 0)
         node = path->privateData;
@@ -191,8 +193,10 @@ static struct FsPath *kfsLookup(struct FsPath *path, const char *name) {
         cli();
         pagingSwitchPageDirectory(path->volume->privateData);
         node = getFileINode(name);
-        if (node != NULL)
+        if (node != NULL) {
             filesize = node->file_sz;
+            inode = node->idx;
+        }
         pagingSwitchPageDirectory(currentTask->pageDirectory);
         sti();
     }
@@ -207,6 +211,7 @@ static struct FsPath *kfsLookup(struct FsPath *path, const char *name) {
 
     file->privateData = node;
     file->size = filesize;
+    file->inode = inode;
     return file;
 }
 

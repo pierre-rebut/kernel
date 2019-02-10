@@ -161,12 +161,12 @@ struct dirent *readdir(int repertoire) {
     return (struct dirent *) syscall2(SYSCALL_READDIR, (u32) repertoire, (u32) &data);
 }
 
-int mount(char id, const char *fstype, u32 arg) {
-    return syscall3(SYSCALL_MOUNT, (u32) id, (u32) fstype, arg);
+int mount(const char *mnt, const char *fstype, u32 arg) {
+    return syscall3(SYSCALL_MOUNT, (u32) mnt, (u32) fstype, arg);
 }
 
-int umount(char id) {
-    return syscall1(SYSCALL_UMOUNT, (u32) id);
+int umount(const char *mnt) {
+    return syscall1(SYSCALL_UMOUNT, (u32) mnt);
 }
 
 int pipe(int fd[2]) {

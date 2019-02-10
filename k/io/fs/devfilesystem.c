@@ -22,6 +22,7 @@ static struct FsPath *devRoot(struct FsVolume *volume) {
 
     rootPath->size = 0;
     rootPath->privateData = 0;
+    rootPath->inode = 0;
     return rootPath;
 }
 
@@ -61,6 +62,7 @@ static struct FsPath *devLookup(struct FsPath *path, const char *name) {
 
     file->privateData = 0;
     file->size = 0;
+    file->inode = 0;
     return file;
 }
 

@@ -35,17 +35,26 @@ struct Fs {
 };
 
 struct FsVolume {
-    char id;
     struct Fs *fs;
     u32 blockSize;
     int refcount;
     void *privateData;
     struct FsPath *root;
-    struct FsVolume *next;
-    struct FsVolume *prev;
+};
+
+struct FsMountVolume {
+    struct FsVolume *volumeId;
+    u32 inodeId;
+
+    struct FsVolume *mountedVolume;
+
+    struct FsMountVolume *next;
+    struct FsMountVolume *prev;
 };
 
 struct FsPath {
+    u32 inode;
+
     struct FsVolume *volume;
     u32 size;
     void *privateData;
@@ -57,8 +66,11 @@ struct FsPath *fsResolvePath(const char *path);
 void fsRegister(struct Fs *fs);
 struct Fs *fsGetFileSystemByName(const char *name);
 
-struct FsVolume *fsVolumeOpen(char id, struct Fs *fs, u32 data);
-struct FsVolume *fsGetVolumeById(char mountPoint);
+struct FsMountVolume *fsMountVolumeOn(struct FsPath *mntPoint, struct Fs *fs, u32 data);
+int fsUmountVolume(struct FsPath *mntPoint);
+
+struct FsVolume *fsVolumeOpen(struct Fs *fs, u32 data);
+struct FsMountVolume *fsGetMountedVolumeByNode(struct FsVolume *v, u32 inode);
 struct FsPath *fsVolumeRoot(struct FsVolume *volume);
 int fsVolumeClose(struct FsVolume *volume);
 ;
@@ -74,6 +86,7 @@ int fsMkdir(struct FsPath *path, const char *name);
 int fsMkfile(struct FsPath *path, const char *name);
 int fsPathDestroy(struct FsPath *path);
 
-extern struct FsVolume *fsVolumeList;
+extern struct FsMountVolume *fsMountedVolumeList;
+extern struct FsVolume *fsRootVolume;
 
 #endif //KERNEL_FILESYSTEM_H

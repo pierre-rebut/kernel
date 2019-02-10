@@ -7,7 +7,7 @@
 #include "kstd.h"
 
 void help() {
-    printf("umount <utils point>\n");
+    printf("umount <mount point>\n");
 }
 
 int main(int ac, char **av) {
@@ -16,6 +16,6 @@ int main(int ac, char **av) {
         return 1;
     }
 
-    printf("umount: %d\n", umount(av[1][0]));
+    printf("umount: %d\n", umount(av[1]));
     return 0;
 }

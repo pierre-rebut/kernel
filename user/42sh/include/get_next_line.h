@@ -12,6 +12,6 @@
 # define	GET_NEXT_LINE_H_
 
 # define	ABS(x) ((x < 0) ? (-x) : (x))
-# define	BUFFER_SIZE 10
+# define	BUFFER_SIZE 100
 
 #endif		/* !GET_NEXT_LINE_H_*/

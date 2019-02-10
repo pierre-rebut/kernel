@@ -165,27 +165,51 @@ int consoleGetkey2(struct Console *console) {
     return tmp;
 }
 
-s32 consoleReadKeyboard(void *entryData, void *buf, u32 size) {
-    struct Console *console = (struct Console *) entryData;
-
-    mutexLock(&console->mtx);
-    console->readingTask = currentTask;
-    taskWaitEvent(TaskEventKeyboard, 0);
-
-    LOG("keyboard event end\n");
-
-    char *str = (char *) buf;
+static u32 consoleInternalRead(struct Console *console, char *str, u32 size) {
     u32 read = 0;
     char key;
 
-    while ((key = consoleGetkey(console)) != -1 && read < size) {
+    while (read < size && (key = consoleGetkey(console)) != -1) {
         str[read] = key;
         read++;
     }
 
     console->readingTask = NULL;
-    mutexUnlock(&console->mtx);
     return read;
+}
+
+static char isConsoleReadReady(struct Console *console) {
+    struct CirBuffer *val = &console->readBuffer;
+
+    int tmp = val->readPtr;
+    while (tmp != val->writePtr) {
+        if (val->buffer[tmp] == '\n')
+            return 1;
+        tmp = (tmp + 1) % CONSOLE_BUFFER_SIZE;
+    }
+    return 0;
+}
+
+s32 consoleReadKeyboard(void *entryData, void *buf, u32 size) {
+    struct Console *console = (struct Console *) entryData;
+    s32 ret;
+
+    mutexLock(&console->mtx);
+    if (isConsoleReadReady(console)) {
+        ret = consoleInternalRead(console, buf, size);
+        mutexUnlock(&console->mtx);
+        return ret;
+    }
+
+    console->readingTask = currentTask;
+    taskWaitEvent(TaskEventKeyboard, 0);
+
+    LOG("keyboard event end\n");
+    ret = consoleInternalRead(console, buf, size);
+    mutexUnlock(&console->mtx);
+
+    klog("pute de train: [%s]\n", buf);
+    return ret;
 }
 
 s32 consoleWriteStandard(void *entryData, const char *buf, u32 size) {
