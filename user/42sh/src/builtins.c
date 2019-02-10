@@ -18,21 +18,15 @@
 int cd_call(char *path, t_env *env, int fd) {
     char *old_path;
     char *new_path;
-    char buf[1024];
 
-    if (getcwd(buf, 1024) == NULL)
-        return (FAIL);
-    if ((old_path = strdup(buf)) == NULL)
-        return (FAIL);
+    old_path = my_getenv("PWD", env->env);
+
     if ((new_path = cd_check_arg(path, env, fd)) == NULL)
         return (FAIL);
-    if (getcwd(buf, 1024) == NULL)
-        return (FAIL);
-    if ((new_path = strdup(buf)) == NULL)
-        return (FAIL);
+
     setenv_call("OLDPWD", old_path, env);
     setenv_call("PWD", new_path, env);
-    free(old_path);
+
     free(new_path);
     return (SUCCESS);
 }

@@ -4,8 +4,11 @@
 
 #include <string.h>
 #include <stdio.h>
+#include "include/syscallw.h"
 
-int write(int, const char *, size_t);
+int putchar(char c) {
+    return write(1, &c, 1);
+}
 
 int puts(const char *s) {
     return write(1, s, strlen(s));
@@ -26,7 +29,7 @@ int printf(const char *fmt, ...) {
     return printed;
 }
 
-int printfErr(const char *fmt, ...) {
+int warn(const char *fmt, ...) {
     char printf_buf[1024];
     va_list args;
     int printed;
@@ -41,7 +44,7 @@ int printfErr(const char *fmt, ...) {
     return printed;
 }
 
-int fprintf(int fd, const char *fmt, ...) {
+int err(const char *fmt, ...) {
     char printf_buf[1024];
     va_list args;
     int printed;
@@ -51,7 +54,8 @@ int fprintf(int fd, const char *fmt, ...) {
     va_end(args);
 
     if (printed > 0)
-        write(fd, printf_buf, (u32) printed);
+        write(2, printf_buf, (u32) printed);
 
-    return printed;
+    exit(-1);
+    return 0;
 }

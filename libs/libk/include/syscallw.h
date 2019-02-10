@@ -41,6 +41,7 @@
 #define SYSCALL_PIPE            27
 #define SYSCALL_DUP2            28
 #define SYSCALL_GETCWD          29
+#define SYSCALL_SYSCONF         30
 
 int exit(int value);
 void *sbrk(ssize_t increment);
@@ -73,5 +74,6 @@ int umount(const char *mnt);
 int pipe(int fd[2]);
 int dup2(int o, int n);
 char *getcwd(char *buf, u32 size);
+long sysconf(int name);
 
 #endif //KERNEL_SYSCALLW_H

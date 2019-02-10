@@ -93,7 +93,7 @@ static struct FsVolume *kfsMount(u32 data) {
         goto kfsMountFailure;
 
     u32 lengthFile = 0;
-    u32 allocSize = alignUp(fileStat.file_sz, PAGESIZE);
+    u32 allocSize = alignUp(fileStat.st_size, PAGESIZE);
     LOG("[KFS] alloc page %p (addr: %X, size: %u)\n", pd, KFS_MEM_POS, allocSize);
 
     LOG("[KFS] mount2: %u - %p\n", currentTask->pid, currentTask->pageDirectory);
@@ -103,7 +103,7 @@ static struct FsVolume *kfsMount(u32 data) {
     LOG("[KFS] mount3: %u - %p\n", currentTask->pid, currentTask->pageDirectory);
 
     LOG("[KFS] read file and put into page alloc\n");
-    while (lengthFile < fileStat.file_sz) {
+    while (lengthFile < fileStat.st_size) {
         LOG("[KFS] read data from file\n");
         int tmp = fsReadFile(file, tmpData, 4096, lengthFile);
         LOG("[KFS] result: %d\n", tmp);
@@ -169,13 +169,15 @@ static int kfsStat(struct FsPath *path, struct stat *result) {
 
     cli();
     pagingSwitchPageDirectory(path->volume->privateData);
-    result->inumber = inode->inumber;
-    result->file_sz = inode->file_sz;
-    result->i_blk_cnt = inode->i_blk_cnt;
-    result->d_blk_cnt = inode->d_blk_cnt;
-    result->blk_cnt = inode->blk_cnt;
-    result->idx = inode->idx;
-    result->cksum = inode->cksum;
+
+    result->st_ino = inode->inumber;
+    result->st_size = inode->file_sz;
+    result->st_blksize = KFS_BLK_DATA_SZ;
+    result->st_mode = 0;
+
+    result->st_uid = result->st_gid = result->st_nlink = 0;
+    result->st_atim = result->st_ctim = result->st_mtim = 0;
+
     pagingSwitchPageDirectory(currentTask->pageDirectory);
     sti();
     return 0;

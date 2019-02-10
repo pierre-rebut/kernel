@@ -22,7 +22,7 @@
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <kstd.h>
-#include <syscallw.h>
+#include "include/syscallw.h"
 
 static inline u32 syscall0(int syscall_nb) {
     u32 res;
@@ -179,4 +179,8 @@ int dup2(int o, int n) {
 
 char *getcwd(char *buf, u32 size) {
     return (char *) syscall2(SYSCALL_GETCWD, (u32) buf, size);
+}
+
+long sysconf(int name) {
+    return (long) syscall1(SYSCALL_SYSCONF, (u32) name);
 }

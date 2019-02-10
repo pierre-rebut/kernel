@@ -1,10 +1,7 @@
-//
-// Created by rebut_p on 10/02/19.
-//
-
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <err.h>
 
 int __db_getopt_reset;    /* global reset for VxWorks. */
 
@@ -21,29 +18,10 @@ char *optarg;        /* argument associated with option */
 #undef    EMSG
 #define    EMSG    ""
 
-/*
- * getopt --
- *	Parse argc/argv argument vector.
- *
- * PUBLIC: #ifndef HAVE_GETOPT
- * PUBLIC: int getopt __P((int, char * const *, const char *));
- * PUBLIC: #endif
- */
-int getopt(int nargc, char *const*nargv, const char *ostr) {
-    static char *const*argv = NULL;
-    static char *elem = NULL;
-    static int pos = 0;
-
-    if (argv != nargv) {
-        argv = nargv;
-        elem = argv[0];
-        pos = 0;
-    }
-
-    if (elem )
+#define EOF (-1)
 
 
-
+int getopt(int nargc, char *const *nargv, const char *ostr) {
     static char *progname;
     static char *place = EMSG;        /* option letter processing */
     char *oli;                /* option letter list index */
@@ -52,6 +30,7 @@ int getopt(int nargc, char *const*nargv, const char *ostr) {
      * VxWorks needs to be able to repeatedly call getopt from multiple
      * programs within its global name space.
      */
+
     if (__db_getopt_reset) {
         __db_getopt_reset = 0;
 
@@ -62,11 +41,7 @@ int getopt(int nargc, char *const*nargv, const char *ostr) {
         place = EMSG;
     }
     if (!progname) {
-        progname = nargv;
-        if ((progname = __db_rpath(*nargv)) == NULL)
-            progname = *nargv;
-        else
-            ++progname;
+        progname = nargv[0];
     }
 
     if (optreset || !*place) {        /* update scanning pointer */
@@ -92,7 +67,7 @@ int getopt(int nargc, char *const*nargv, const char *ostr) {
         if (!*place)
             ++optind;
         if (opterr && *ostr != ':')
-            (void) fprintf(stderr, "%s: illegal option -- %c\n", progname, optopt);
+            warn("%s: illegal option -- %c\n", progname, optopt);
         return (BADCH);
     }
     if (*++oli != ':') {            /* don't need argument */
@@ -107,9 +82,7 @@ int getopt(int nargc, char *const*nargv, const char *ostr) {
             if (*ostr == ':')
                 return (BADARG);
             if (opterr)
-                (void) fprintf(stderr,
-                               "%s: option requires an argument -- %c\n",
-                               progname, optopt);
+                warn("%s: option requires an argument -- %c\n", progname, optopt);
             return (BADCH);
         } else                /* white space */
             optarg = nargv[optind];

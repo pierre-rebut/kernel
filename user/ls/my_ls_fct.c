@@ -57,7 +57,7 @@ int format_ll2(char *file, char *name) {
     if (stat(file, &sb) == -1)
         puts("Error stat");
 
-    printf("%u %u %s\n", sb.inumber, sb.file_sz, name);
+    printf("%u %u %u %u %u %s\n", sb.st_mode, sb.st_size, sb.st_atim, sb.st_ctim, sb.st_mtim, name);
     free(file);
     return (1);
 }

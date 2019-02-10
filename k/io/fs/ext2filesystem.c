@@ -143,16 +143,20 @@ static int ext2ReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
 }
 
 static int ext2Stat(struct FsPath *path, struct stat *result) {
-    // struct Ext2PrivData *priv = path->volume->privateData;
     struct Ext2Inode *pathInode = path->privateData;
 
-    result->inumber = 0;
-    result->file_sz = pathInode->size;
-    result->i_blk_cnt = 0;
-    result->d_blk_cnt = 0;
-    result->blk_cnt = 0;
-    result->idx = 0;
-    result->cksum = 0;
+    result->st_ino = path->inode;
+    result->st_uid = pathInode->uid;
+    result->st_gid = pathInode->gid;
+    result->st_size = pathInode->size;
+    result->st_mode = pathInode->type;
+    result->st_nlink = pathInode->hardlinks;
+    result->st_blksize = path->volume->blockSize;
+
+    result->st_atim = pathInode->last_access;
+    result->st_mtim = pathInode->last_modif;
+    result->st_ctim = pathInode->create_time;
+
     return 0;
 }
 
@@ -314,6 +318,7 @@ static struct FsPath *ext2Root(struct FsVolume *volume) {
 
     rootPath->privateData = rootInode;
     rootPath->size = 0;
+    rootPath->inode = 2;
     return rootPath;
 
     ext2RootFaillure:

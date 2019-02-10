@@ -24,8 +24,8 @@
 #ifndef SKATE_H_
 #define SKATE_H_
 
-#include "../../../libs/include/graphic.h"
-#include "../../../libs/include/sound.h"
+#include "graphic.h"
+#include "sound.h"
 #include "../../../libs/include/stdlib.h"
 
 enum e_gfx {

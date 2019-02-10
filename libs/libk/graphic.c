@@ -21,9 +21,10 @@
 * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include <graphic.h>
+#include "include/graphic.h"
 #include <stdlib.h>
-#include <syscallw.h>
+#include <err.h>
+#include "include/syscallw.h"
 
 /*
  * offscreen buffer (for double buffering).
@@ -449,18 +450,18 @@ struct image *load_image(const char *path) {
 
     int rc = read(fd, &bmp, sizeof(bmp));
     if (rc < (int) sizeof(bmp)) {
-        printfErr("load img error: read failed (%d)\n", rc);
+        warn("load img error: read failed (%d)\n", rc);
         goto err_img;
     }
 
     if (!(bmp.signature[0] == 'B' && bmp.signature[1] == 'M')) {
-        printfErr("load img error: invalid signature\n");
+        warn("load img error: invalid signature\n");
         goto err_img;
     }
 
     struct image *img = malloc(sizeof(struct image));
     if (!img) {
-        printfErr("load img error: malloc error\n");
+        warn("load img error: malloc error\n");
         goto err_img;
     }
 
@@ -469,7 +470,7 @@ struct image *load_image(const char *path) {
 
     img->data = calloc(img->height, sizeof(*img->data));
     if (!img->data) {
-        printfErr("load img error: calloc error\n");
+        warn("load img error: calloc error\n");
         goto err_buf;
     }
 
@@ -482,21 +483,21 @@ struct image *load_image(const char *path) {
     int ppl = (bmp.size - (img->width * img->height)) / img->height;
 
     if (seek(fd, bmp.offset, SEEK_SET) == (off_t) -1) {
-        printfErr("load img error: invalid seek\n");
+        warn("load img error: invalid seek\n");
         goto err;
     }
 
     for (unsigned int i = 0; i < img->height; i++) {
         rc = read(fd, img->data[i], img->width);
         if (rc < (int) img->width) {
-            printfErr("read 2 error: %d - %d\n", rc, img->width);
+            warn("read 2 error: %d - %d\n", rc, img->width);
             goto err;
         }
 
         rc = seek(fd, ppl, SEEK_CUR);
 
         if (rc == (off_t) -1) {
-            printfErr("seek error\n");
+            warn("seek error\n");
             goto err;
         }
     }

@@ -22,8 +22,8 @@
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <syscallw.h>
-#include "../../../libs/include/graphic.h"
-#include "../../../libs/include/sound.h"
+#include "graphic.h"
+#include "sound.h"
 
 /*
  * the splash screen with sexy chiche's face.

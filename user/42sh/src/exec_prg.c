@@ -19,20 +19,12 @@
 char *my_getenv(char *str, char **env) {
     int j;
     size_t i;
-    int k;
-    char *name;
 
     j = -1;
-    k = 0;
     while (env[++j] != NULL) {
         if (strncmp(str, env[j], i = strlen(str)) == 0) {
             i++;
-            if ((name = malloc(sizeof(char *) * (strlen(env[j]) - (i + 1)))) == NULL)
-                return (NULL);
-            while (env[j][i])
-                name[k++] = env[j][i++];
-            name[k] = '\0';
-            return (name);
+            return env[j] + i;
         }
     }
     return (NULL);
@@ -44,6 +36,7 @@ char *get_prg(char *prg, t_env *env) {
     if ((path = my_getenv("PATH", env->env)) == NULL)
         return (NULL);
 
+    path = strdup(path);
     path = strcat(path, "/");
     path = strcat(path, prg);
 

@@ -93,12 +93,20 @@ enum e_mouse_codes {
     BUTTON_RIGHT = 2
 };
 
+enum SysConfigInfo {
+    _SC_PHYS_PAGES,
+    _SC_PAGESIZE
+};
+
 /* misc */
-#define O_RDONLY	1
-#define O_WRONLY    2
-#define O_RDWR      3
-#define O_APPEND    4
-#define O_CREAT    8
+#define O_ACCMODE	   0003
+#define O_RDONLY	     00
+#define O_WRONLY	     01
+#define O_RDWR		     02
+#define O_CREAT        0100
+#define O_EXCL		   0200
+#define O_TRUNC	      01000
+#define O_APPEND	  02000
 
 #define SEEK_SET	0
 #define SEEK_CUR	1

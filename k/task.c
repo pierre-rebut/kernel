@@ -262,7 +262,7 @@ pid_t createProcess(const struct ExceveInfo *info) {
         return -1;
     }
 
-    s32 fileSize = fileStat.file_sz;
+    s32 fileSize = fileStat.st_size;
 
     LOG("[TASK] kmalloc of size %d\n", fileSize);
     char *data = kmalloc(sizeof(char) * fileSize, 0, "data bin file");
@@ -415,7 +415,7 @@ int taskKill(struct Task *task) {
 
     if (task == task->console->readingTask) {
         task->console->readingTask = NULL;
-        mutexUnlock(&task->console->mtx);
+        mutexForceUnlock(&task->console->mtx);
     }
 
     if (task->type == T_PROCESS) {

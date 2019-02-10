@@ -7,14 +7,16 @@
 #include "io/terminal.h"
 #include "syscall.h"
 #include "io/libvga.h"
+#include "physical-memory.h"
 
 #include <kstdio.h>
 #include <io/pipe.h>
+#include <string.h>
 
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
-#define NB_SYSCALL 30
+#define NB_SYSCALL 31
 
 static void sys_write(struct esp_context *ctx);
 
@@ -76,6 +78,8 @@ static void sys_dup2(struct esp_context *ctx);
 
 static void sys_getcwd(struct esp_context *ctx);
 
+static void sys_sysconf(struct esp_context *ctx);
+
 typedef void (*syscall_t)(struct esp_context *);
 
 static syscall_t syscall[] = {
@@ -108,7 +112,8 @@ static syscall_t syscall[] = {
         sys_umount,
         sys_pipe,
         sys_dup2,
-        sys_getcwd
+        sys_getcwd,
+        sys_sysconf
 };
 
 static void syscall_handler(struct esp_context *ctx);
@@ -288,6 +293,7 @@ static void sys_fstat(struct esp_context *ctx) {
 }
 
 static void sys_chdir(struct esp_context *ctx) {
+    LOG("change dir: %s\n", (char *) ctx->ebx);
     ctx->eax = (u32) taskChangeDirectory((void *) ctx->ebx);
 }
 
@@ -334,7 +340,7 @@ static void sys_closedir(struct esp_context *ctx) {
 }
 
 static void sys_mount(struct esp_context *ctx) {
-    klog("mount: %s (%s)\n", (char *)ctx->ebx, (char *) ctx->ecx);
+    klog("mount: %s (%s)\n", (char *) ctx->ebx, (char *) ctx->ecx);
     klog("mount: get fs by name\n");
     struct Fs *fs = fsGetFileSystemByName((const char *) ctx->ecx);
     if (!fs)
@@ -434,6 +440,22 @@ static void sys_dup2(struct esp_context *ctx) {
 
 static void sys_getcwd(struct esp_context *ctx) {
     LOG("getcwd: %u\n", ctx->ecx);
-    ctx->eax = 0;
+    char *tmp = (char *)ctx->ebx;
+    strcpy(tmp, "/tmp");
+
+    ctx->eax = ctx->ebx;
 }
 
+static void sys_sysconf(struct esp_context *ctx) {
+    LOG("sysconf: %u\n", ctx->ebx);
+    switch (ctx->ebx) {
+        case _SC_PHYS_PAGES:
+            ctx->eax = physmemGetTotalPages();
+            break;
+        case _SC_PAGESIZE:
+            ctx->eax = PAGESIZE;
+            break;
+        default:
+            ctx->eax = (u32) -1;
+    }
+}

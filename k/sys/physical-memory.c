@@ -121,3 +121,7 @@ u32 getTotalUsedPhysMemory() {
     mutexUnlock(&mtx);
     return total;
 }
+
+u32 physmemGetTotalPages() {
+    return physicalMemSize * 32;
+}

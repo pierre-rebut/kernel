@@ -69,9 +69,9 @@ int get_total_ll(t_option *opt, char **tab, char *dir) {
         if (stat(direc, &sb) == -1)
             return (0);
         if (opt->all == 0 && tab[i][0] != '.')
-            total += (sb.file_sz / 2);
+            total += (sb.st_size / 2);
         else if (opt->all == 1)
-            total += (sb.file_sz / 2);
+            total += (sb.st_size / 2);
         free(direc);
         i++;
     }

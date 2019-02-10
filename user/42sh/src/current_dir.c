@@ -46,7 +46,7 @@ char *cd_dash(t_env *env, int fd) {
 }
 
 char *cd_check_arg(char *path, t_env *env, int fd) {
-    char *new_path = NULL;
+    char *new_path = my_getenv("PWD", env->env);
 
     if (path == NULL || strcmp("~", path) == SUCCESS) {
         if ((new_path = cd_tild(env)) == NULL)
@@ -57,6 +57,9 @@ char *cd_check_arg(char *path, t_env *env, int fd) {
     } else if (chdir(path) == FAIL) {
         printf("cd: '%s' : Aucun fichier ou dossier de ce type\n", path);
         return (NULL);
+    } else {
+        new_path = strdup(new_path);
+        new_path = strcat(new_path, path);
     }
     return (new_path);
 }

@@ -3,7 +3,7 @@
 //
 
 #include <stdio.h>
-#include <syscallw.h>
+#include "../../libs/libk/include/syscallw.h"
 #include "kstd.h"
 
 int main(int ac, char **av) {

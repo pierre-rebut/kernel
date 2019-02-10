@@ -26,7 +26,7 @@
 
 #include <stddef.h>
 #include <kstd.h>
-#include <syscallw.h>
+#include "../libk/include/syscallw.h"
 
 int atoi(const char *str);
 long atol(const char *str);

@@ -4,6 +4,7 @@
 
 #include <sys/allocator.h>
 #include <task.h>
+#include <include/kstdio.h>
 #include "pipe.h"
 
 #define PIPE_SIZE 1024
@@ -62,6 +63,8 @@ int pipeRead(struct Pipe *pipe, char *buffer, u32 size) {
 int pipeWrite(struct Pipe *pipe, const char *buffer, u32 size) {
     if (!pipe || !buffer)
         return -1;
+
+    klog("here i am now\n");
 
     mutexLock(&pipe->mtx);
     for (u32 written = 0; written < size; written++) {

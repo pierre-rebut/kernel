@@ -28,6 +28,8 @@ u32 initPhysicalMemory(const multiboot_info_t *info);
 u32 allocPhysicalMemory();
 void freePhysicalMemory(u32 alloc);
 
+u32 physmemGetTotalPages();
+
 u32 getTotalPhysMemory();
 u32 getTotalUsedPhysMemory();
 

@@ -73,13 +73,14 @@ static int procStat(struct FsPath *path, struct stat *result) {
     if (procPath->type != PP_FILE)
         return -1;
 
-    result->inumber = (u32) procPath->data;
-    result->file_sz = 0;
-    result->i_blk_cnt = 0;
-    result->d_blk_cnt = 0;
-    result->blk_cnt = 0;
-    result->idx = 0;
-    result->cksum = 0;
+    result->st_ino = (u32) procPath->data;
+    result->st_size = 0;
+    result->st_mode = 0;
+    result->st_blksize = path->volume->blockSize;
+
+    result->st_gid = result->st_uid = result->st_nlink = 0;
+    result->st_atim = result->st_ctim = result->st_mtim = 0;
+
     return 0;
 }
 

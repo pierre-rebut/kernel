@@ -21,7 +21,7 @@
 * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include <sound.h>
+#include "include/sound.h"
 #include <stdlib.h>
 
 struct melody *load_sound(const char *path)

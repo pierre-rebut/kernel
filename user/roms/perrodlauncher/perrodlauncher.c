@@ -21,8 +21,8 @@
 * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include "../../../libs/include/graphic.h"
-#include "../../../libs/include/sound.h"
+#include "graphic.h"
+#include "sound.h"
 #include "../../../libs/include/stdlib.h"
 
 /*
