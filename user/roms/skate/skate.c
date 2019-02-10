@@ -76,7 +76,7 @@ static void draw_trick(void) {
 static void splash_screen(void) {
     unsigned long t;
     int blink = 0;
-    struct image *logo = load_image("/logo.bmp");
+    struct image *logo = load_image("logo.bmp");
 
     while (getkey() == -1) {
         draw_clear(BG_COLOR);

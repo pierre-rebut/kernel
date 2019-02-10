@@ -37,7 +37,7 @@ set(K_UTILS
         utils/kprintf.c
         utils/list.c
         utils/string.c
-        )
+        include/ascii.h)
 
 set_property(SOURCE crt0.S PROPERTY LANGUAGE C)
 set_property(SOURCE sys/interrupt-entry.S PROPERTY LANGUAGE C)

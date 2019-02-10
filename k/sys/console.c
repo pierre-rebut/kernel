@@ -2,20 +2,43 @@
 // Created by rebut_p on 16/12/18.
 //
 
-#include <kstdio.h>
 #include <sys/allocator.h>
 #include <io/libvga.h>
 #include <io/terminal.h>
 #include <tty.h>
 #include <string.h>
-#include "console.h"
+#include <ascii.h>
 
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
-static char *currentKeyMap = NULL;
-static char keyMap[] = "&\0\"'(-\0_\0\0)=\0\tazertyuiop^$\n\0qsdfghjklm\0\0\0*wxcvbn,;:!\0\0\0 ";
-static char keyMapShift[] = "1234567890\0+\0\tAZERTYUIOP\0\0\n\0QSDFGHJKLM%\0\0\0WXCVBN?./\0";
+#define KEY_INVALID 127
+#define KEY_EXTRA   -32        /*sent before certain keys such as up, down, left, or right( */
+
+enum KeyMapSpecial {
+    SPECIAL_SHIFT = 1,
+    SPECIAL_ALT,
+    SPECIAL_CTRL,
+    SPECIAL_SHIFTLOCK,
+    SPECIAL_FONCTION,
+    SPECIAL_WIN
+};
+
+struct keymap {
+    char normal;
+    char shifted;
+    char ctrled;
+    char special;
+};
+static struct keymap keymap[] = {
+#include <keymap.us.txt>
+};
+
+static int shift_mode = 0;
+static int alt_mode = 0;
+static int ctrl_mode = 0;
+static int shiftlock_mode = 0;
+static int win_mode = 0;
 
 static struct Console *consoleLists[12] = {0};
 static int activeConsoleId = -1;
@@ -23,7 +46,6 @@ static int activeConsoleId = -1;
 static struct Console *createConsole();
 
 void initConsole() {
-    currentKeyMap = keyMap;
     consoleSwitchById(0);
 }
 
@@ -36,7 +58,9 @@ static struct Console *createConsole() {
     newConsole->readBuffer.writePtr = 0;
 
     newConsole->mode = ConsoleModeText;
-    newConsole->videoBuffer = NULL;
+    newConsole->videoBuffer = kmalloc(VGA_VIDEO_WIDTH * VGA_VIDEO_HEIGHT, 0, "videobuffer");
+    memset(newConsole->videoBuffer, 0, VGA_VIDEO_WIDTH * VGA_VIDEO_HEIGHT);
+
     newConsole->tty = createTerminal();
 
     mutexReset(&newConsole->mtx);
@@ -86,41 +110,88 @@ char consoleGetLastkey(struct Console *console) {
     return val->buffer[val->writePtr];
 }
 
+static char keyboard_map(struct Console *cons, int code) {
+    int direction;
+
+    if (code & 0x80) {
+        direction = 0;
+        code = code & 0x7f;
+    } else {
+        direction = 1;
+    }
+
+    if (keymap[code].special == SPECIAL_SHIFT) {
+        shift_mode = direction;
+        return KEY_INVALID;
+    } else if (keymap[code].special == SPECIAL_ALT) {
+        alt_mode = direction;
+        return KEY_INVALID;
+    } else if (keymap[code].special == SPECIAL_CTRL) {
+        ctrl_mode = direction;
+        return KEY_INVALID;
+    } else if (keymap[code].special == SPECIAL_WIN) {
+        win_mode = direction;
+        return KEY_INVALID;
+    } else if (keymap[code].special == SPECIAL_SHIFTLOCK) {
+        if (direction == 0)
+            shiftlock_mode = !shiftlock_mode;
+        return KEY_INVALID;
+    } else if (direction) {
+        if (keymap[code].special == SPECIAL_FONCTION) {
+            int consId = code - 59;
+            char isNotReady = (consoleLists[consId] == NULL);
+            consoleSwitchById(consId);
+            if (isNotReady)
+                createNewTTY();
+            return KEY_INVALID;
+        } else if ((ctrl_mode && keymap[code].normal == 'c') || (win_mode && keymap[code].normal == 'q')) {
+            taskKill(cons->activeProcess);
+            return KEY_INVALID;
+        } else if (shiftlock_mode) {
+            if (shift_mode) {
+                return keymap[code].normal;
+            } else {
+                return keymap[code].shifted;
+            }
+        } else if (shift_mode) {
+            return keymap[code].shifted;
+        } else if (ctrl_mode) {
+            return keymap[code].ctrled;
+        } else {
+            return keymap[code].normal;
+        }
+    } else {
+        return KEY_INVALID;
+    }
+}
+
 void consoleKeyboardHandler(int code) {
+    static char mod = 0x00;
+
     LOG("keyboard: %d\n", code);
-
-    int release = code >> 7;
-    code &= ~(1 << 7);
-
     struct Console *cons = consoleLists[activeConsoleId];
 
-    if (code == 91 && !release && cons->activeProcess) {
-        taskKill(cons->activeProcess);
-        return;
-    } else if (code >= 59 && code <= 68 && !release) {
-        int consId = code - 59;
-        char isNotReady = (consoleLists[consId] == NULL);
-        consoleSwitchById(consId);
-        if (isNotReady)
-            createNewTTY();
 
+    char c;
+    if (code == KEY_EXTRA) {
+        mod = 0x80;
         return;
-    } else if (code == 14 && !release) {
-        char c = consoleGetLastkey(cons);
+    } else {
+        c = keyboard_map(cons, code) | mod;
+        mod = 0x00;
+    }
+
+    if (c == KEY_INVALID)
+        return;
+
+
+    if (c == ASCII_BS) {
+        c = consoleGetLastkey(cons);
         if (c != -1)
             terminalRemoveLastChar(cons->tty, cons->mode == ConsoleModeText);
 
         return;
     }
-
-    if (code == 42 || code == 54) {
-        currentKeyMap = (release ? keyMap : keyMapShift);
-        return;
-    }
-
-    char c = currentKeyMap[code - 2];
-    if (release)
-        return;
 
     struct CirBuffer *val = &cons->readBuffer;
 
@@ -132,14 +203,11 @@ void consoleKeyboardHandler(int code) {
     val->writePtr = (val->writePtr + 1) % CONSOLE_BUFFER_SIZE;
 
     if (cons->mode == ConsoleModeText) {
-        if (c == 0)
-            terminalPutchar(cons->tty, 1, '@');
-        else
-            terminalPutchar(cons->tty, 1, c);
+        terminalPutchar(cons->tty, 1, c);
         terminalUpdateCursor(cons->tty);
     }
 
-    if (c == '\n')
+    if (c == ASCII_LF)
         taskResetEvent(cons->readingTask);
 }
 
@@ -208,7 +276,6 @@ s32 consoleReadKeyboard(void *entryData, void *buf, u32 size) {
     ret = consoleInternalRead(console, buf, size);
     mutexUnlock(&console->mtx);
 
-    klog("pute de train: [%s]\n", buf);
     return ret;
 }
 
@@ -235,11 +302,14 @@ int consoleSwitchVideoMode(struct Console *console, enum ConsoleMode mode) {
 
     console->mode = mode;
 
-    if (mode == ConsoleModeVideo && console->videoBuffer == NULL)
-        console->videoBuffer = kmalloc(VGA_VIDEO_WIDTH * VGA_VIDEO_HEIGHT, 0, "videobuffer");
-
-    if (console == consoleLists[activeConsoleId])
+    if (console == consoleLists[activeConsoleId]) {
         switchVgaMode(mode);
+
+        if (mode == ConsoleModeText)
+            updateTerminal(console->tty);
+        else
+            setVgaFrameBuffer(console->videoBuffer);
+    }
     return 0;
 }
 

@@ -31,10 +31,10 @@
 
 static int splash_screen(void) {
     unsigned long t;
-    struct image *imgchiche = load_image("/chiche_big.bmp");
-    struct image *imgchef = load_image("/chef_big.bmp");
+    struct image *imgchiche = load_image("chiche_big.bmp");
+    struct image *imgchef = load_image("chef_big.bmp");
     int blink = 0;
-    struct melody *intro = load_sound("/intro.csf");
+    struct melody *intro = load_sound("intro.csf");
     int sel = 1;
     int k = 0;
     int mouse_x, mouse_y, buttons;
@@ -130,9 +130,9 @@ static void game_loop(struct image *img) {
     int monsters = -1;
     int hit[NB_MONSTERS];
     int dead_monsters = 0;
-    struct melody *sound = load_sound("/ball.csf");
+    struct melody *sound = load_sound("ball.csf");
     int mouse_x, mouse_y, buttons;
-    struct image *bush = load_image("/bush.bmp");
+    struct image *bush = load_image("bush.bmp");
     char score[] = "score: xx/xx";
     int choot, can_choot;
 
@@ -303,8 +303,8 @@ int main(int ac, char **av) {
     switch_graphic();
 
     while (1) {
-        game_loop(splash_screen() ? load_image("/chiche.bmp") :
-                  load_image("/chef.bmp"));
+        game_loop(splash_screen() ? load_image("chiche.bmp") :
+                  load_image("chef.bmp"));
     }
     /*
      * we should never arrive here...

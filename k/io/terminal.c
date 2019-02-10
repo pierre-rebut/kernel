@@ -1,4 +1,5 @@
 #include <sys/allocator.h>
+#include <include/ascii.h>
 #include "terminal.h"
 #include "io.h"
 
@@ -86,15 +87,15 @@ void setTerminalColor(struct TerminalBuffer *tty, enum e_cons_codes fg, enum e_c
 
 void terminalPutchar(struct TerminalBuffer *tty, char writing, char c) {
     switch (c) {
-        case '\n':
+        case ASCII_LF:
             newline(tty, writing);
             break;
 
-        case '\t':
+        case ASCII_HT:
             tty->terminalCol += 4;
             break;
 
-        case ' ':
+        case ASCII_SP:
             tty->terminalCol++;
             break;
 
