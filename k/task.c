@@ -16,8 +16,8 @@
 #include <string.h>
 #include <io/pit.h>
 
-#define LOG(x, ...) klog((x), ##__VA_ARGS__)
-//#define LOG(x, ...)
+//#define LOG(x, ...) klog((x), ##__VA_ARGS__)
+#define LOG(x, ...)
 
 char taskSwitching = 0;
 struct Task *currentTask = NULL;
@@ -343,13 +343,19 @@ pid_t createProcess(const struct ExceveInfo *info) {
 
     if (info->fd_in == -1)
         task->objectList[0] = koCreate(KO_CONS_STD, cons, O_RDONLY);
-    else
-        task->objectList[0] = koDupplicate(taskGetKObjectByFd(info->fd_in));
+    else {
+        LOG("[TASK] redir stdin onto fd %d\n", info->fd_in);
+        struct Kobject *tmp = taskGetKObjectByFd(info->fd_in);
+        task->objectList[0] = koDupplicate(tmp);
+    }
 
     if (info->fd_out == -1)
         task->objectList[1] = koCreate(KO_CONS_STD, cons, O_WRONLY);
-    else
-        task->objectList[1] = koDupplicate(taskGetKObjectByFd(info->fd_out));
+    else {
+        LOG("[TASK] redir stdout onto fd %d\n", info->fd_out);
+        struct Kobject *tmp = taskGetKObjectByFd(info->fd_out);
+        task->objectList[1] = koDupplicate(tmp);
+    }
 
 
     task->objectList[2] = koCreate(KO_CONS_ERROR, cons, O_WRONLY);

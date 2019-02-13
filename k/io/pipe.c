@@ -9,6 +9,9 @@
 
 #define PIPE_SIZE 1024
 
+//#define LOG(x, ...) klog((x), ##__VA_ARGS__)
+#define LOG(x, ...)
+
 struct Pipe *pipeCreate() {
     struct Pipe *pipe = kmalloc(sizeof(struct Pipe), 0, "newPipe");
     if (pipe == NULL)
@@ -34,13 +37,16 @@ struct Pipe *pipeAddref(struct Pipe *pipe) {
 }
 
 int pipeRead(struct Pipe *pipe, char *buffer, u32 size) {
-    if (!pipe || !buffer)
+    if (!pipe || !buffer || pipe->refcount <= 1)
         return -1;
+
+    LOG("[PIPE] read\n");
 
     mutexLock(&pipe->mtx);
     if (pipe->write_pos == pipe->read_pos) {
         pipe->task = currentTask;
         mutexUnlock(&pipe->mtx);
+        LOG("[PIPE] read wait event\n");
         taskWaitEvent(TaskEventPipe, 0);
         mutexLock(&pipe->mtx);
     }
@@ -53,8 +59,10 @@ int pipeRead(struct Pipe *pipe, char *buffer, u32 size) {
     }
 
     if (pipe->task) {
-        pipe->task->event.type = TaskEventNone;
+        LOG("[PIPE] read disable wait\n");
+        struct Task *tmp = pipe->task;
         pipe->task = NULL;
+        taskResetEvent(tmp);
     }
     mutexUnlock(&pipe->mtx);
     return (int) read;
@@ -64,7 +72,7 @@ int pipeWrite(struct Pipe *pipe, const char *buffer, u32 size) {
     if (!pipe || !buffer)
         return -1;
 
-    klog("here i am now\n");
+    LOG("[PIPRE] write: %d\n", size);
 
     mutexLock(&pipe->mtx);
     for (u32 written = 0; written < size; written++) {
@@ -81,8 +89,10 @@ int pipeWrite(struct Pipe *pipe, const char *buffer, u32 size) {
         pipe->write_pos = (pipe->write_pos + 1) % PIPE_SIZE;
 
         if (pipe->task != NULL) {
-            pipe->task->event.type = TaskEventNone;
+            LOG("[PIPE] write disable wait\n");
+            struct Task *tmp = pipe->task;
             pipe->task = NULL;
+            taskResetEvent(tmp);
         }
     }
 
