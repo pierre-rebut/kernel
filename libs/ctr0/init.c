@@ -9,3 +9,8 @@ void _init() {
     stdout = fdopen(1);
     stderr = fdopen(2);
 }
+
+void _end() {
+    fflush(stdout);
+    fflush(stderr);
+}

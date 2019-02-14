@@ -9,3 +9,6 @@ target_link_libraries(cat stdk stdc crt0)
 
 add_executable(touch touch.c)
 target_link_libraries(touch stdk stdc crt0)
+
+add_executable(wc wc.c)
+target_link_libraries(wc stdk stdc crt0)

@@ -6,4 +6,5 @@ entry:
 
     call _init
     call main
+    call _end
     call exit

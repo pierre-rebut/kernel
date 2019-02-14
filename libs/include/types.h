@@ -16,6 +16,7 @@ typedef u32 mode_t;
 
 #define isascii(c) ((c) >= 0 && (c) < 128)
 #define isprint(c) ((c) >= 20 && (c) <= 126)
+#define isalpha(c) (((c) >= 'a' && (c) <= 'z') || ((c) >= 'A' && (c) <= 'Z'));
 
 #define	__S_IFMT	0170000
 #define	__S_ISTYPE(mode, mask)	(((mode) & __S_IFMT) == (mask))
