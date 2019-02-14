@@ -21,8 +21,8 @@ struct Fs {
     struct FsVolume *(*mount)(u32 data);
     int (*umount)(struct FsVolume *volume);
     int (*close)(struct FsPath *path);
-    int (*mkdir)(struct FsPath *path, const char *name);
-    int (*mkfile)(struct FsPath *path, const char *name);
+    struct FsPath *(*mkdir)(struct FsPath *path, const char *name);
+    struct FsPath *(*mkfile)(struct FsPath *path, const char *name);
     int (*stat)(struct FsPath *path, struct stat *result);
 
     struct FsPath *(*lookup)(struct FsPath * path, const char *name);
@@ -83,8 +83,8 @@ int fsStat(struct FsPath *file, struct stat *result);
 struct FsPath *fsGetPathByName(struct FsPath *path, const char *name);
 struct dirent *fsPathReaddir(struct FsPath *path, struct dirent *result);
 int fsRmdir(struct FsPath *path, const char *name);
-int fsMkdir(struct FsPath *path, const char *name);
-int fsMkfile(struct FsPath *path, const char *name);
+struct FsPath *fsMkdir(const char *name);
+struct FsPath *fsMkfile(const char *name);
 int fsPathDestroy(struct FsPath *path);
 
 extern struct FsMountVolume *fsMountedVolumeList;

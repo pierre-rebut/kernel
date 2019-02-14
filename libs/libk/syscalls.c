@@ -185,6 +185,14 @@ long sysconf(int name) {
     return (long) syscall1(SYSCALL_SYSCONF, (u32) name);
 }
 
-int touch(const char *file) {
-    return (int) syscall1(SYSCALL_TOUCH, (u32) file);
+void sync() {
+    syscall0(SYSCALL_SYNC);
+}
+
+int mkdir(const char *file) {
+    return (int) syscall1(SYSCALL_MKDIR, (u32) file);
+}
+
+int mkfile(const char *file) {
+    return (int) syscall1(SYSCALL_MKFILE, (u32) file);
 }

@@ -4,6 +4,7 @@
 
 #include <sys/allocator.h>
 #include <string.h>
+#include <include/kstdio.h>
 #include "fscache.h"
 
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
@@ -167,6 +168,7 @@ int fsCacheWrite(struct Device *device, const void *buffer, int nblocks, int off
 
         fsCacheBlock = createFsCacheBlock(fsCache, data, nblocks, offset);
     } else {
+        klog("[fsCache] cache found\n");
         data = fsCacheBlock->data;
     }
 
@@ -202,4 +204,26 @@ int fsCacheFlush(struct Device *device) {
 
     kfree(fsCache);
     return 0;
+}
+
+static void fsCacheSyncDevice(struct FsCache *fsCache) {
+    struct FsCacheBlock *tmpBlock = fsCache->dataBlock;
+
+    while (tmpBlock != NULL) {
+        if (tmpBlock->updated == 1) {
+            tmpBlock->updated = 0;
+            deviceWrite(fsCache->device, tmpBlock->data, tmpBlock->nblocks, tmpBlock->offset);
+        }
+
+        tmpBlock = tmpBlock->next;
+    }
+}
+
+void fsCacheSync() {
+    struct FsCache *tmpCache = fsCacheList;
+
+    while (tmpCache != NULL) {
+        fsCacheSyncDevice(tmpCache);
+        tmpCache = tmpCache->next;
+    }
 }

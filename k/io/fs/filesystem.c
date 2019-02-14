@@ -282,16 +282,58 @@ int fsReadFile(struct FsPath *file, char *buffer, u32 length, u32 offset) {
     return total;
 }
 
-int fsMkdir(struct FsPath *path, const char *name) {
-    if (!path || !name || !path->volume->fs->mkdir)
-        return 0;
-    return path->volume->fs->mkdir(path, name);
+struct FsPath *fsMkdir(const char *name) {
+    if (!name)
+        return NULL;
+    //path->volume->fs->mkdir(path, name);
+    return 0;
 }
 
-int fsMkfile(struct FsPath *path, const char *name) {
-    if (!path || !name || !path->volume->fs->mkfile)
-        return 0;
-    return path->volume->fs->mkfile(path, name);
+struct FsPath *fsMkfile(const char *name) {
+    if (!name)
+        return NULL;
+
+    u32 nameSize = strlen(name) + 1;
+    char *f = kmalloc(nameSize, 0, "mkfilename");
+    if (f == NULL)
+        return NULL;
+
+    memcpy(f, name, nameSize);
+    char *file = NULL;
+    int ret = str_backspace(f, '/', &file);
+
+    if (strcontain(file, '/') == 1) {
+        kfree(f);
+        return NULL;
+    }
+
+    struct FsPath *parent;
+    if (ret)
+        parent = fsResolvePath(f);
+    else {
+        parent = currentTask->currentDir;
+        parent->refcount += 1;
+    }
+
+    if (parent == NULL || !parent->volume->fs->mkfile) {
+        kfree(f);
+        return NULL;
+    }
+
+    struct FsPath *path = parent->volume->fs->mkfile(parent, file);
+    kfree(f);
+
+    if (path == NULL) {
+        fsPathDestroy(parent);
+        return NULL;
+    }
+
+    path->volume = parent->volume;
+    fsPathDestroy(parent);
+    path->size = 0;
+    path->refcount = 1;
+
+    return path;
 }
 
 int fsRmdir(struct FsPath *path, const char *name) {
@@ -320,7 +362,7 @@ int fsWriteFile(struct FsPath *file, const char *buffer, u32 length, u32 offset)
 
     while (length > 0) {
 
-        int blocknum = offset / bs;
+        u32 blocknum = offset / bs;
         int actual = 0;
 
         if (offset % bs) {

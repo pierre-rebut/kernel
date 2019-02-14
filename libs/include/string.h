@@ -46,9 +46,11 @@ char *strchr(const char *p, int ch);
 char *strtok(char *s, const char *delim);
 u32 strcspn(const char *s1, register const char *s2);
 char isspace(char c);
+int strcontain(const char *s1, char c);
+int strncontain(const char *s, char c, u32 n);
 
 void strtoupper(char *str);
-u32 str_backspace(char *str, char c);
+u32 str_backspace(char *str, char c, char **);
 u32 strsplit(char *str, char delim);
 u32 str_begins_with(const char *str, const char *with);
 

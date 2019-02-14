@@ -13,11 +13,12 @@
 #include <io/pipe.h>
 #include <string.h>
 #include <io/fs/ext2filesystem.h>
+#include <io/device/fscache.h>
 
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
-#define NB_SYSCALL 31
+#define NB_SYSCALL 34
 
 static u32 sys_write(struct esp_context *ctx);
 
@@ -81,7 +82,11 @@ static u32 sys_getcwd(struct esp_context *ctx);
 
 static u32 sys_sysconf(struct esp_context *ctx);
 
-static u32 sys_touch(struct esp_context *ctx);
+static u32 sys_sync(struct esp_context *ctx);
+
+static u32 sys_mkdir(struct esp_context *ctx);
+
+static u32 sys_mkfile(struct esp_context *ctx);
 
 typedef u32 (*syscall_t)(struct esp_context *);
 
@@ -117,7 +122,9 @@ static syscall_t syscall[] = {
         sys_dup2,
         sys_getcwd,
         sys_sysconf,
-        sys_touch
+        sys_sync,
+        sys_mkdir,
+        sys_mkfile
 };
 
 static void syscall_handler(struct esp_context *ctx);
@@ -175,8 +182,17 @@ static u32 sys_open(struct esp_context *ctx) {
     if (!path)
         return (u32) -1;
 
-    taskSetKObjectByFd(fd, koCreate(KO_FS_FILE, path, ctx->ecx));
+    struct Kobject *obj = koCreate(KO_FS_FILE, path, ctx->ecx);
+    if (obj == NULL) {
+        fsPathDestroy(path);
+        return (u32) -1;
+    }
+
+    taskSetKObjectByFd(fd, obj);
     LOG("open: %s (%d)\n", (char *) ctx->ebx, fd);
+    if (ctx->ecx & O_APPEND)
+        obj->offset = path->size;
+
     return (u32) fd;
 }
 
@@ -429,7 +445,23 @@ static u32 sys_sysconf(struct esp_context *ctx) {
     };
 }
 
-static u32 sys_touch(struct esp_context *ctx) {
-    LOG("touch: %s\n", (const char *) ctx->ebx);
-    return ext2Touch((const char *)ctx->ebx, currentTask->rootDir->volume->privateData);
+static u32 sys_sync(struct esp_context *ctx) {
+    (void) ctx;
+    LOG("sync\n");
+    fsCacheSync();
+    return 0;
+}
+
+static u32 sys_mkdir(struct esp_context *ctx) {
+    LOG("mkdir: %s\n", (char *) ctx->ebx);
+
+    void *tmp = fsMkdir((const char *)ctx->ebx);
+    return (u32) (tmp ? 0 : -1);
+}
+
+static u32 sys_mkfile(struct esp_context *ctx) {
+    LOG("mkfile: %s\n", (char *) ctx->ebx);
+
+    void *tmp = fsMkfile((const char *)ctx->ebx);
+    return (u32) (tmp ? 0 : -1);
 }

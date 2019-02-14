@@ -35,3 +35,11 @@ u32 strnlen(const char *s, u32 maxlen) {
             return i;
     return i;
 }
+
+int strncontain(const char *s, char c, u32 n) {
+    for (;*s != '\0' && n > 0; s++, n--) {
+        if (*s == c)
+            return 1;
+    }
+    return 0;
+}

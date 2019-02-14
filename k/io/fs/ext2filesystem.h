@@ -105,6 +105,4 @@ struct Ext2PrivData {
 
 void initExt2FileSystem();
 
-u8 ext2Touch(const char *file, struct Ext2PrivData *priv);
-
 #endif //KERNEL_EXT2FILESYSTEM_H

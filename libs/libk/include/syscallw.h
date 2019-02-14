@@ -42,7 +42,9 @@
 #define SYSCALL_DUP2            28
 #define SYSCALL_GETCWD          29
 #define SYSCALL_SYSCONF         30
-#define SYSCALL_TOUCH           31
+#define SYSCALL_SYNC            31
+#define SYSCALL_MKDIR           32
+#define SYSCALL_MKFILE          33
 
 int exit(int value);
 void *sbrk(ssize_t increment);
@@ -76,6 +78,8 @@ int pipe(int fd[2]);
 int dup2(int o, int n);
 char *getcwd(char *buf, u32 size);
 long sysconf(int name);
-int touch(const char *);
+void sync();
+int mkfile(const char *);
+int mkdir(const char *);
 
 #endif //KERNEL_SYSCALLW_H

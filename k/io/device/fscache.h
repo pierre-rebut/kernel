@@ -36,4 +36,6 @@ int fsCacheRead(struct Device *device, void *buffer, int nblocks, int offset);
 int fsCacheWrite(struct Device *device, const void *buffer, int nblocks, int offset);
 int fsCacheFlush(struct Device *device);
 
+void fsCacheSync();
+
 #endif //KERNEL_FSCACHE_H

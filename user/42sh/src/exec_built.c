@@ -44,6 +44,8 @@ int exec_built(t_cmd *lst, t_env *env) {
         unsetenv_call(lst->args[1], env);
     else if (strcmp("echo", lst->prg) == SUCCESS)
         echo(lst, fd);
+    else if (strcmp("sync", lst->prg) == SUCCESS)
+        sync();
     else
         return (FAIL);
     if (fd > 2)
