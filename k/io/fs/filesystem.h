@@ -86,6 +86,7 @@ int fsRmdir(struct FsPath *path, const char *name);
 struct FsPath *fsMkdir(const char *name);
 struct FsPath *fsMkfile(const char *name);
 int fsPathDestroy(struct FsPath *path);
+int fsResizeFile(struct FsPath *path, u32 s);
 
 extern struct FsMountVolume *fsMountedVolumeList;
 extern struct FsVolume *fsRootVolume;

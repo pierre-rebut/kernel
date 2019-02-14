@@ -7,6 +7,8 @@
 
 #define FILE_BUFFER_SIZE 4096
 
+#include <types.h>
+
 typedef struct {
     int fd;
     int flags;
@@ -20,6 +22,7 @@ FILE *fdopen(int fd);
 FILE *fopen(const char *pathname, int mode);
 int fclose(FILE *stream);
 int getc(FILE *stream);
+int getchar();
 int ungetc(int c, FILE *stream);
 int ferror(FILE *stream);
 int feof(FILE *stream);
@@ -30,5 +33,9 @@ size_t fread(char *buf, size_t size, size_t nmemb, FILE *stream);
 size_t fwrite(const char *buf, size_t size, size_t nmemb, FILE *stream);
 int fprintf(FILE *stream, const char *fmt, ...);
 int fputchar(FILE *stream, char c);
+
+extern FILE *stdin;
+extern FILE *stdout;
+extern FILE *stderr;
 
 #endif //KERNEL_FILESTREAM_H

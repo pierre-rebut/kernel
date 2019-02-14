@@ -11,6 +11,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <syscallw.h>
 
 #include "functions.h"
 #include "define.h"

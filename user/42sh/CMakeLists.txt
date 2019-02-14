@@ -25,4 +25,4 @@ set(SOURCE
         src/parsing/tools.c)
 
 add_executable(42sh ${SOURCE})
-target_link_libraries(42sh stdk stdc bin-entry)
+target_link_libraries(42sh stdk stdc crt0)

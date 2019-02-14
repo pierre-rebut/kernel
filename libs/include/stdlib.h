@@ -25,10 +25,9 @@
 #define STDLIB_H_
 
 #include <stddef.h>
-#include <kstd.h>
-#include "../libk/include/syscallw.h"
 
 int atoi(const char *str);
+
 long atol(const char *str);
 
 void *malloc(size_t size);
@@ -39,4 +38,6 @@ void free(const void *ptr);
 
 void *calloc(size_t nmemb, size_t size);
 
-#endif				/* !STDLIB_H_ */
+void qsort(void *, size_t, size_t, int (*)(const void *, const void *));
+
+#endif                /* !STDLIB_H_ */

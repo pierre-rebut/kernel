@@ -367,7 +367,7 @@ int fsWriteFile(struct FsPath *file, const char *buffer, u32 length, u32 offset)
 
         if (offset % bs) {
             actual = file->volume->fs->readBlock(file, temp, blocknum);
-            if (actual <= 0)
+            if (actual < 0)
                 goto failure;
 
             actual = MIN(actual - offset % bs, (u32) actual);
@@ -385,7 +385,7 @@ int fsWriteFile(struct FsPath *file, const char *buffer, u32 length, u32 offset)
                 goto failure;
         } else {
             actual = file->volume->fs->readBlock(file, temp, blocknum);
-            if (actual <= 0)
+            if (actual < 0)
                 goto failure;
 
             actual = MIN(actual, (int) length);
@@ -406,6 +406,7 @@ int fsWriteFile(struct FsPath *file, const char *buffer, u32 length, u32 offset)
     return total;
 
     failure:
+    klog("[FS] writeblock failure\n");
     kfree(temp);
     if (total == 0)
         return -1;
@@ -420,4 +421,11 @@ int fsStat(struct FsPath *path, struct stat *result) {
         return -1;
 
     return path->volume->fs->stat(path, result);
+}
+
+int fsResizeFile(struct FsPath *path, u32 size) {
+    if (!path || !path->volume->fs->resizeFile)
+        return -1;
+
+    return path->volume->fs->resizeFile(path, size);
 }

@@ -28,23 +28,6 @@ int check_redir(const char *str) {
         return (FAIL);
 }
 
-int check_file(char *file) {
-    int fd;
-
-    if (file[0] == '\0')
-        return (FAIL);
-    // errno = 0;
-    if ((fd = open(file + 1, O_RDWR)) == -1) {
-        // if (errno == 2)
-        //     return (SUCCESS);
-        printf("[%s] : error\n", file);
-        //my_putfd(strerror(errno), 2);
-        return (FAIL);
-    }
-    close(fd);
-    return (SUCCESS);
-}
-
 int check_r_and_f(char *str) {
     int redir;
     int i;
@@ -61,10 +44,12 @@ int check_r_and_f(char *str) {
     free(tmp);
     tmp = (strdup_to_char(str + i, "\0"));
     tmp = (strdup_to_char(tmp, " "));
-    if (check_file(str + i) == FAIL) {
+
+    if (tmp[0] == '\0') {
         free(tmp);
         return (FAIL);
     }
+
     free(tmp);
     return (redir);
 }

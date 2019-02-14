@@ -12,6 +12,7 @@ typedef signed int s32;
 typedef unsigned long long u64;
 typedef signed long long s64;
 typedef u32 time_t;
+typedef u32 mode_t;
 
 #define isascii(c) ((c) >= 0 && (c) < 128)
 #define isprint(c) ((c) >= 20 && (c) <= 126)
@@ -33,6 +34,33 @@ typedef u32 time_t;
 #define	S_ISREG(mode)	 __S_ISTYPE((mode), __S_IFREG)
 # define S_ISFIFO(mode)	 __S_ISTYPE((mode), __S_IFIFO)
 # define S_ISLNK(mode)	 __S_ISTYPE((mode), __S_IFLNK)
+
+#define S_IFIFO __S_IFIFO
+#define S_IFSOCK __S_IFSOCK
+#define S_IFCHR __S_IFCHR
+#define S_IFBLK __S_IFBLK
+#define S_IFDIR __S_IFDIR
+#define S_IFLNK __S_IFLNK
+#define S_IFMT __S_IFMT
+
+#define	__S_ISUID	04000	/* Set user ID on execution.  */
+#define	__S_ISGID	02000	/* Set group ID on execution.  */
+#define	__S_ISVTX	01000	/* Save swapped text after use (sticky).  */
+#define	__S_IREAD	0400	/* Read by owner.  */
+#define	__S_IWRITE	0200	/* Write by owner.  */
+#define	__S_IEXEC	0100	/* Execute by owner.  */
+
+#define	S_IRUSR	__S_IREAD	/* Read by owner.  */
+#define	S_IWUSR	__S_IWRITE	/* Write by owner.  */
+#define	S_IXUSR	__S_IEXEC	/* Execute by owner.  */
+/* Read, write, and execute by owner.  */
+#define	S_IRWXU	(__S_IREAD|__S_IWRITE|__S_IEXEC)
+
+#define	S_ISUID __S_ISUID	/* Set user ID on execution.  */
+#define	S_ISGID	__S_ISGID	/* Set group ID on execution.  */
+#define S_ISVTX __S_ISVTX
+#define	S_IRWXG	(S_IRWXU >> 3)
+#define	S_IRWXO	(S_IRWXG >> 3)
 
 enum FileType {
     FT_DIRECTORY,
@@ -58,6 +86,7 @@ struct dirent {
     u32 d_off;       // décalage jusqu'à la dirent suivante
     unsigned short d_reclen;    // longueur de cet enregistrement
     enum FileType d_type;      // type du fichier
+    u32 d_namlen;
     char d_name[256]; // nom du fichier
 };
 

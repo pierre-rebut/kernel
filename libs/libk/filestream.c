@@ -5,10 +5,15 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <err.h>
+#include <syscallw.h>
 #include "filestream.h"
 
 #define STREAM_EOF 1
 #define STREAM_ERROR 2
+
+FILE *stdin;
+FILE *stdout;
+FILE *stderr;
 
 FILE *fdopen(int fd) {
     FILE *stream = malloc(sizeof(FILE));
@@ -76,6 +81,10 @@ int getc(FILE *stream) {
     int tmp = stream->buf[stream->posr];
     stream->posr = (stream->posr + 1) % FILE_BUFFER_SIZE;
     return tmp;
+}
+
+int getchar() {
+    return getc(stdin);
 }
 
 int ungetc(int c, FILE *stream) {

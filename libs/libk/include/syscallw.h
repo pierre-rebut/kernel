@@ -45,6 +45,12 @@
 #define SYSCALL_SYNC            31
 #define SYSCALL_MKDIR           32
 #define SYSCALL_MKFILE          33
+#define SYSCALL_FCHDIR          34
+#define SYSCALL_CHMOD           35
+#define SYSCALL_FCHMOD          36
+#define SYSCALL_LINK            37
+#define SYSCALL_SYMLINK         38
+#define SYSCALL_UNLINK          39
 
 int exit(int value);
 void *sbrk(ssize_t increment);
@@ -80,6 +86,12 @@ char *getcwd(char *buf, u32 size);
 long sysconf(int name);
 void sync();
 int mkfile(const char *);
-int mkdir(const char *);
+int mkdir(const char *, mode_t mode);
+int fchdir(int fd);
+int chmod(const char *path, mode_t mode);
+int fchmod(int, mode_t mode);
+int link(const char *, const char *);
+int symlink(const char *, const char *);
+int unlink(const char *name);
 
 #endif //KERNEL_SYSCALLW_H

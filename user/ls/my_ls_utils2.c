@@ -11,6 +11,7 @@
 #include "../../libs/include/stdlib.h"
 #include "kstd.h"
 #include <stdio.h>
+#include <syscallw.h>
 #include "include/my_ls.h"
 
 int get_nbr_dir(char **av) {

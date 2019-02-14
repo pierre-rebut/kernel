@@ -75,6 +75,7 @@ static struct dirent *devReaddir(struct FsPath *path, struct dirent *result) {
     sprintf(result->d_name, "%s", driver->name);
     result->d_ino = (u32) path->privateData;
     result->d_type = FT_FILE;
+    result->d_namlen = strlen(driver->name);
 
     path->privateData += 1;
     return result;

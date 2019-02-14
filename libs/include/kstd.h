@@ -6,6 +6,7 @@
 typedef s32 ssize_t;
 typedef s32 off_t;
 typedef s32 pid_t;
+typedef unsigned short int u_short;
 
 struct melody {
     unsigned long freq;
@@ -126,5 +127,7 @@ struct ExceveInfo {
 #define INIT_EXECINFO() {0, 0, 0, -1, -1}
 
 #define STDIN_FILENO 0
+
+#define MAXPATHLEN 255
 
 #endif

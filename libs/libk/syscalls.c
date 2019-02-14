@@ -189,10 +189,34 @@ void sync() {
     syscall0(SYSCALL_SYNC);
 }
 
-int mkdir(const char *file) {
-    return (int) syscall1(SYSCALL_MKDIR, (u32) file);
+int mkdir(const char *file, mode_t mode) {
+    return (int) syscall2(SYSCALL_MKDIR, (u32) file, mode);
 }
 
 int mkfile(const char *file) {
     return (int) syscall1(SYSCALL_MKFILE, (u32) file);
+}
+
+int fchdir(int fd) {
+    return syscall1(SYSCALL_FCHDIR, (u32) fd);
+}
+
+int chmod(const char *path, mode_t mode) {
+    return syscall2(SYSCALL_CHMOD, (u32) path, mode);
+}
+
+int fchmod(int fd, mode_t mode) {
+    return syscall2(SYSCALL_FCHMOD, (u32) fd, mode);
+}
+
+int link(const char *p1, const char *p2) {
+    return syscall2(SYSCALL_LINK, (u32) p1, (u32) p2);
+}
+
+int symlink(const char *p1, const char *p2) {
+    return syscall2(SYSCALL_SYMLINK, (u32) p1, (u32) p2);
+}
+
+int unlink(const char *p1) {
+    return syscall1(SYSCALL_UNLINK, (u32) p1);
 }

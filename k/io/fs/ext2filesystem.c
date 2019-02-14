@@ -8,6 +8,7 @@
 #include <sys/allocator.h>
 #include <io/device/fscache.h>
 #include <io/serial.h>
+#include <io/pit.h>
 
 #include "ext2filesystem.h"
 #include "filesystem.h"
@@ -197,7 +198,7 @@ static int ext2ReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
     if (blocknum < 12) {
         u32 b = pathInode->dbp[blocknum];
         if (b == 0) {
-            LOG("[ext2] readblock EOF\n");
+            klog("[ext2] readblock EOF\n");
             return 0;
         }
 
@@ -267,6 +268,7 @@ static struct dirent *ext2Readdir(struct FsPath *path, struct dirent *result) {
 
     result->d_ino = dir->inode;
     result->d_type = FT_FILE;
+    result->d_namlen = dir->namelength;
 
     LOG("dir size = %u, %X\n", dir->size, dir);
     pathInode->tmpDir += dir->size;
@@ -372,7 +374,7 @@ static void ext2AllocBlock(u32 *out, struct Ext2PrivData *priv) {
 static int ext2UpdateParentDir(struct Ext2DirEntry *entry, struct Ext2Inode *parentInode, struct FsPath *parentDir,
                                void *block_buf, struct Ext2PrivData *priv) {
     for (int i = 0; i < 12; i++) {
-        if (parentInode->dbp[i] == 0) {
+        if (parentInode->dbp[i] == 0 || parentInode->dbp[i] >= priv->sb.blocks) {
             u32 theblock = 0;
             ext2AllocBlock(&theblock, priv);
             parentInode->dbp[i] = theblock;
@@ -387,7 +389,7 @@ static int ext2UpdateParentDir(struct Ext2DirEntry *entry, struct Ext2Inode *par
             if (d->size == 0)
                 break;
 
-            u32 truesize = d->namelength + 8;
+            /*u32 truesize = d->namelength + 8;
             truesize += 4 - truesize % 4;
             // u32 origsize = d->size;
 
@@ -397,7 +399,7 @@ static int ext2UpdateParentDir(struct Ext2DirEntry *entry, struct Ext2Inode *par
                 d = (struct Ext2DirEntry *) ((u32) d + d->size);
                 entry->size = (u16)(priv->blocksize - passed);
                 break;
-            }
+            }*/
             passed += d->size;
             d = (struct Ext2DirEntry *) ((u32) d + d->size);
         }
@@ -424,29 +426,35 @@ static struct FsPath *ext2Mkfile(struct FsPath *parentDir, const char *filename)
     if (inode == NULL)
         goto failure_inode;
 
+    klog("[ext2] mkfile\n");
+
     memset(inode, 0, sizeof(struct Ext2Inode));
 
     inode->hardlinks = 1;
     inode->size = 0;
-    inode->type = INODE_TYPE_FILE;
+    inode->type = INODE_TYPE_FILE | 0x100 | 0x080;
     inode->disk_sectors = 2;
+    inode->last_modif = inode->last_access = inode->create_time = gettick();
 
-    u32 filenameSize = strlen(filename);
-    struct Ext2DirEntry *entry = kmalloc(sizeof(struct Ext2DirEntry) + filenameSize + 1, 0, "ext2Dir");
+
+    u32 filenameSize = strlen(filename) + 1;
+    struct Ext2DirEntry *entry = kmalloc(sizeof(struct Ext2DirEntry) + filenameSize, 0, "ext2Dir");
     if (entry == NULL)
         goto failure_entry;
 
-    entry->size = sizeof(struct Ext2DirEntry) + filenameSize + 1;
+    entry->size = sizeof(struct Ext2DirEntry) + filenameSize;
     entry->reserved = 0;
-    entry->namelength = (u8) (filenameSize + 1);
-    memcpy(&entry->reserved + 1, filename, filenameSize + 1);
+    entry->namelength = (u8) filenameSize;
+    memcpy(&entry->reserved + 1, filename, filenameSize);
 
     u32 id = ext2FindNewInodeId(priv);
+    klog("[ext2] mkfile: new id = %u\n", id);
     entry->inode = id;
 
     u32 block = 0; /* The block where this inode should be written */
     u32 ioff = 0; /* Offset into the block function to sizeof(inode_t) */
     ext2GetInodeBlock(id, &block, &ioff, priv);
+    klog("[ext2] mkfile: block = %u, ioff = %u\n", block, ioff);
 
     ext2DeviceReadBlock(block_buf, block, priv);
 
@@ -512,8 +520,10 @@ static int ext2WriteBlock(struct FsPath *path, const char *buffer, u32 blocknum)
     }
 
     if (bid == 0 || bid > priv->sb.blocks) {
+        klog("[ext2] writeblock: create new block\n");
         ext2AllocBlock(&bid, priv);
         pathInode->dbp[blocknum] = bid;
+        klog("[ext2] writeblock: id = %u\n", bid);
         ext2WriteInode(pathInode, path->inode, priv);
     }
 

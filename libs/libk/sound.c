@@ -23,6 +23,7 @@
 */
 #include "include/sound.h"
 #include <stdlib.h>
+#include <syscallw.h>
 
 struct melody *load_sound(const char *path)
 {

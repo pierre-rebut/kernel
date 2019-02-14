@@ -10,6 +10,7 @@ add_subdirectory(k)
 
 add_subdirectory(libs/libc)
 add_subdirectory(libs/libk)
+add_subdirectory(libs/ctr0)
 
 add_subdirectory(tools/mkkfs)
 #add_subdirectory(tools/mkksf)

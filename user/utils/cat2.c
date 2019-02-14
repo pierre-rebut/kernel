@@ -8,8 +8,8 @@ static char const copyright[] =
 #include <getopt.h>
 #include <err.h>
 #include <filestream.h>
-
-static FILE *stdin = NULL;
+#include <kstd.h>
+#include <syscallw.h>
 
 static int bflag, eflag, nflag, sflag, tflag, vflag;
 static int rval;
@@ -40,7 +40,6 @@ static void raw_cat(int);
 
 int main(int argc, char *argv[]) {
     int ch;
-    stdin = fdopen(0);
 
     while ((ch = getopt(argc, argv, "benstv")) != -1)
         switch (ch) {

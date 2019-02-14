@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <sys/physical-memory.h>
 #include <sys/time.h>
+#include <io/pit.h>
 #include "procfilesystem.h"
 
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
@@ -168,6 +169,7 @@ static struct dirent *procReaddir(struct FsPath *path, struct dirent *result) {
                 return NULL;
         }
         result->d_type = FT_FILE;
+        result->d_namlen = strlen(result->d_name);
         result->d_ino = (u32) procPath->data;
         procPath->data++;
     } else {
@@ -183,6 +185,7 @@ static struct dirent *procReaddir(struct FsPath *path, struct dirent *result) {
         sprintf(result->d_name, "%u", task->pid);
         result->d_ino = (u32) procPath->data;
         result->d_type = FT_FILE;
+        result->d_namlen = strlen(result->d_name);
     }
 
     return result;

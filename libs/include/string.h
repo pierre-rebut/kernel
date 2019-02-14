@@ -54,4 +54,8 @@ u32 str_backspace(char *str, char c, char **);
 u32 strsplit(char *str, char delim);
 u32 str_begins_with(const char *str, const char *with);
 
+char *strrchr(const char *cp, int ch);
+size_t strlcpy(char *dst, const char *src, size_t siz);
+char *strncat(char *s1, const char *s2, size_t n);
+
 #endif				/* !STRING_H_ */

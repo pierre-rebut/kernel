@@ -236,6 +236,7 @@ static struct dirent *kfsReaddir(struct FsPath *path, struct dirent *result) {
     strcpy(tmp.d_name, node->filename);
     tmp.d_ino = node->idx;
     tmp.d_type = FT_FILE;
+    result->d_namlen = strlen(node->filename);
 
     path->privateData = (struct kfs_inode *) (KFS_MEM_POS + (node->next_inode * KFS_BLK_SZ));
 

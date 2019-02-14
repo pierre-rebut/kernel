@@ -11,6 +11,7 @@
 #include "../../libs/include/stdlib.h"
 #include "kstd.h"
 #include <string.h>
+#include <syscallw.h>
 
 #include "include/my_ls.h"
 

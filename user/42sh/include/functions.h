@@ -40,12 +40,14 @@ int check_tab(char **tab, int i, int value);
 ** builtin
 */
 
-int cd_call(char *path, t_env *env, int fd);
+int cd_call(int fd, t_cmd *cmd, t_env *env);
+int env_call(int fd, t_cmd *cmd, t_env *env);
+int setenv_call(int fd, t_cmd *cmd, t_env *env);
+int unsetenv_call(int fd, t_cmd *cmd, t_env *env);
+int echo(int fd, t_cmd *cmd, t_env *env);
+int sync_call(int fd, t_cmd *cmd, t_env *env);
+
 char *cd_check_arg(char *path, t_env *env, int fd);
-int env_call(t_env *env, int fd);
-int setenv_call(char *name, char *var, t_env *env);
-int unsetenv_call(char *var, t_env *env);
-int echo(t_cmd *cmd, int fd);
 char *cd_tild(t_env *env);
 char *cd_dash(t_env *env, int fd);
 int modify_var(char *name, char *new_var, t_env *env);

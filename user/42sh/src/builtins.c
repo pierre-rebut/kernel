@@ -11,92 +11,112 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <syscallw.h>
 
 #include "functions.h"
 #include "define.h"
 
-int cd_call(char *path, t_env *env, int fd) {
-    char *old_path;
-    char *new_path;
-
-    old_path = my_getenv("PWD", env->env);
-
-    if ((new_path = cd_check_arg(path, env, fd)) == NULL)
-        return (FAIL);
-
-    setenv_call("OLDPWD", old_path, env);
-    setenv_call("PWD", new_path, env);
-
-    free(new_path);
-    return (SUCCESS);
-}
-
-int env_call(t_env *env, int fd) {
-    int i;
-
-    i = 0;
-    if (env->env == NULL)
-        return (FAIL);
-    while (env->env[i] != NULL) {
-        if (my_putfd(env->env[i], fd) == FAIL) {
-            printf("42sh : access denied\n");
-            return (FAIL);
-        }
-        if (my_putfd("\n", fd) == FAIL)
-            return (FAIL);
-        i++;
-    }
-    return (SUCCESS);
-}
-
-int setenv_call(char *name, char *var, t_env *env) {
+static int my_setenv(char *name, char *value, t_env *env) {
     int i;
     char *new_env_var;
 
     i = 0;
     if (name == NULL) {
         printf("Usage : setenv NAME [VAR]\n");
-        return (FAIL);
+        return FAIL;
     }
+
     new_env_var = strcat(name, "=");
-    if (var != NULL)
-        new_env_var = strcat(new_env_var, var);
+    if (value != NULL)
+        new_env_var = strcat(new_env_var, value);
     while (env->env[i] != NULL) {
         if (strncmp(name, env->env[i], strlen(name)) == 0) {
             modify_var(name, new_env_var, env);
-            return (0);
+            return SUCCESS;
         }
         i++;
     }
     add_var(new_env_var, env);
     if (new_env_var != NULL)
         free(new_env_var);
-    return (SUCCESS);
+
+    return SUCCESS;
 }
 
-int unsetenv_call(char *var, t_env *env) {
+int cd_call(int fd, t_cmd *cmd, t_env *env) {
+    char *old_path;
+    char *new_path;
+
+    old_path = my_getenv("PWD", env->env);
+
+    if ((new_path = cd_check_arg(cmd->args[1], env, fd)) == NULL)
+        return (FAIL);
+
+    my_setenv("OLDPWD", old_path, env);
+    my_setenv("PWD", new_path, env);
+
+    free(new_path);
+    return SUCCESS;
+}
+
+int env_call(int fd, t_cmd *cmd, t_env *env) {
+    (void) cmd;
+
+    int i;
+
+    i = 0;
+    if (env->env == NULL)
+        return FAIL;
+
+    while (env->env[i] != NULL) {
+        if (my_putfd(env->env[i], fd) == FAIL) {
+            printf("42sh : access denied\n");
+            return FAIL;
+        }
+        if (my_putfd("\n", fd) == FAIL)
+            return FAIL;
+        i++;
+    }
+    return SUCCESS;
+}
+
+int setenv_call(int fd, t_cmd *cmd, t_env *env) {
+    (void) fd;
+
+    char *name = cmd->args[1], *value = cmd->args[2];
+    return my_setenv(name, value, env);
+}
+
+int unsetenv_call(int fd, t_cmd *cmd, t_env *env) {
+    (void) fd;
+
+    char *var = cmd->args[1];
+
     char **new_env;
     int lines;
     int line_cpy;
 
     if (var == NULL) {
         printf("Usage : unsetenv NAME\n");
-        return (FAIL);
+        return FAIL;
     }
     if ((line_cpy = my_getenv_line(var, env->env)) == -1) {
         printf("%s doesn't exist\n", var);
-        return (FAIL);
+        return FAIL;
     }
     lines = 0;
     while (env->env[lines] != NULL)
         lines++;
     if ((new_env = malloc(sizeof(char *) * (lines + 2))) == NULL)
-        return (FAIL);
+        return FAIL;
     remove_var(new_env, line_cpy, env);
-    return (SUCCESS);
+
+    return SUCCESS;
 }
 
-int echo(t_cmd *cmd, int fd) {
+int echo(int fd, t_cmd *cmd, t_env *env) {
+    (void) env;
+
     char bool;
     int i;
 
@@ -118,5 +138,15 @@ int echo(t_cmd *cmd, int fd) {
     }
     if (bool == 0)
         my_putfd("\n", fd);
-    return (SUCCESS);
+
+    return SUCCESS;
+}
+
+int sync_call(int fd, t_cmd *cmd, t_env *env) {
+    (void) fd;
+    (void) cmd;
+    (void) env;
+
+    sync();
+    return SUCCESS;
 }

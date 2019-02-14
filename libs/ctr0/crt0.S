@@ -4,5 +4,6 @@ entry:
     push %ecx
     push %eax
 
+    call _init
     call main
     call exit

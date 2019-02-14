@@ -18,7 +18,7 @@
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
-#define NB_SYSCALL 34
+#define NB_SYSCALL 35
 
 static u32 sys_write(struct esp_context *ctx);
 
@@ -88,6 +88,8 @@ static u32 sys_mkdir(struct esp_context *ctx);
 
 static u32 sys_mkfile(struct esp_context *ctx);
 
+static u32 sys_fchdir(struct esp_context *ctx);
+
 typedef u32 (*syscall_t)(struct esp_context *);
 
 static syscall_t syscall[] = {
@@ -124,7 +126,8 @@ static syscall_t syscall[] = {
         sys_sysconf,
         sys_sync,
         sys_mkdir,
-        sys_mkfile
+        sys_mkfile,
+        sys_fchdir,
 };
 
 static void syscall_handler(struct esp_context *ctx);
@@ -179,8 +182,14 @@ static u32 sys_open(struct esp_context *ctx) {
         return (u32) -1;
 
     struct FsPath *path = fsResolvePath((char *) ctx->ebx);
-    if (!path)
-        return (u32) -1;
+    if (!path) {
+        if (!(ctx->ecx & O_CREAT))
+            return (u32) -1;
+
+        path = fsMkfile((const char *)ctx->ebx);
+        if (!path)
+            return (u32) -1;
+    }
 
     struct Kobject *obj = koCreate(KO_FS_FILE, path, ctx->ecx);
     if (obj == NULL) {
@@ -192,6 +201,10 @@ static u32 sys_open(struct esp_context *ctx) {
     LOG("open: %s (%d)\n", (char *) ctx->ebx, fd);
     if (ctx->ecx & O_APPEND)
         obj->offset = path->size;
+    else if (ctx->ecx & O_TRUNC) {
+        fsResizeFile(path, 0);
+    }
+
 
     return (u32) fd;
 }
@@ -462,6 +475,27 @@ static u32 sys_mkdir(struct esp_context *ctx) {
 static u32 sys_mkfile(struct esp_context *ctx) {
     LOG("mkfile: %s\n", (char *) ctx->ebx);
 
-    void *tmp = fsMkfile((const char *)ctx->ebx);
+    void *tmp = fsResolvePath((const char *)ctx->ebx);
+    if (tmp) {
+        fsPathDestroy(tmp);
+        return (u32) -1;
+    }
+
+    tmp = fsMkfile((const char *)ctx->ebx);
+    fsPathDestroy(tmp);
     return (u32) (tmp ? 0 : -1);
+}
+
+static u32 sys_fchdir(struct esp_context *ctx) {
+    LOG("fchdir: %d\n", ctx->ebx);
+    struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
+    if (!obj || obj->type != KO_FS_FOLDER)
+        return (u32) -1;
+
+    fsPathDestroy(currentTask->currentDir);
+
+    currentTask->currentDir = obj->data;
+    currentTask->currentDir->refcount += 1;
+
+    return 0;
 }

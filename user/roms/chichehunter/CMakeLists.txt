@@ -13,7 +13,7 @@ set(FILES
         test)
 
 add_executable(hunter ${SOURCE})
-target_link_libraries(hunter stdk stdc bin-entry)
+target_link_libraries(hunter stdk stdc crt0)
 
 add_custom_command(TARGET hunter
         POST_BUILD

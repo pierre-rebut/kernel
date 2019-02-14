@@ -16,39 +16,49 @@
 #include "define.h"
 #include "functions.h"
 
+struct BuiltinCmd {
+    char *name;
+    int (*fct)(int fd, t_cmd *lst, t_env *env);
+};
+
+static struct BuiltinCmd lstCmd[] = {
+        {"cd", cd_call},
+        {"env", env_call},
+        {"setenv", setenv_call},
+        {"unsetenv", unsetenv_call},
+        {"echo", echo},
+        {"sync", sync_call},
+        {NULL}
+};
+
 int redir_out_fd(t_cmd *lst) {
     int fd;
     
     if (lst->redir_out[0] == '>')
-        fd = open(lst->redir_out + 1, O_APPEND | O_RDWR | O_CREAT);
+        fd = open(lst->redir_out + 1, O_WRONLY | O_CREAT | O_APPEND);
     else
-        fd = open(lst->redir_out, O_WRONLY | O_CREAT);
+        fd = open(lst->redir_out, O_WRONLY | O_CREAT | O_TRUNC);
     return (fd);
 }
 
 int exec_built(t_cmd *lst, t_env *env) {
-    int fd;
+    int i = 0;
 
-    fd = 1;
-    if (lst->next != NULL)
-        fd = lst->next->pipefd[1];
-    else if (lst->redir_out != NULL)
-        fd = redir_out_fd(lst);
-    if (strcmp("cd", lst->prg) == SUCCESS)
-        cd_call(lst->args[1], env, fd);
-    else if (strcmp("env", lst->prg) == SUCCESS)
-        env_call(env, fd);
-    else if (strcmp("setenv", lst->prg) == SUCCESS)
-        setenv_call(lst->args[1], lst->args[2], env);
-    else if (strcmp("unsetenv", lst->prg) == SUCCESS)
-        unsetenv_call(lst->args[1], env);
-    else if (strcmp("echo", lst->prg) == SUCCESS)
-        echo(lst, fd);
-    else if (strcmp("sync", lst->prg) == SUCCESS)
-        sync();
-    else
-        return (FAIL);
-    if (fd > 2)
-        close(fd);
-    return (SUCCESS);
+    while (lstCmd[i].name) {
+        if (strcmp(lstCmd[i].name, lst->prg) == 0) {
+            int fd = 1;
+            if (lst->next != NULL)
+                fd = lst->next->pipefd[1];
+            else if (lst->redir_out != NULL)
+                fd = redir_out_fd(lst);
+
+            int res = lstCmd[i].fct(fd, lst, env);
+            if (fd > 2)
+                close(fd);
+            return res;
+        }
+        i++;
+    }
+
+    return FAIL;
 }

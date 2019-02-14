@@ -7,7 +7,7 @@ set(FILES
         intro.ksf)
 
 add_executable(pong ${SOURCE})
-target_link_libraries(pong stdk stdc bin-entry)
+target_link_libraries(pong stdk stdc crt0)
 
 add_custom_command(TARGET pong
         POST_BUILD

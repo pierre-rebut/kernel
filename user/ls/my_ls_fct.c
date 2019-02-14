@@ -12,6 +12,7 @@
 #include "../../libs/include/stdlib.h"
 #include <stdio.h>
 #include <string.h>
+#include <syscallw.h>
 
 #include "include/my_ls.h"
 
