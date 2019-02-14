@@ -184,3 +184,7 @@ char *getcwd(char *buf, u32 size) {
 long sysconf(int name) {
     return (long) syscall1(SYSCALL_SYSCONF, (u32) name);
 }
+
+int touch(const char *file) {
+    return (int) syscall1(SYSCALL_TOUCH, (u32) file);
+}

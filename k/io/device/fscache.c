@@ -4,7 +4,6 @@
 
 #include <sys/allocator.h>
 #include <string.h>
-#include <include/kstdio.h>
 #include "fscache.h"
 
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
@@ -87,19 +86,15 @@ static struct FsCacheBlock *findFsCacheBlock(struct FsCache *fsCache, int offset
     return NULL;
 }
 
-static struct FsCacheBlock *createAndReadDevice(struct FsCache *fsCache, int nblocks, int offset) {
+static struct FsCacheBlock *createFsCacheBlock(struct FsCache *fsCache, void *data, int nblocks, int offset) {
     LOG("[fsCache] create new block cache: %d\n", offset);
 
     struct FsCacheBlock *tmpBlock = kmalloc(sizeof(struct FsCacheBlock), 0, "newTmpBlock");
     if (tmpBlock == NULL)
         return NULL;
 
-    tmpBlock->data = kmalloc((u32)nblocks * fsCache->device->blockSize, 0, "newDataBlock");
-    if (tmpBlock->data == NULL)
-        goto createAndReadDeviceFailure;
-
-    if (deviceRead(fsCache->device, tmpBlock->data, nblocks, offset) == -1)
-        goto createAndReadDeviceFailure;
+    tmpBlock->data = data;
+    tmpBlock->nblocks = nblocks;
 
     tmpBlock->offset = offset;
     tmpBlock->next = fsCache->dataBlock;
@@ -119,15 +114,15 @@ static struct FsCacheBlock *createAndReadDevice(struct FsCache *fsCache, int nbl
         struct FsCacheBlock *tmp = fsCache->lastBlock;
         fsCache->lastBlock = tmp->prev;
         fsCache->lastBlock->next = NULL;
+
+        if (tmp->updated == 1) {
+            deviceWrite(fsCache->device, tmp->data, tmp->nblocks, tmp->offset);
+        }
+
         kfree(tmp->data);
         kfree(tmp);
     }
     return tmpBlock;
-
-    createAndReadDeviceFailure:
-    kfree(tmpBlock->data);
-    kfree(tmpBlock);
-    return NULL;
 }
 
 int fsCacheRead(struct Device *device, void *buffer, int nblocks, int offset) {
@@ -136,13 +131,47 @@ int fsCacheRead(struct Device *device, void *buffer, int nblocks, int offset) {
         return -1;
 
     struct FsCacheBlock *fsCacheBlock = findFsCacheBlock(fsCache, offset);
-    if (fsCacheBlock == NULL)
-        fsCacheBlock = createAndReadDevice(fsCache,nblocks, offset);
+    if (fsCacheBlock == NULL) {
+        void *data = kmalloc((u32) nblocks * fsCache->device->blockSize, 0, "newDataBlock");
+        if (data == NULL)
+            return -1;
+
+        if (deviceRead(fsCache->device, data, nblocks, offset) == -1) {
+            kfree(data);
+            return -1;
+        }
+
+        fsCacheBlock = createFsCacheBlock(fsCache, data, nblocks, offset);
+    }
 
     if (fsCacheBlock == NULL)
         return -1;
 
-    memcpy(buffer, fsCacheBlock->data, (u32)nblocks * device->blockSize);
+    fsCacheBlock->updated = 0;
+    memcpy(buffer, fsCacheBlock->data, (u32) nblocks * device->blockSize);
+    return nblocks;
+}
+
+int fsCacheWrite(struct Device *device, const void *buffer, int nblocks, int offset) {
+    struct FsCache *fsCache = findOrCreateFsCache(device);
+    if (fsCache == NULL)
+        return -1;
+
+    void *data;
+
+    struct FsCacheBlock *fsCacheBlock = findFsCacheBlock(fsCache, offset);
+    if (fsCacheBlock == NULL) {
+        data = kmalloc((u32) nblocks * fsCache->device->blockSize, 0, "newDataBlock");
+        if (data == NULL)
+            return -1;
+
+        fsCacheBlock = createFsCacheBlock(fsCache, data, nblocks, offset);
+    } else {
+        data = fsCacheBlock->data;
+    }
+
+    fsCacheBlock->updated = 1;
+    memcpy(data, buffer, (u32) nblocks * fsCache->device->blockSize);
     return nblocks;
 }
 
@@ -155,6 +184,11 @@ int fsCacheFlush(struct Device *device) {
     while (tmpBlock) {
         struct FsCacheBlock *tmp = tmpBlock;
         tmpBlock = tmpBlock->next;
+
+        if (tmp->updated == 1) {
+            deviceWrite(device, tmp->data, tmp->nblocks, tmp->offset);
+        }
+
         kfree(tmp->data);
         kfree(tmp);
     }

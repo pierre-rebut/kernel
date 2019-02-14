@@ -13,6 +13,9 @@
 struct FsCacheBlock {
     int offset;
     void *data;
+    int nblocks;
+
+    char updated;
 
     struct FsCacheBlock *next;
     struct FsCacheBlock *prev;

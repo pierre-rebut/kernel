@@ -3,7 +3,6 @@
 //
 
 #include <string.h>
-#include <stdlib.h>
 
 int strcmp(const char *s1, const char *s2) {
     for (; *s1 == *s2 && *s1 != '\0'; s1++, s2++)
@@ -91,4 +90,46 @@ void strtoupper(char *str) {
             *str = *str - 32;
         str++;
     }
+}
+
+u32 str_backspace(char *str, char c) {
+    size_t i = strlen(str);
+    i--;
+    while (i) {
+        i--;
+        if (str[i] == c) {
+            str[i + 1] = 0;
+            return 1;
+        }
+    }
+    return 0;
+}
+
+u32 strsplit(char *str, char delim) {
+    size_t n = 0;
+    u32 i = 0;
+    while (str[i]) {
+        if (str[i] == delim) {
+            str[i] = 0;
+            n++;
+        }
+        i++;
+    }
+    n++;
+    return n;
+}
+
+u32 str_begins_with(const char *str, const char *with) {
+    size_t j = strlen(with);
+    size_t i = 0;
+    size_t ret = 1;
+    while (with[j] != 0) {
+        if (str[i] != with[i]) {
+            ret = 0;
+            break;
+        }
+        j--;
+        i++;
+    }
+    return ret;
 }

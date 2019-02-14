@@ -48,5 +48,8 @@ u32 strcspn(const char *s1, register const char *s2);
 char isspace(char c);
 
 void strtoupper(char *str);
+u32 str_backspace(char *str, char c);
+u32 strsplit(char *str, char delim);
+u32 str_begins_with(const char *str, const char *with);
 
 #endif				/* !STRING_H_ */

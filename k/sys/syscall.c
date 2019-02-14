@@ -12,6 +12,7 @@
 #include <kstdio.h>
 #include <io/pipe.h>
 #include <string.h>
+#include <io/fs/ext2filesystem.h>
 
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
@@ -80,6 +81,8 @@ static u32 sys_getcwd(struct esp_context *ctx);
 
 static u32 sys_sysconf(struct esp_context *ctx);
 
+static u32 sys_touch(struct esp_context *ctx);
+
 typedef u32 (*syscall_t)(struct esp_context *);
 
 static syscall_t syscall[] = {
@@ -113,7 +116,8 @@ static syscall_t syscall[] = {
         sys_pipe,
         sys_dup2,
         sys_getcwd,
-        sys_sysconf
+        sys_sysconf,
+        sys_touch
 };
 
 static void syscall_handler(struct esp_context *ctx);
@@ -423,4 +427,9 @@ static u32 sys_sysconf(struct esp_context *ctx) {
         default:
             return  (u32) -1;
     };
+}
+
+static u32 sys_touch(struct esp_context *ctx) {
+    LOG("touch: %s\n", (const char *) ctx->ebx);
+    return ext2Touch((const char *)ctx->ebx, currentTask->rootDir->volume->privateData);
 }

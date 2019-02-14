@@ -134,6 +134,16 @@ static void ataReadPio(int id, void *buffer, int size) {
     }
 }
 
+static void ataWritePio(int id, const void *buffer, int size) {
+    u16 *wbuffer = (u16 *) buffer;
+    while (size > 0) {
+        outw(ata_base[id] + ATA_DATA, *wbuffer);
+        wbuffer++;
+        size -= 2;
+    }
+}
+
+
 static int ataBegin(int id, int command, int nblocks, int offset) {
     int base = ata_base[id];
     int sector, clow, chigh, flags;
@@ -205,6 +215,51 @@ static int ataReadBlock(int id, void *buffer, int nblocks, int offset) {
     return result;
 }
 
+static int ataWriteUnlocked(int id, const void *buffer, int nblocks, int offset) {
+    LOG("ata write unlocked\n");
+
+    int i;
+    if (!ataBegin(id, ATA_COMMAND_WRITE, nblocks, offset))
+        return 0;
+
+    LOG("[ata] write unlocked: loop\n");
+
+    for (i = 0; i < nblocks; i++) {
+        LOG("[ata] wait for ready: %d\n", i);
+        if (!ataWait(id, ATA_STATUS_DRQ, ATA_STATUS_DRQ))
+            return 0;
+
+        LOG("[ata] write nblock: %d\n", i);
+        ataWritePio(id, buffer, ATA_BLOCKSIZE);
+        buffer = ((char *) buffer) + ATA_BLOCKSIZE;
+        offset++;
+        LOG("[ata] write end: %d\n", i);
+    }
+    // XXX On fast virtual hardware, waiting for the interrupt
+    // doesn't work b/c it has already arrived before we get here.
+    // For now, busy wait until a fix is in place.
+
+    // if(ata_interrupt_active) process_wait(&queue);
+
+    LOG("[ata] wait busy\n");
+    if (!ataWait(id, ATA_STATUS_BSY, 0))
+        return 0;
+
+    LOG("[ata] write unlocked end\n");
+    return nblocks;
+}
+
+int ataWriteBlock(int id, const void *buffer, int nblocks, int offset) {
+    int result;
+    mutexLock(&ata_mutex);
+    LOG("[ata] write: %u\n", nblocks);
+    result = ataWriteUnlocked(id, buffer, nblocks, offset);
+    LOG("[ata] write: res = %d\n", result);
+    mutexUnlock(&ata_mutex);
+    counters.blocks_written[id] += nblocks;
+    return result;
+}
+
 static int ataIdentify(int id, int command, void *buffer) {
     int result = 0;
     identify_in_progress = 1;
@@ -259,6 +314,7 @@ static struct DeviceDriver ataDriver = {
         .name = "ata",
         .reset = &ataReset,
         .read = &ataReadBlock,
+        .write = &ataWriteBlock,
         .probe = &ataProbe
 };
 
