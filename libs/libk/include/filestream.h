@@ -24,9 +24,11 @@ int ungetc(int c, FILE *stream);
 int ferror(FILE *stream);
 int feof(FILE *stream);
 void clearerr(FILE *stream);
+int fflush(FILE *stream);
 
 size_t fread(char *buf, size_t size, size_t nmemb, FILE *stream);
-size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream);
+size_t fwrite(const char *buf, size_t size, size_t nmemb, FILE *stream);
 int fprintf(FILE *stream, const char *fmt, ...);
+int fputchar(FILE *stream, char c);
 
 #endif //KERNEL_FILESTREAM_H

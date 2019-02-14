@@ -4,7 +4,6 @@
 
 #include <string.h>
 #include <sys/allocator.h>
-#include <sys/physical-memory.h>
 #include <task.h>
 #include <include/kstdio.h>
 
@@ -313,6 +312,11 @@ int fsWriteFile(struct FsPath *file, const char *buffer, u32 length, u32 offset)
         return -1;
 
     klog("test 1: %u\n", length);
+    if (offset + length > file->size) {
+        if (file->volume->fs->resizeFile == NULL)
+            return -1;
+        file->volume->fs->resizeFile(file, offset + length);
+    }
 
     while (length > 0) {
 

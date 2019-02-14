@@ -120,6 +120,10 @@ static void cook_cat(FILE *fp) {
     if (fp == stdin && feof(stdin))
         clearerr(stdin);
 
+    FILE *out = fdopen(1);
+    if (out == NULL)
+        return;
+
     line = gobble = 0;
     for (prev = '\n'; (ch = getc(fp)) != EOF; prev = ch) {
         if (prev == '\n') {
@@ -133,36 +137,39 @@ static void cook_cat(FILE *fp) {
             }
             if (nflag) {
                 if (!bflag || ch != '\n') {
-                    printf("%6d\t", ++line);
+                    fprintf(out, "%6d\t", ++line);
                 } else if (eflag) {
-                    printf("%6s\t", "");
+                    fprintf(out, "%6s\t", "");
                 }
             }
         }
         if (ch == '\n') {
-            if (eflag && putchar('$') == EOF)
+            if (eflag && fputchar(out, '$') == EOF)
                 break;
         } else if (ch == '\t') {
             if (tflag) {
-                if (putchar('^') == EOF || putchar('I') == EOF)
+                if (fputchar(out, '^') == EOF || fputchar(out, 'I') == EOF)
                     break;
                 continue;
             }
         } else if (vflag) {
             if (!isascii(ch) && !isprint(ch)) {
-                if (putchar('M') == EOF || putchar('-') == EOF)
+                if (fputchar(out, 'M') == EOF || fputchar(out, '-') == EOF)
                     break;
             } else {
-                if (putchar(ch) == EOF)
+                if (fputchar(out, ch) == EOF)
                     break;
             }
 
             ch = -1;
             continue;
         }
-        if (putchar(ch) == EOF)
+        if (fputchar(out, ch) == EOF)
             break;
     }
+
+    fflush(out);
+
     if (ferror(fp)) {
         warn("%s", filename);
         rval = 1;

@@ -574,6 +574,20 @@ u8 ext2Touch(const char *file, struct Ext2PrivData *priv) {
     return 0;
 }
 
+static int ext2ResizeFile(struct FsPath *path, u32 newSize) {
+    struct Ext2PrivData *priv = path->volume->privateData;
+    struct Ext2Inode *pathInode = path->privateData;
+
+    /* Locate and load the inode */
+    if (!(pathInode->type & INODE_TYPE_FILE))
+        return -1;
+
+    pathInode->size = newSize;
+    ext2WriteInode(pathInode, path->inode - 1, priv);
+    path->size = newSize;
+    return 0;
+}
+
 static int ext2WriteBlock(struct FsPath *path, const char *buffer, u32 blocknum) {
     klog("[ext2] writeblock: %u\n", blocknum);
     struct Ext2PrivData *priv = path->volume->privateData;
@@ -594,7 +608,6 @@ static int ext2WriteBlock(struct FsPath *path, const char *buffer, u32 blocknum)
     if (bid == 0 || bid > priv->sb.blocks) {
         ext2AllocBlock(&bid, priv);
         pathInode->dbp[blocknum] = bid;
-        pathInode->size += priv->blocksize;
         ext2WriteInode(pathInode, path->inode - 1, priv);
     }
 
@@ -785,7 +798,8 @@ static struct Fs fs_ext2 = {
         .lookup = &ext2Lookup,
         .readBlock = &ext2ReadBlock,
         .writeBlock = &ext2WriteBlock,
-        .stat = &ext2Stat
+        .stat = &ext2Stat,
+        .resizeFile = &ext2ResizeFile
 };
 
 void initExt2FileSystem() {

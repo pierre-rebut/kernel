@@ -4,6 +4,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <err.h>
 #include "filestream.h"
 
 #define STREAM_EOF 1
@@ -118,7 +119,7 @@ size_t fread(char *buf, size_t size, size_t nmemb, FILE *stream) {
     for (size_t i = 0; i < nmemb; i++) {
         for (size_t pos = 0; pos < size; pos++) {
             if (stream->posr == stream->posw) {
-                if (fileInternalRead(stream) == EOF)
+                if (fileInternalRead(stream) <= 0)
                     return readed;
             }
 
@@ -127,21 +128,57 @@ size_t fread(char *buf, size_t size, size_t nmemb, FILE *stream) {
             readed += 1;
         }
     }
+
     return readed;
 }
 
-size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream) {
+static int fileInternalWrite(FILE *stream) {
+    char tmpBuf[FILE_BUFFER_SIZE];
+    u32 i = 0;
+
+   while (i < FILE_BUFFER_SIZE) {
+       if (stream->posr == stream->posw )
+           break;
+
+        tmpBuf[i] = stream->buf[stream->posr];
+        stream->posr = (stream->posr + 1) % FILE_BUFFER_SIZE;
+       i++;
+    }
+
+    warn("file internal write: %d\n", i);
+
+    int size = write(stream->fd, tmpBuf, i);
+    if (size < 0) {
+        stream->flags = STREAM_ERROR;
+        return STREAM_ERROR;
+    }
+
+    if (size == 0) {
+        stream->flags = STREAM_EOF;
+        return EOF;
+    }
+
+    return size;
+}
+
+size_t fwrite(const char *buf, size_t size, size_t nmemb, FILE *stream) {
     if (stream == NULL || stream->flags != 0)
         return 0;
 
     size_t writed = 0;
     for (size_t i = 0; i < nmemb; i++) {
-        int tmp = write(stream->fd, ptr + (i * size), size);
-        if (tmp <= 0)
-            return writed;
+        for (size_t pos = 0; pos < size; pos++) {
+            if ((stream->posw + 1) % FILE_BUFFER_SIZE == stream->posr) {
+                if (fileInternalWrite(stream) <= 0)
+                    return writed;
+            }
 
-        writed += tmp;
+            stream->buf[stream->posw] = buf[i * size + pos];
+            stream->posw = (stream->posw + 1) % FILE_BUFFER_SIZE;
+            writed += 1;
+        }
     }
+
     return writed;
 }
 
@@ -161,4 +198,25 @@ int fprintf(FILE *stream, const char *fmt, ...) {
         fwrite(printf_buf, (u32) printed, 1, stream);
 
     return printed;
+}
+
+int fputchar(FILE *stream, char c) {
+    if (stream == NULL || stream->flags != 0)
+        return -1;
+
+    if ((stream->posw + 1) % FILE_BUFFER_SIZE == stream->posr) {
+        if (fileInternalWrite(stream) <= 0)
+            return 0;
+    }
+
+    stream->buf[stream->posw] = c;
+    stream->posw = (stream->posw + 1) % FILE_BUFFER_SIZE;
+    return 1;
+}
+
+int fflush(FILE *stream) {
+    if (stream == NULL || stream->flags != 0)
+        return -1;
+
+    return fileInternalWrite(stream);
 }

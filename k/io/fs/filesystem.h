@@ -30,6 +30,7 @@ struct Fs {
     int (*rmdir)(struct FsPath *path, const char *name);
     int (*readBlock)(struct FsPath *path, char *buffer, u32 blocknum);
     int (*writeBlock)(struct FsPath *path, const char *buffer, u32 blocknum);
+    int (*resizeFile)(struct FsPath *path, u32 newSize);
 
     struct Fs *next;
 };
