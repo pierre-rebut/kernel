@@ -308,7 +308,11 @@ int fsWriteFile(struct FsPath *file, const char *buffer, u32 length, u32 offset)
     if (!file->volume->fs->writeBlock || !file->volume->fs->readBlock)
         return -1;
 
-    char *temp = kmalloc(4096, PAGESIZE, "fsFileWrite");
+    char *temp = kmalloc(4096, 0, "fsFileWrite");
+    if (temp == NULL)
+        return -1;
+
+    klog("test 1: %u\n", length);
 
     while (length > 0) {
 
@@ -317,10 +321,12 @@ int fsWriteFile(struct FsPath *file, const char *buffer, u32 length, u32 offset)
 
         if (offset % bs) {
             actual = file->volume->fs->readBlock(file, temp, blocknum);
-            if (actual != (int) bs)
+            if (actual <= 0)
                 goto failure;
 
-            actual = MIN(bs - offset % bs, length);
+            actual = MIN(actual - offset % bs, (u32) actual);
+            actual = MIN(actual, (int) length);
+
             memcpy(&temp[offset % bs], buffer, (u32) actual);
 
             int wactual = file->volume->fs->writeBlock(file, temp, blocknum);
@@ -333,10 +339,10 @@ int fsWriteFile(struct FsPath *file, const char *buffer, u32 length, u32 offset)
                 goto failure;
         } else {
             actual = file->volume->fs->readBlock(file, temp, blocknum);
-            if (actual != (int) bs)
+            if (actual <= 0)
                 goto failure;
 
-            actual = length;
+            actual = MIN(actual, (int) length);
             memcpy(temp, buffer, (u32) actual);
 
             int wactual = file->volume->fs->writeBlock(file, temp, blocknum);

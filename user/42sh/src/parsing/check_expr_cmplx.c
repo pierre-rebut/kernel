@@ -10,6 +10,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <err.h>
 
 #include "define.h"
 #include "functions.h"

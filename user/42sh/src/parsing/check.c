@@ -10,6 +10,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <err.h>
 
 #include "define.h"
 #include "functions.h"
@@ -33,10 +34,10 @@ int check_file(char *file) {
     if (file[0] == '\0')
         return (FAIL);
     // errno = 0;
-    if ((fd = open(file, O_RDWR)) == -1) {
+    if ((fd = open(file + 1, O_RDWR)) == -1) {
         // if (errno == 2)
         //     return (SUCCESS);
-        printf("%s : error\n", file);
+        printf("[%s] : error\n", file);
         //my_putfd(strerror(errno), 2);
         return (FAIL);
     }

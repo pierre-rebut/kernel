@@ -8,6 +8,7 @@
 ** Last update Sun May 24 18:58:27 2015 Vincent Ganivet
 */
 
+#include <err.h>
 #include    "define.h"
 #include    "functions.h"
 
@@ -50,46 +51,59 @@ int count_redir(const char *str) {
 int binar_first(char *expr, int redir, int pipe) {
     int sec_red;
 
-    if (check_binary(expr) == FAIL)
+    if (check_binary(expr) == FAIL) {
         return (FAIL);
-    if (expr[find_char(expr, "><\0")] == '\0')
+    }
+    if (expr[find_char(expr, "><\0")] == '\0') {
         return (SUCCESS);
-    if ((redir = check_r_and_f(expr + find_char(expr, "><\0"))) == FAIL)
+    }
+    if ((redir = check_r_and_f(expr + find_char(expr, "><\0"))) == FAIL) {
         return (FAIL);
-    if (expr[next_elem(expr + find_char(expr, "><\0")) + find_char(expr, "><\0")
-        ] == '\0')
+    }
+    if (expr[next_elem(expr + find_char(expr, "><\0")) + find_char(expr, "><\0")] == '\0') {
         return (redir);
-    if ((sec_red = check_r_and_f(epur_str(expr + next_elem
-            (expr + find_char(expr, "><\0"))
-                                          + find_char(expr, "><\0")))) == FAIL)
+    }
+
+    sec_red = check_r_and_f(epur_str(expr + next_elem(expr + find_char(expr, "><\0")) + find_char(expr, "><\0")));
+    if (sec_red == FAIL) {
         return (FAIL);
-    if ((redir = order_redir(redir, sec_red)) == FAIL)
+    }
+
+    if ((redir = order_redir(redir, sec_red)) == FAIL) {
         return (FAIL);
-    if (pipe != 1)
+    }
+    if (pipe != 1) {
         return (redir);
+    }
     return (ERROR_REDIR);
 }
 
 int check_expr(char *expr, int redir, int pipe) {
     int sec_red;
 
-    if ((sec_red = check_r_and_f(expr)) == FAIL)
+    if ((sec_red = check_r_and_f(expr)) == FAIL) {
         return (binar_first(expr, redir, pipe));
-    if (pipe == 2)
+    }
+    if (pipe == 2) {
         return (FAIL);
-    if ((redir = order_redir(redir, sec_red)) == FAIL)
+    }
+    if ((redir = order_redir(redir, sec_red)) == FAIL) {
         return (FAIL);
-    if (check_binary(expr + next_elem(expr)) == FAIL)
+    }
+    if (check_binary(expr + next_elem(expr)) == FAIL) {
         return (check_expr(epur_str(expr + next_elem(expr)), sec_red, pipe++));
-    if (expr[find_char(expr + next_elem(expr), "><") + next_elem(expr)] == '\0')
+    }
+    if (expr[find_char(expr + next_elem(expr), "><") + next_elem(expr)] == '\0') {
         return (redir);
-    else if ((redir = check_r_and_f(expr + find_char(expr + next_elem(expr),
-                                                     "><\0") + next_elem(expr)))
-             == FAIL)
+    }
+    else if ((redir = check_r_and_f(expr + find_char(expr + next_elem(expr), "><\0") + next_elem(expr))) == FAIL) {
         return (FAIL);
-    else if ((redir = order_redir(redir, sec_red)) == FAIL)
+    }
+    else if ((redir = order_redir(redir, sec_red)) == FAIL) {
         return (FAIL);
-    if (pipe != 1)
+    }
+    if (pipe != 1) {
         return (redir);
+    }
     return (ERROR_REDIR);
 }

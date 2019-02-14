@@ -11,6 +11,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <err.h>
 
 #include "functions.h"
 
@@ -19,7 +20,7 @@ int exe_redir_in_double(t_cmd *lst) {
     char *tmp;
 
     my_putfd("> ", 1);
-    fd = open("/tmp", O_RDWR);
+    fd = open("/tmp/test", O_RDWR);
     while ((tmp = get_next_line(0)) != NULL && strcmp(tmp, lst->redir_in + 1) != 0) {
         my_putfd("> ", 1);
         my_putfd(tmp, fd);
@@ -55,16 +56,12 @@ int exe_redir_out(t_cmd *lst, int fd) {
             printf("42sh : access denied or file doesn't exist\n");
             return (-1);
         }
-        if (dup2(fd, 1) == -1)
-            printf("Warning : dup2 fail\n");
     } else {
         fd = open(lst->redir_out, O_WRONLY | O_CREAT);
         if (fd == -1) {
             printf("42sh : access denied or file doesn't exist\n");
             return (-1);
         }
-        if (dup2(fd, 1) == -1)
-            printf("Warning : dup2 fail\n");
     }
     return (fd);
 }

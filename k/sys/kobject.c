@@ -57,7 +57,7 @@ s32 koWrite(struct Kobject *obj, void *buffer, u32 size) {
 
     switch (obj->type) {
         case KO_FS_FILE:
-            actual = fsReadFile(obj->data, (char *) buffer, size, obj->offset);
+            actual = fsWriteFile(obj->data, (char *) buffer, size, obj->offset);
             break;
         case KO_CONS_STD:
             return consoleWriteStandard(obj->data, buffer, size);

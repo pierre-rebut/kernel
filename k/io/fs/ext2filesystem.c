@@ -575,7 +575,7 @@ u8 ext2Touch(const char *file, struct Ext2PrivData *priv) {
 }
 
 static int ext2WriteBlock(struct FsPath *path, const char *buffer, u32 blocknum) {
-    LOG("[ext2] readblock: %u\n", blocknum);
+    klog("[ext2] writeblock: %u\n", blocknum);
     struct Ext2PrivData *priv = path->volume->privateData;
     struct Ext2Inode *pathInode = path->privateData;
 
