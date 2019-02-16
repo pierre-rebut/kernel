@@ -169,7 +169,6 @@ void pagingDestroyPageDirectory(struct PageDirectory *pageDirectory) {
 }
 
 void pagingSwitchPageDirectory(struct PageDirectory *pageDirectory) {
-    //klog("bite je ten merde : %p - %p\n", pageDirectory, currentPageDirectory);
     if (pageDirectory == currentPageDirectory)
         return;
 

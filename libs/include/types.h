@@ -3,17 +3,6 @@
 
 #include <stddef.h>
 
-typedef unsigned char u8;
-typedef signed char s8;
-typedef unsigned short u16;
-typedef signed short s16;
-typedef unsigned int u32;
-typedef signed int s32;
-typedef unsigned long long u64;
-typedef signed long long s64;
-typedef u32 time_t;
-typedef u32 mode_t;
-
 #define isascii(c) ((c) >= 0 && (c) < 128)
 #define isprint(c) ((c) >= 20 && (c) <= 126)
 #define isalpha(c) (((c) >= 'a' && (c) <= 'z') || ((c) >= 'A' && (c) <= 'Z'));
@@ -44,24 +33,23 @@ typedef u32 mode_t;
 #define S_IFLNK __S_IFLNK
 #define S_IFMT __S_IFMT
 
-#define	__S_ISUID	04000	/* Set user ID on execution.  */
-#define	__S_ISGID	02000	/* Set group ID on execution.  */
-#define	__S_ISVTX	01000	/* Save swapped text after use (sticky).  */
-#define	__S_IREAD	0400	/* Read by owner.  */
-#define	__S_IWRITE	0200	/* Write by owner.  */
-#define	__S_IEXEC	0100	/* Execute by owner.  */
+#define	S_ISUID	4000	/* Set user ID on execution.  */
+#define	S_ISGID	2000	/* Set group ID on execution.  */
+#define	S_ISVTX	1000	/* Save swapped text after use (sticky).  */
 
-#define	S_IRUSR	__S_IREAD	/* Read by owner.  */
-#define	S_IWUSR	__S_IWRITE	/* Write by owner.  */
-#define	S_IXUSR	__S_IEXEC	/* Execute by owner.  */
-/* Read, write, and execute by owner.  */
-#define	S_IRWXU	(__S_IREAD|__S_IWRITE|__S_IEXEC)
+#define	S_IRUSR	400	/* Read by owner.  */
+#define	S_IWUSR	200	/* Write by owner.  */
+#define	S_IXUSR	100	/* Execute by owner.  */
+#define	S_IRGRP	40	/* Read by groupe.  */
+#define	S_IWGRP	20	/* Write by groupe.  */
+#define	S_IXGRP	10	/* Execute by groupe.  */
+#define	S_IROTH	4	/* Read by others.  */
+#define	S_IWOTH	2	/* Write by others.  */
+#define	S_IXOTH	1	/* Execute by others.  */
 
-#define	S_ISUID __S_ISUID	/* Set user ID on execution.  */
-#define	S_ISGID	__S_ISGID	/* Set group ID on execution.  */
-#define S_ISVTX __S_ISVTX
-#define	S_IRWXG	(S_IRWXU >> 3)
-#define	S_IRWXO	(S_IRWXG >> 3)
+#define	S_IRWXU	(S_IRUSR|S_IWUSR|S_IXUSR) /* Read, write, and execute by owner.  */
+#define	S_IRWXG	(S_IRWXU >> 3) /* Read, write, and execute by group.  */
+#define	S_IRWXO	(S_IRWXG >> 3) /* Read, write, and execute by others.  */
 
 enum FileType {
     FT_DIRECTORY,
@@ -93,5 +81,17 @@ struct dirent {
     u32 d_namlen;
     char d_name[256]; // nom du fichier
 } __attribute__((packed));
+
+
+struct ExceveInfo {
+    const char *cmdline;
+    const char **av;
+    const char **env;
+
+    int fd_in;
+    int fd_out;
+};
+
+#define INIT_EXECINFO() {0, 0, 0, -1, -1}
 
 #endif

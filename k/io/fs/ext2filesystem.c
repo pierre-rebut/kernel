@@ -8,6 +8,8 @@
 #include <sys/allocator.h>
 #include <io/device/fscache.h>
 #include <io/pit.h>
+#include <sys/kobject.h>
+#include <errno-base.h>
 
 #include "ext2filesystem.h"
 #include "filesystem.h"
@@ -242,7 +244,7 @@ static int ext2Stat(struct FsPath *path, struct stat *result) {
     return 0;
 }
 
-static u32 ext2Readdir(struct FsPath *path, void *block, u32 nblock) {
+static int ext2Readdir(struct FsPath *path, void *block, u32 nblock) {
     if (nblock >= 12)
         return 0;
 
@@ -251,16 +253,16 @@ static u32 ext2Readdir(struct FsPath *path, void *block, u32 nblock) {
 
     ext2ReadInode(&pathInode, path->inode, priv);
     if ((pathInode.type & 0xF000) != INODE_TYPE_DIRECTORY)
-        return 0;
+        return -ENOTDIR;
 
     LOG("[ext2] readdir b=%d\n", nblock);
     u32 b = pathInode.dbp[nblock];
     if (b == 0)
-        return 0;
+        return -EFAULT;
 
     void *buf = kmalloc(priv->blocksize, 0, "newExt2Buf");
     if (buf == NULL)
-        return 0;
+        return -ENOMEM;
 
     u32 size = 0;
     ext2DeviceReadBlock(buf, b, priv);
@@ -453,7 +455,7 @@ struct FsPath *ext2Link(struct FsPath *nodeToLink, struct FsPath *parentDir, con
         LOG("[ext2] mkfile: new id = %u\n", id);
     } else {
         ext2ReadInode(&inode, nodeToLink->inode, priv);
-        if (!(inode.type & INODE_TYPE_FILE))
+        if ((inode.type & 0xF000) != INODE_TYPE_FILE)
             goto failure_inode;
 
         id = nodeToLink->inode;
@@ -574,7 +576,7 @@ static int ext2ResizeFile(struct FsPath *path, u32 newSize) {
 
     /* Locate and load the inode */
     ext2ReadInode(&pathInode, path->inode, priv);
-    if (!(pathInode.type & INODE_TYPE_FILE))
+    if ((pathInode.type & 0xF000) != INODE_TYPE_FILE)
         return -1;
 
     pathInode.size = newSize;
@@ -592,7 +594,7 @@ static int ext2WriteBlock(struct FsPath *path, const char *buffer, u32 blocknum)
 
     /* Locate and load the inode */
     ext2ReadInode(&pathInode, path->inode, priv);
-    if (!(pathInode.type & INODE_TYPE_FILE))
+    if ((pathInode.type & 0xF000) != INODE_TYPE_FILE)
         return -1;
 
     u32 bid = 0;
@@ -656,6 +658,7 @@ static struct FsPath *ext2Lookup(struct FsPath *path, const char *name) {
         goto ext2LookupFaillure;
 
     newPath->size = inode.size;
+    newPath->mode = (u16) (inode.type & 0x1FF);
     newPath->inode = fileInode;
 
     kfree(buf);
@@ -707,17 +710,13 @@ static struct FsPath *ext2Root(struct FsVolume *volume) {
     return NULL;
 }
 
-static struct FsVolume *ext2Mount(u32 unit) {
+struct FsVolume *ext2MountDevice(struct Device *device) {
     LOG("[ext2] mount volume unit %u:\n", unit);
     struct Ext2VolumeData *priv = NULL;
 
     u8 *buf = (u8 *) kmalloc(1024, 0, "newBuf");
     if (buf == NULL)
         return NULL;
-
-    struct Device *device = deviceCreate("ata", unit);
-    if (device == NULL)
-        goto ext2MountFaillure;
 
     deviceRead(device, buf, 2, 2);
     struct Ext2Superblock *sb = (struct Ext2Superblock *) buf;
@@ -774,11 +773,26 @@ static struct FsVolume *ext2Mount(u32 unit) {
     return NULL;
 }
 
+static struct FsVolume *ext2Mount(struct FsPath *dev) {
+    struct Device *device = fsOpenFile(dev, S_IRUSR, NULL);
+    if (device == NULL)
+        return NULL;
+
+    return ext2MountDevice(device);
+}
+
+static void *ext2OpenFile(struct FsPath *path, int *type) {
+    if (type)
+        *type = KO_FS_FILE;
+    return path;
+}
+
 static struct Fs fs_ext2 = {
         "ext2fs",
         .mount = &ext2Mount,
         .umount = &ext2Umount,
         .root = &ext2Root,
+        .openFile = &ext2OpenFile,
         .close = &ext2Close,
         .readdir = &ext2Readdir,
         .lookup = &ext2Lookup,

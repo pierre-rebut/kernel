@@ -15,6 +15,7 @@
 #include <cpu.h>
 #include <string.h>
 #include <io/pit.h>
+#include <errno-base.h>
 
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
@@ -251,24 +252,22 @@ pid_t createProcess(const struct ExceveInfo *info) {
     struct FsPath *file = fsResolvePath(info->cmdline);
     if (!file) {
         klog("[TASK] Can not open file: %s\n", info->cmdline);
-        return -1;
+        return -ENOENT;
     }
 
-    LOG("[TASK] get file stat\n");
-    struct stat fileStat;
-    if (fsStat(file, &fileStat) == -1) {
-        klog("[TASK] Can not get file info: %s\n", info->cmdline);
-        return -1;
+    if (fsOpenFile(file, S_IXUSR, NULL) == NULL) {
+        fsPathDestroy(file);
+        return -EACCES;
     }
 
-    s32 fileSize = fileStat.st_size;
+    s32 fileSize = file->size;
 
     LOG("[TASK] kmalloc of size %d\n", fileSize);
     char *data = kmalloc(sizeof(char) * fileSize, 0, "data bin file");
     if (data == NULL) {
         fsPathDestroy(file);
         klog("[TASK] Can not alloc memory\n");
-        return -1;
+        return -ENOMEM;
     }
 
     LOG("[TASK] read\n");
@@ -278,7 +277,7 @@ pid_t createProcess(const struct ExceveInfo *info) {
     if (readSize != (s32) fileSize) {
         kfree(data);
         klog("[TASK] Can not read bin data: %d\n", readSize);
-        return -1;
+        return -EIO;
     }
 
     LOG("[TASK] alloc pagedirec\n");
@@ -286,7 +285,7 @@ pid_t createProcess(const struct ExceveInfo *info) {
     if (pageDirectory == NULL) {
         kfree(data);
         klog("[TASK] Can not alloc new page directory\n");
-        return -1;
+        return -ENOMEM;
     }
 
     LOG("[TASK] loadbin\n");
@@ -295,7 +294,7 @@ pid_t createProcess(const struct ExceveInfo *info) {
 
     if (entryPrg == 0) {
         klog("[TASK] Can not load binary: %s\n", info->cmdline);
-        return -1;
+        return -ENOEXEC;
     }
 
     struct Task *progParent = currentTask;
@@ -326,7 +325,7 @@ pid_t createProcess(const struct ExceveInfo *info) {
 
     struct Task *task = createTask(&taskInfo);
     if (!task)
-        return -1;
+        return -ENOMEM;
 
     LOG("[TASK] adding task to parent\n");
     listAddElem(&progParent->childs, task);
@@ -390,7 +389,7 @@ pid_t createThread(u32 entryPrg) {
 
     struct Task *task = createTask(&taskInfo);
     if (!task)
-        return -1;
+        return -ENOMEM;
 
     task->currentDir = procTask->currentDir;
     task->rootDir = procTask->rootDir;
@@ -404,13 +403,13 @@ pid_t createThread(u32 entryPrg) {
 
 int taskKill(struct Task *task) {
     if (task == NULL)
-        return -1;
+        return -ESRCH;
 
     LOG("[TASK] Killing %u\n", task->pid);
 
     if (task->privilege == TaskPrivilegeKernel) {
         klog("[TASK] can not kill kernel tasks !!\n");
-        return -1;
+        return -EACCES;
     }
 
     char tmpTaskSwitching = taskSwitching;
@@ -425,6 +424,8 @@ int taskKill(struct Task *task) {
 
     if (task->type == T_PROCESS) {
         for (struct ListElem *tmp = task->threads.begin; tmp != NULL; tmp = tmp->next)
+            taskKill(tmp->data);
+        for (struct ListElem *tmp = task->childs.begin; tmp != NULL; tmp = tmp->next)
             taskKill(tmp->data);
 
         LOG("[TASK] kill process\n");
@@ -476,7 +477,7 @@ pid_t taskGetpid() {
 pid_t taskKillByPid(pid_t pid) {
     struct Task *task = getTaskByPid(pid);
     if (task == NULL)
-        return -1;
+        return -ESRCH;
 
     taskKill(task);
     return pid;
@@ -564,7 +565,7 @@ struct Task *getTaskByPid(pid_t pid) {
 int taskChangeDirectory(const char *directory) {
     struct FsPath *newPath = fsResolvePath(directory);
     if (!newPath)
-        return -1;
+        return -ENOENT;
 
     fsPathDestroy(currentTask->currentDir);
     currentTask->currentDir = newPath;
@@ -582,7 +583,7 @@ int taskGetAvailableFd(struct Task *task) {
             break;
 
     if (id >= MAX_NB_FILE)
-        return -1;
+        return -EMFILE;
 
     return id;
 }
@@ -598,7 +599,7 @@ struct Kobject *taskGetKObjectByFd(int fd) {
 
 int taskSetKObjectByFd(int fd, struct Kobject *obj) {
     if (fd >= MAX_NB_FILE || fd < 0)
-        return -1;
+        return -EBADF;
 
     if (currentTask->type == T_THREAD)
         currentTask->parent->objectList[fd] = obj;

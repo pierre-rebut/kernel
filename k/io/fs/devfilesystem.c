@@ -6,6 +6,7 @@
 #include <kstdio.h>
 #include <string.h>
 #include <io/device/device.h>
+#include <sys/kobject.h>
 
 #include "devfilesystem.h"
 #include "filesystem.h"
@@ -26,9 +27,9 @@ static struct FsPath *devRoot(struct FsVolume *volume) {
     return rootPath;
 }
 
-static struct FsVolume *devMount(u32 data) {
+static struct FsVolume *devMount(struct FsPath *dev) {
     LOG("[dev] mount:\n");
-    (void) data;
+    (void) dev;
 
     struct FsVolume *devVolume = kmalloc(sizeof(struct FsVolume), 0, "newDevVolume");
     if (devVolume == NULL)
@@ -60,13 +61,25 @@ static struct FsPath *devLookup(struct FsPath *path, const char *name) {
     if (!file)
         return NULL;
 
-    file->privateData = 0;
+    if (*name == 0 || strcmp(name, ".") == 0) {
+        file->privateData = NULL;
+        file->inode = 0;
+    } else {
+        file->privateData = deviceGetByName(name);
+        if (file->privateData == NULL) {
+            kfree(file);
+            return NULL;
+        }
+
+        file->inode = 1;
+    }
+
     file->size = 0;
-    file->inode = 0;
+    file->mode = S_IRUSR | S_IRGRP | S_IROTH;
     return file;
 }
 
-u32 devReaddir(struct FsPath *path, void *block, u32 nblock) {
+static int devReaddir(struct FsPath *path, void *block, u32 nblock) {
     (void) path;
 
     LOG("[dev] readdir: %u\n", nblock);
@@ -94,6 +107,18 @@ u32 devReaddir(struct FsPath *path, void *block, u32 nblock) {
     return size;
 }
 
+static void *devOpenFile(struct FsPath *dev, int *type) {
+    if (dev->inode == 0)
+        return NULL;
+
+    if (type)
+        *type = KO_DEVICE;
+
+    void *tmp = dev->privateData;
+    fsPathDestroy(dev);
+    return tmp;
+}
+
 static struct Fs fs_devfs = {
         .name = "devfs",
         .mount = &devMount,
@@ -101,7 +126,8 @@ static struct Fs fs_devfs = {
         .root = &devRoot,
         .lookup = &devLookup,
         .readdir = &devReaddir,
-        .close = &devClose
+        .close = &devClose,
+        .openFile = &devOpenFile
 };
 
 void initDevFileSystem() {

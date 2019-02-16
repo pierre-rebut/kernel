@@ -6,6 +6,7 @@
 #include <sys/allocator.h>
 #include <task.h>
 #include <include/kstdio.h>
+#include <errno-base.h>
 
 static struct Fs *fsList = NULL;
 struct FsMountVolume *fsMountedVolumeList = NULL;
@@ -50,9 +51,9 @@ struct Fs *fsGetFileSystemByName(const char *name) {
     return NULL;
 }
 
-struct FsVolume *fsVolumeOpen(struct Fs *fs, u32 data) {
+struct FsVolume *fsVolumeOpen(struct Fs *fs, struct FsPath *dev) {
     LOG("[FS] utils with fs fct\n");
-    struct FsVolume *volume = fs->mount(data);
+    struct FsVolume *volume = fs->mount(dev);
     if (volume == NULL)
         return NULL;
 
@@ -69,7 +70,17 @@ struct FsVolume *fsVolumeOpen(struct Fs *fs, u32 data) {
     return volume;
 }
 
-struct FsMountVolume *fsMountVolumeOn(struct FsPath *mntPoint, struct Fs *fs, u32 data) {
+void *fsOpenFile(struct FsPath *path, int mode, int *type) {
+    if (!path || !path->volume->fs->openFile)
+        return NULL;
+
+    if (~(path->mode) & mode)
+        return NULL;
+
+    return path->volume->fs->openFile(path, type);
+}
+
+struct FsMountVolume *fsMountVolumeOn(struct FsPath *mntPoint, struct Fs *fs, struct FsPath *devicePath) {
     if (mntPoint->inode == 0 || fsGetMountedVolumeByNode(mntPoint->volume, mntPoint->inode) != NULL)
         return NULL;
 
@@ -77,7 +88,7 @@ struct FsMountVolume *fsMountVolumeOn(struct FsPath *mntPoint, struct Fs *fs, u3
     if (mntVolume == NULL)
         return NULL;
 
-    mntVolume->mountedVolume = fsVolumeOpen(fs, data);
+    mntVolume->mountedVolume = fsVolumeOpen(fs, devicePath);
     if (mntVolume->mountedVolume == NULL) {
         kfree(mntVolume);
         return NULL;
@@ -96,7 +107,7 @@ struct FsMountVolume *fsMountVolumeOn(struct FsPath *mntPoint, struct Fs *fs, u3
 
 int fsVolumeClose(struct FsVolume *v) {
     if (!v || !v->fs->umount || v->refcount > 1)
-        return -1;
+        return -EPERM;
 
     return v->fs->umount(v);
 }
@@ -107,7 +118,7 @@ int fsUmountVolume(struct FsPath *mntPoint) {
         return 0;
 
     if (fsVolumeClose(mntVolume->mountedVolume) == -1)
-        return -1;
+        return -EIO;
 
     mntVolume->volumeId->refcount -= 1;
     if (mntVolume->prev)
@@ -135,9 +146,10 @@ struct FsPath *fsVolumeRoot(struct FsVolume *volume) {
     return pathRoot;
 }
 
-u32 fsPathReaddir(struct FsPath *path, void *block, u32 nblock) {
+int fsPathReaddir(struct FsPath *path, void *block, u32 nblock) {
     if (!block || !path->volume->fs->readdir)
-        return 0;
+        return -EPERM;
+
     LOG("readdir: %u\n", nblock);
     return path->volume->fs->readdir(path, block, nblock);
 }
@@ -170,7 +182,6 @@ static struct FsPath *fsPathLookup(struct FsPath *path, const char *name) {
     return newPath;
 }
 
-// todo fix bug
 struct FsPath *fsGetPathByName(struct FsPath *d, const char *path) {
     if (!d || !path)
         return NULL;
@@ -209,7 +220,7 @@ struct FsPath *fsGetPathByName(struct FsPath *d, const char *path) {
 
 int fsPathDestroy(struct FsPath *path) {
     if (!path || !path->volume->fs->close)
-        return -1;
+        return -EPERM;
 
     path->refcount--;
     if (path->refcount > 0)
@@ -225,11 +236,11 @@ int fsReadFile(struct FsPath *file, char *buffer, u32 length, u32 offset) {
     u32 bs = file->volume->blockSize;
 
     if (!file->volume->fs->readBlock)
-        return -1;
+        return -EPERM;
 
     char *temp = kmalloc(bs, 0, "fsFileRead");
     if (!temp)
-        return -1;
+        return -ENOMEM;
 
     u32 blocknum = offset / bs;;
     int readSize;
@@ -278,7 +289,7 @@ int fsReadFile(struct FsPath *file, char *buffer, u32 length, u32 offset) {
     LOG("[FS] read failure: %d\n", readSize);
     kfree(temp);
     if (total == 0)
-        return -1;
+        return -EIO;
     return total;
 }
 
@@ -354,7 +365,8 @@ struct FsPath *fsLink(const char *name, const char *linkTo) {
 
 int fsRmdir(struct FsPath *path, const char *name) {
     if (!path || !name || !path->volume->fs->rmdir)
-        return 0;
+        return -EPERM;
+
     return path->volume->fs->rmdir(path, name);
 }
 
@@ -363,16 +375,16 @@ int fsWriteFile(struct FsPath *file, const char *buffer, u32 length, u32 offset)
     u32 bs = file->volume->blockSize;
 
     if (!file->volume->fs->writeBlock || !file->volume->fs->readBlock)
-        return -1;
+        return -EPERM;
 
     char *temp = kmalloc(4096, 0, "fsFileWrite");
     if (temp == NULL)
-        return -1;
+        return -ENOMEM;
 
     klog("test 1: %u\n", length);
     if (offset + length > file->size) {
         if (file->volume->fs->resizeFile == NULL)
-            return -1;
+            return -EPERM;
         file->volume->fs->resizeFile(file, offset + length);
     }
 
@@ -425,7 +437,7 @@ int fsWriteFile(struct FsPath *file, const char *buffer, u32 length, u32 offset)
     klog("[FS] writeblock failure\n");
     kfree(temp);
     if (total == 0)
-        return -1;
+        return -EIO;
     return total;
 }
 
@@ -434,14 +446,14 @@ int fsStat(struct FsPath *path, struct stat *result) {
         return 0;
 
     if (!path || !path->volume->fs->stat)
-        return -1;
+        return -EPERM;
 
     return path->volume->fs->stat(path, result);
 }
 
 int fsResizeFile(struct FsPath *path, u32 size) {
     if (!path || !path->volume->fs->resizeFile)
-        return -1;
+        return -EPERM;
 
     return path->volume->fs->resizeFile(path, size);
 }

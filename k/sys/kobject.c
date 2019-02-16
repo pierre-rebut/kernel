@@ -5,6 +5,9 @@
 #include <io/terminal.h>
 #include <io/serial.h>
 #include <io/pipe.h>
+#include <io/device/device.h>
+#include <io/device/proc.h>
+#include <errno-base.h>
 #include "kobject.h"
 #include "allocator.h"
 #include "console.h"
@@ -25,7 +28,7 @@ struct Kobject *koCreate(enum KObjectType type, void *data, int mode) {
 s32 koRead(struct Kobject *obj, void *buffer, u32 size) {
     int mode = obj->mode & 3;
     if (mode != O_RDONLY && mode != O_RDWR)
-        return -1;
+        return -EPERM;
 
     int actual;
 
@@ -38,8 +41,14 @@ s32 koRead(struct Kobject *obj, void *buffer, u32 size) {
         case KO_PIPE:
             actual = pipeRead(obj->data, buffer, size);
             break;
+        case KO_DEVICE:
+            actual = deviceRead(obj->data, buffer, size / deviceBlockSize(obj->data), obj->offset);
+            break;
+        case KO_PROC:
+            actual = procRead(obj->data, buffer, size, 0);
+            break;
         default:
-            return -1;
+            return -EPERM;
     }
 
     if (actual > 0)
@@ -51,7 +60,7 @@ s32 koRead(struct Kobject *obj, void *buffer, u32 size) {
 s32 koWrite(struct Kobject *obj, void *buffer, u32 size) {
     int mode = obj->mode & 3;
     if (mode != O_WRONLY && mode != O_RDWR)
-        return -1;
+        return -EPERM;
 
     int actual;
 
@@ -66,8 +75,11 @@ s32 koWrite(struct Kobject *obj, void *buffer, u32 size) {
         case KO_PIPE:
             actual = pipeWrite(obj->data, buffer, size);
             break;
+        case KO_DEVICE:
+            actual = deviceWrite(obj->data, buffer, size / deviceBlockSize(obj->data), obj->offset);
+            break;
         default:
-            return -1;
+            return -EPERM;
     }
 
     if (actual > 0)
@@ -105,7 +117,7 @@ int koDestroy(struct Kobject *obj) {
 
 off_t koSeek(struct Kobject *obj, off_t offset, int whence) {
     if (obj->type != KO_FS_FILE)
-        return -1;
+        return -ESPIPE;
 
     u32 fileSize = ((struct FsPath*)obj->data)->size;
     if (fileSize == 0)
@@ -114,7 +126,7 @@ off_t koSeek(struct Kobject *obj, off_t offset, int whence) {
     switch (whence) {
         case SEEK_SET:
             if (offset < 0)
-                return -1;
+                return -ESPIPE;
 
             if ((u32) offset > fileSize)
                 offset = fileSize;
@@ -123,7 +135,7 @@ off_t koSeek(struct Kobject *obj, off_t offset, int whence) {
             break;
         case SEEK_END:
             if (offset < 0)
-                return -1;
+                return -ESPIPE;
 
             if ((u32) offset > fileSize)
                 obj->offset = 0;
@@ -137,7 +149,7 @@ off_t koSeek(struct Kobject *obj, off_t offset, int whence) {
                 obj->offset += (u32) offset;
             break;
         default:
-            return -1;
+            return -ESPIPE;
     }
 
     return obj->offset;

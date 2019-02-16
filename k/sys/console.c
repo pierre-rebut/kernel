@@ -8,6 +8,8 @@
 #include <tty.h>
 #include <string.h>
 #include <ascii.h>
+#include <errno-base.h>
+#include <include/kstdio.h>
 
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
@@ -226,7 +228,7 @@ int consoleGetkey2(struct Console *console) {
     struct CirBuffer *val = &console->readBuffer;
 
     if (val->readPtr == val->writePtr)
-        return -1;
+        return 0;
 
     int tmp = val->tmpBuffer[val->readPtr];
     val->readPtr = (val->readPtr + 1) % CONSOLE_BUFFER_SIZE;
@@ -315,7 +317,7 @@ int consoleSwitchVideoMode(struct Console *console, enum ConsoleMode mode) {
 
 int consoleSetVgaFrameBuffer(struct Console *console, const void *buffer) {
     if (console->mode != ConsoleModeVideo)
-        return -1;
+        return -EPERM;
 
     memcpy(console->videoBuffer, buffer, VGA_VIDEO_HEIGHT * VGA_VIDEO_WIDTH);
     if (console == consoleLists[activeConsoleId])

@@ -89,55 +89,36 @@ static int k_init(const multiboot_info_t *info) {
     kprintf("Init ATA driver\n");
     ataInit();
 
-    struct DeviceDriver *driverAta = deviceGetDeviceDriverByName("ata");
-    struct FsVolume *kvolume = NULL;
+    return 0;
+}
 
-    kprintf("Mount available ATA device\n");
-    LOG("Mount available ATA device\n");
+int k_volume() {
     struct Fs *extfs = fsGetFileSystemByName("ext2fs");
-    for (u32 i = 0; i < 4; i++) {
-        u32 nblocks = 0;
-        int blocksize = 0;
-        char longname[256];
+    struct Device *dev = deviceGetByName("sda");
 
-        if (driverAta->probe(i, &nblocks, &blocksize, longname) == 1) {
-            LOG("Mounting unit %d on /: %s\n", i, longname);
-            kprintf("Mounting unit %d on /: %s\n", i, longname);
-            kvolume = fsVolumeOpen(extfs, i);
-            if (kvolume == NULL) {
-                klog("Mounting failed\n");
-                return -1;
-            }
+    if (extfs == NULL || dev == NULL)
+        return -1;
 
-            break;
-        }
+    LOG("Mounting sda on /\n");
+    kprintf("Mounting sda on /\n");
+
+    struct FsVolume *kvolume = ext2MountDevice(dev);
+    if (kvolume == NULL) {
+        klog("Mounting failed\n");
+        return -1;
     }
 
-    if (kvolume == NULL)
+    kvolume->fs = extfs;
+    kvolume->refcount = 0;
+    kvolume->root = fsVolumeRoot(kvolume);
+    if (kvolume->root == NULL)
         return -1;
+
+    kvolume->root->refcount += 4;
 
     fsRootVolume = kvolume;
-    kernelTask.rootDir = kernelTask.currentDir = fsVolumeRoot(kvolume);
+    kernelTask.rootDir = kernelTask.currentDir = kvolume->root;
     freeTimeTask->rootDir = freeTimeTask->currentDir = kernelTask.rootDir;
-
-    freeTimeTask->currentDir->refcount += 2;
-    kernelTask.currentDir->refcount += 2;
-
-    /*kprintf("Mount procfs on %c\n", mountId);
-    LOG("Mount procfs on %c\n", mountId);
-    struct Fs *procfs = fsGetFileSystemByName("procfs");
-    struct FsVolume *pvolume = fsVolumeOpen(mountId++, procfs, 0);
-    if (!pvolume)
-        return -1;
-
-    kprintf("Mount devfs on %c\n", mountId);
-    LOG("Mount devfs on %c\n", mountId);
-    struct Fs *devfs = fsGetFileSystemByName("devfs");
-    struct FsVolume *dvolume = fsVolumeOpen(mountId, devfs, 0);
-    if (!dvolume)
-        return -1;
-        */
-
     return 0;
 }
 
@@ -148,6 +129,9 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
         goto error;
 
     if (k_init(info))
+        goto error;
+
+    if (k_volume())
         goto error;
 
     taskWaitEvent(TaskEventTimer, 1000);

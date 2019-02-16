@@ -13,21 +13,11 @@
 #include <io/pit.h>
 #include <include/kstdio.h>
 #include "procfilesystem.h"
+#include <io/device/proc.h>
+#include <errno-base.h>
 
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
-
-enum ProcPathType {
-    PP_INFO,
-    PP_PROC,
-    PP_FOLDER
-};
-
-struct ProcPath {
-    enum ProcPathType type;
-    int data;
-    char *name;
-};
 
 #define STATIC_PROC_DATA_NB 7
 static struct ProcPath staticProcData[] = {
@@ -52,7 +42,7 @@ static struct FsPath *procRoot(struct FsVolume *volume) {
     return rootPath;
 }
 
-static struct FsVolume *procMount(u32 data) {
+static struct FsVolume *procMount(struct FsPath *data) {
     LOG("[proc] mount:\n");
     (void) data;
 
@@ -96,32 +86,40 @@ static int procStat(struct FsPath *path, struct stat *result) {
 
 static struct FsPath *procLookup(struct FsPath *path, const char *name) {
     (void) path;
-
     struct ProcPath *procPath = NULL;
-    for (u32 i = 0; i < STATIC_PROC_DATA_NB; i++) {
-        if (strcmp(name, staticProcData[i].name) == 0) {
-            procPath = &(staticProcData[i]);
-            break;
-        }
-    }
 
-    if (procPath == NULL) {
-        struct Task *task;
-        int pid = atoi(name);
-        if (pid == 0)
-            task = &kernelTask;
-        else
-            task = getTaskByPid(pid);
-
-        if (task == NULL)
-            return NULL;
-
+    if (*name == 0 || strcmp(name, ".") == 0) {
         procPath = kmalloc(sizeof(struct ProcPath), 0, "procPath");
         if (procPath == NULL)
             return NULL;
 
-        procPath->type = PP_PROC;
-        procPath->data = task->pid;
+        procPath->type = PP_FOLDER;
+    } else {
+        for (u32 i = 0; i < STATIC_PROC_DATA_NB; i++) {
+            if (strcmp(name, staticProcData[i].name) == 0) {
+                procPath = &(staticProcData[i]);
+                break;
+            }
+        }
+
+        if (procPath == NULL) {
+            struct Task *task;
+            int pid = atoi(name);
+            if (pid == 0)
+                task = &kernelTask;
+            else
+                task = getTaskByPid(pid);
+
+            if (task == NULL)
+                return NULL;
+
+            procPath = kmalloc(sizeof(struct ProcPath), 0, "procPath");
+            if (procPath == NULL)
+                return NULL;
+
+            procPath->type = PP_PROC;
+            procPath->data = task->pid;
+        }
     }
 
     LOG("[proc] lookup enter\n");
@@ -133,16 +131,17 @@ static struct FsPath *procLookup(struct FsPath *path, const char *name) {
     }
 
     file->privateData = procPath;
+    file->mode = S_IRUSR | S_IRGRP | S_IROTH;
     file->size = 0;
     file->inode = 0;
     return file;
 }
 
-u32 procReaddir(struct FsPath *path, void *block, u32 nblock) {
+static int procReaddir(struct FsPath *path, void *block, u32 nblock) {
     struct ProcPath *procPath = (struct ProcPath *) path->privateData;
 
     if (!procPath || procPath->type != PP_FOLDER)
-        return 0;
+        return -ENOTDIR;
 
     u32 size = 0;
     u32 i = nblock * DIRENT_BUFFER_NB;
@@ -182,75 +181,17 @@ u32 procReaddir(struct FsPath *path, void *block, u32 nblock) {
     return size;
 }
 
-static int procReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
-    struct ProcPath *procPath = (struct ProcPath *) path->privateData;
-    LOG("[proc] readblock: %u\n", blocknum);
-    if (!procPath || blocknum > 0)
-        return -1;
+static void *procOpenFile(struct FsPath *proc, int *type) {
+    struct ProcPath *p = proc->privateData;
+    if (p->type == PP_FOLDER)
+        return NULL;
 
-    switch (procPath->type) {
-        case PP_PROC: {
-            struct Task *task = getTaskByPid((pid_t) procPath->data);
-            if (!task)
-                return -1;
+    if (type)
+        *type = KO_PROC;
 
-            return sprintf(buffer, "pid:%u\ncmdline:%s\nprivilege:%s\nevent:%d,%lu,%u\n",
-                           task->pid,
-                           (task->cmdline ? task->cmdline : "NONE"),
-                           (task->privilege == TaskPrivilegeKernel ? "KERNEL" : "USER"),
-                           task->event.type, task->event.timer, task->event.arg
-            );
-        }
-        case PP_INFO: {
-            int read;
-            switch (procPath->data) {
-                case 0:
-                    read = sprintf(buffer, "%s,%u,%u\n", fsRootVolume->fs->name, fsRootVolume->refcount,
-                                   fsRootVolume->blockSize);
-                    struct FsMountVolume *tmpMntVolume = fsMountedVolumeList;
-                    while (tmpMntVolume) {
-                        struct FsVolume *tmpVolume = tmpMntVolume->mountedVolume;
-                        read += sprintf(buffer + read, "%s,%u,%u\n",
-                                        tmpVolume->fs->name, tmpVolume->refcount, tmpVolume->blockSize
-                        );
-                        tmpMntVolume = tmpMntVolume->next;
-                    }
-                    break;
-                case 1: {
-                    u32 total, used;
-                    kmallocGetInfo(&total, &used);
-                    read = sprintf(buffer, "[PHYSMEM]\nused:%u\ntotal:%u\n\n[KERNEL MEM]\nused:%u\npaged:%u\n",
-                                   getTotalUsedPhysMemory(), getTotalPhysMemory(), total, used);
-                    break;
-                }
-                case 2:
-                    read = getCurrentDateAndTime(buffer);
-                    buffer[read++] = '\n';
-                    buffer[read] = '\0';
-                    break;
-                case 3:
-                    read = sprintf(buffer, "%lu\n", gettick());
-                    break;
-                case 4:
-                    read = sprintf(buffer, "pid:%u\ngid:%u\ncmdline:%s\nprivilege:%s\nevent:%d,%lu,%u\n",
-                                   currentTask->pid,
-                                   (currentTask->parent ? currentTask->parent->pid : 0),
-                                   (currentTask->cmdline ? currentTask->cmdline : "NONE"),
-                                   (currentTask->privilege == TaskPrivilegeKernel ? "KERNEL" : "USER"),
-                                   currentTask->event.type, currentTask->event.timer, currentTask->event.arg
-                    );
-                    break;
-                case 5:
-                    read = sprintf(buffer, "K-OS version 1.0-arch\n");
-                    break;
-                default:
-                    return -1;
-            }
-            return read;
-        }
-        default:
-            return -1;
-    }
+    void *tmp = proc->privateData;
+    fsPathDestroy(proc);
+    return tmp;
 }
 
 static struct Fs fs_procfs = {
@@ -260,9 +201,9 @@ static struct Fs fs_procfs = {
         .root = &procRoot,
         .lookup = &procLookup,
         .readdir = &procReaddir,
-        .readBlock = &procReadBlock,
         .stat = &procStat,
-        .close = &procClose
+        .close = &procClose,
+        .openFile = &procOpenFile
 };
 
 void initProcFileSystem() {

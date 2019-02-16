@@ -50,7 +50,7 @@ static const char *const months[] = {
         "Novembre", "Decembre"
 };
 
-int getCurrentDateAndTime(char *buf) {
+int getCurrentDateAndTime(char *buf, u32 size) {
     static struct tm pct = {.dayofmonth = 0xFF};
     static char dayofmonth[3];
 
@@ -67,7 +67,7 @@ int getCurrentDateAndTime(char *buf) {
     writeInt(pct.minute, minute);
     writeInt(pct.second, second);
 
-    int read = sprintf(buf, "%s %s %s %u, %s:%s:%s", weekdays[pct.weekday - 1], dayofmonth, months[pct.month - 1],
+    int read = snprintf(buf, size, "%s %s %s %u, %s:%s:%s", weekdays[pct.weekday - 1], dayofmonth, months[pct.month - 1],
                         pct.century * 100 + pct.year, hour, minute, second);
 
     buf[read] = '\0';

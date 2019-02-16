@@ -25,6 +25,7 @@
 #define STDIO_H_
 
 #include <stdarg.h>
+#include <types.h>
 
 #define EOF (-1)
 
@@ -32,6 +33,7 @@ int putchar(char c);
 int puts(const char *s);
 int printf(const char *format, ...);
 int sprintf(char *buf, const char *format, ...);
+int snprintf(char *buf, u32 size, const char *format, ...);
 int vsprintf(char *buf, const char *format, va_list args);
 
 #endif				/* !STDLIB_H_ */

@@ -23,10 +23,11 @@ void ttyTaskLoop() {
             .fd_out = -1
     };
 
+    pid_t pid = 0;
     while (1) {
         clearTerminal(consoleGetActiveConsole()->tty);
-        pid_t pid = createProcess(&execInfo);
-        if (pid == -1)
+        pid = createProcess(&execInfo);
+        if (pid < 0)
             break;
 
         taskWaitEvent(TaskEventWaitPid, (u32) pid);
@@ -34,7 +35,7 @@ void ttyTaskLoop() {
         taskWaitEvent(TaskEventTimer, 1000);
     }
 
-    kprintf("An error occured\n");
+    kprintf("An error occured: %d\n", pid);
     taskExit();
 }
 

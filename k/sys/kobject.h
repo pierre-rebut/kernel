@@ -5,12 +5,16 @@
 #ifndef KERNEL_KOBJECT_H
 #define KERNEL_KOBJECT_H
 
+#include <kstd.h>
+
 enum KObjectType {
     KO_FS_FILE,
     KO_FS_FOLDER,
     KO_CONS_STD,
     KO_PIPE,
-    KO_CONS_ERROR
+    KO_CONS_ERROR ,
+    KO_DEVICE,
+    KO_PROC
 };
 
 struct Kobject {

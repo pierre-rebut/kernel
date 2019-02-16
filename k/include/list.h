@@ -5,6 +5,8 @@
 #ifndef KERNEL_LIST_H
 #define KERNEL_LIST_H
 
+#include <stdarg.h>
+
 struct ListElem {
     void *data;
     struct ListElem *next;
@@ -20,6 +22,9 @@ struct List {
 void listReset(struct List *lst);
 void listAddElem(struct List *lst, void *data);
 void listDeleteElem(struct List *lst, void *data);
+
+void *listGetElem(struct List *lst, int (*fct)(void *, va_list ap), ...);
+
 void *listGetNextElem(struct List *lst);
 u32 listCountElem(struct List *lst);
 

@@ -299,3 +299,19 @@ int sprintf(char *buf, const char *fmt, ...) {
     return i;
 }
 
+int snprintf(char *buf, u32 size, const char *format, ...) {
+    va_list args;
+    int i;
+    char buffer[4096];
+
+    va_start(args, format);
+    i = vsprintf(buffer, format, args);
+    va_end(args);
+
+    if (i > 0) {
+        i = MIN((u32) i, size);
+        memcpy(buf, buffer, (u32) i);
+    }
+    return i;
+}
+

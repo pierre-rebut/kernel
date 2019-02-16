@@ -102,5 +102,6 @@ struct Ext2VolumeData {
 };
 
 void initExt2FileSystem();
+struct FsVolume *ext2MountDevice(struct Device *device);
 
 #endif //KERNEL_EXT2FILESYSTEM_H

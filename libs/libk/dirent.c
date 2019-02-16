@@ -37,13 +37,13 @@ struct dirent *readdir(DIR *dirp) {
         return NULL;
 
     if (dirp->offset >= dirp->size) {
-        u32 size = syscall3(SYSCALL_READDIR, (u32) dirp->fd, (u32) dirp->block, dirp->nblock);
+        int size = syscall3(SYSCALL_READDIR, (u32) dirp->fd, (u32) dirp->block, dirp->nblock);
         if (size == 0)
             return NULL;
 
         dirp->nblock += 1;
         dirp->offset = 0;
-        dirp->size = size;
+        dirp->size = (u32) size;
     }
 
     struct dirent *tmp = (struct dirent *) dirp->block;

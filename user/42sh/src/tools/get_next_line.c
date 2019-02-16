@@ -9,6 +9,8 @@
 */
 
 #include <stdlib.h>
+#include <unistd.h>
+
 #include "get_next_line.h"
 
 char *my_cat_len(char *stock, const char buff[BUFFER_SIZE + 1],

@@ -32,7 +32,7 @@
 #define	EPIPE		25	/* Broken pipe */
 #define	EDEADLK		26	/* Resource deadlock would occur */
 
-#define	ENAMETOOLONG	27	/* File name too long */
+#define	ENAME2LONG	27	/* File name too long */
 
 #define	ENOTEMPTY	28	/* Directory not empty */
 #define	ELOOP		29	/* Too many symbolic links encountered */

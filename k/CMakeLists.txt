@@ -31,7 +31,7 @@ set(K_FILES
         sys/kobject.c sys/kobject.h
         io/fs/procfilesystem.c io/fs/procfilesystem.h
         io/cmos.c io/cmos.h
-        sys/time.c sys/time.h sys/mutex.c sys/mutex.h io/device/device.c io/device/device.h io/fs/devfilesystem.c io/fs/devfilesystem.h io/fs/ext2filesystem.c io/fs/ext2filesystem.h io/device/fscache.c io/device/fscache.h io/pipe.c io/pipe.h tty.c tty.h)
+        sys/time.c sys/time.h sys/mutex.c sys/mutex.h io/device/device.c io/device/device.h io/fs/devfilesystem.c io/fs/devfilesystem.h io/fs/ext2filesystem.c io/fs/ext2filesystem.h io/device/fscache.c io/device/fscache.h io/pipe.c io/pipe.h tty.c tty.h io/device/proc.c io/device/proc.h)
 
 set(K_UTILS
         utils/kprintf.c

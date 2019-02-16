@@ -63,24 +63,11 @@ static struct FsPath *kfsRoot(struct FsVolume *volume) {
     return rootPath;
 }
 
-static struct FsVolume *kfsMount(u32 data) {
+static struct FsVolume *kfsMount(struct FsPath *file) {
     LOG("KFS mount: %s - %u - %p\n", (const char *) data, currentTask->pid, currentTask->pageDirectory);
 
     void *pd = NULL;
     void *tmpData = NULL;
-
-    struct FsPath *file = fsResolvePath((const char *) data);
-    if (!file) {
-        klog("[KFS] Can not open file: %s\n", (const char *) data);
-        return NULL;
-    }
-
-    LOG("[KFS] get file stat\n");
-    struct stat fileStat;
-    if (fsStat(file, &fileStat) == -1) {
-        klog("[KFS] Can not get file info: %s\n", (const char *) data);
-        goto kfsMountFailure;
-    }
 
     LOG("[KFS] alloc tmp data\n");
     tmpData = kmalloc(4096, 0, "kfsTmp");
@@ -93,7 +80,7 @@ static struct FsVolume *kfsMount(u32 data) {
         goto kfsMountFailure;
 
     u32 lengthFile = 0;
-    u32 allocSize = alignUp(fileStat.st_size, PAGESIZE);
+    u32 allocSize = alignUp(file->size, PAGESIZE);
     LOG("[KFS] alloc page %p (addr: %X, size: %u)\n", pd, KFS_MEM_POS, allocSize);
 
     LOG("[KFS] mount2: %u - %p\n", currentTask->pid, currentTask->pageDirectory);
@@ -103,7 +90,7 @@ static struct FsVolume *kfsMount(u32 data) {
     LOG("[KFS] mount3: %u - %p\n", currentTask->pid, currentTask->pageDirectory);
 
     LOG("[KFS] read file and put into page alloc\n");
-    while (lengthFile < fileStat.st_size) {
+    while (lengthFile < file->size) {
         LOG("[KFS] read data from file\n");
         int tmp = fsReadFile(file, tmpData, 4096, lengthFile);
         LOG("[KFS] result: %d\n", tmp);
@@ -212,12 +199,13 @@ static struct FsPath *kfsLookup(struct FsPath *path, const char *name) {
         return NULL;
 
     file->privateData = node;
+    file->mode = S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
     file->size = filesize;
     file->inode = inode;
     return file;
 }
 
-u32 kfsReaddir(struct FsPath *path, void *block, u32 nblock) {
+static int kfsReaddir(struct FsPath *path, void *block, u32 nblock) {
     struct kfs_superblock *kfs = (struct kfs_superblock *) KFS_MEM_POS;
     LOG("[KFS] readdir: %u\n", nblock);
 
@@ -307,11 +295,18 @@ static int kfsReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
     return -1;
 }
 
+static void *kfsOpenFile(struct FsPath *path, int *type) {
+    if (type)
+        *type = KO_FS_FILE;
+    return path;
+}
+
 static struct Fs fs_kfs = {
         .name = "kfs",
         .mount = &kfsMount,
         .umount = &kfsUmount,
         .root = &kfsRoot,
+        .openFile = &kfsOpenFile,
         .lookup = &kfsLookup,
         .readdir = &kfsReaddir,
         .readBlock = &kfsReadBlock,

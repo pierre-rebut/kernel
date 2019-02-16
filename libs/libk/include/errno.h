@@ -9,6 +9,6 @@
 #include <errno-base.h>
 
 extern int errno;
-const char *strerror(u32 e);
+const char *strerror(int e);
 
 #endif //KERNEL_ERRNO_H

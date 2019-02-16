@@ -334,5 +334,26 @@ void ataInit() {
     interruptRegister(ATA_IRQ1, &ataInterruptHandler);
     allowIrq(ATA_IRQ1);
 
-    deviceRegister(&ataDriver);
+    deviceDriverRegister(&ataDriver);
+
+    kprintf("Probe ATA device\n");
+    LOG("[ata] Probe device\n");
+
+    char devName[4] = "sda";
+
+    for (u32 i = 0; i < 4; i++) {
+        u32 nblocks = 0;
+        int blocksize = 0;
+        char longname[256];
+
+        if (ataProbe(i, &nblocks, &blocksize, longname) == 1) {
+            kprintf("[ata] device found on %d: %s\n", i, longname);
+            void *dev = deviceCreate(devName, &ataDriver, i, nblocks, blocksize);
+            if (dev == NULL)
+                continue;
+
+            devName[3]++;
+            break;
+        }
+    }
 }

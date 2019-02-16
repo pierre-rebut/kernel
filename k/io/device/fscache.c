@@ -172,7 +172,6 @@ int fsCacheWrite(struct Device *device, const void *buffer, int nblocks, int off
         data = fsCacheBlock->data;
     }
 
-    klog("bite en bois: %d\n", offset);
     fsCacheBlock->updated = 1;
     memcpy(data, buffer, (u32) nblocks * fsCache->device->blockSize);
     return nblocks;

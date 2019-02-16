@@ -6,20 +6,22 @@
 #include <sys/allocator.h>
 #include <string.h>
 #include <kstdio.h>
+#include <include/list.h>
 #include "device.h"
 
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
-static struct DeviceDriver *deviceList = NULL;
+static struct DeviceDriver *driverList = NULL;
+static struct List deviceList = CREATE_LIST();
 
-void deviceRegister(struct DeviceDriver *driver) {
-    driver->next = deviceList;
-    deviceList = driver;
+void deviceDriverRegister(struct DeviceDriver *driver) {
+    driver->next = driverList;
+    driverList = driver;
 }
 
 struct DeviceDriver *deviceGetDeviceDriverByIndex(u32 index) {
-    struct DeviceDriver *tmpDriver = deviceList;
+    struct DeviceDriver *tmpDriver = driverList;
     u32 i = 0;
 
     while (tmpDriver != NULL) {
@@ -33,7 +35,7 @@ struct DeviceDriver *deviceGetDeviceDriverByIndex(u32 index) {
 }
 
 struct DeviceDriver *deviceGetDeviceDriverByName(const char *name) {
-    struct DeviceDriver *tmpDriver = deviceList;
+    struct DeviceDriver *tmpDriver = driverList;
 
     while (tmpDriver != NULL) {
         if (strcmp(tmpDriver->name, name) == 0)
@@ -44,39 +46,43 @@ struct DeviceDriver *deviceGetDeviceDriverByName(const char *name) {
     return NULL;
 }
 
-struct Device *deviceCreate(const char *deviceName, int arg) {
-    struct DeviceDriver *deviceDriver = deviceGetDeviceDriverByName(deviceName);
-    if (deviceDriver == NULL || deviceDriver->probe == NULL)
-        return NULL;
-
-    u32 nblocks;
-    int blockSize;
-    char info[64];
-
-    if (deviceDriver->probe(arg, &nblocks, &blockSize, info) == 0)
-        return NULL;
-
+struct Device *deviceCreate(const char *name, struct DeviceDriver *driver, int unit, u32 nblocks, int blockSize) {
     LOG("Device blocksize = %d - %u\n", blockSize, nblocks);
 
     struct Device *device = kmalloc(sizeof(struct Device), 0, "newDevice");
     if (device == NULL)
         return NULL;
 
-    device->unit = arg;
-    device->driver = deviceDriver;
+    device->name = strdup(name);
+    device->unit = unit;
+    device->driver = driver;
     device->blockSize = blockSize;
     device->nblocks = nblocks;
 
-    if (deviceDriver->multiplier != 0)
-        device->multiplier = deviceDriver->multiplier;
+    if (driver->multiplier != 0)
+        device->multiplier = driver->multiplier;
     else
         device->multiplier = 1;
 
+    listAddElem(&deviceList, device);
     return device;
 }
 
+static int deviceGetFromList(void *data, va_list ap) {
+    struct Device *device = data;
+    const char *name = va_arg(ap, const char *);
+
+    return strcmp(device->name, name) == 0 ? 1 : 0;
+}
+
+struct Device *deviceGetByName(const char *name) {
+    return listGetElem(&deviceList, &deviceGetFromList, name);
+}
+
 void deviceDestroy(struct Device *device) {
+    kfree(device->name);
     kfree(device);
+    listDeleteElem(&deviceList, device);
 }
 
 int deviceRead(struct Device *device, void *buffer, int size, int offset) {

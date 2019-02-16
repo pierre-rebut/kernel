@@ -6,6 +6,12 @@
 #define KERNEL_SYSCALL_H
 
 #include <types.h>
+#include <errno.h>
+
+int syscall0(int syscall_nb);
+int syscall1(int syscall_nb, u32 ebx);
+int syscall2(int syscall_nb, u32 ebx, u32 ecx);
+int syscall3(int syscall_nb, u32 ebx, u32 ecx, u32 edx);
 
 #define SYSCALL_EXIT            0
 #define SYSCALL_SBRK			1
@@ -47,37 +53,5 @@
 #define SYSCALL_LINK            37
 #define SYSCALL_SYMLINK         38
 #define SYSCALL_UNLINK          39
-
-inline u32 syscall0(int syscall_nb) {
-    u32 res;
-
-    asm volatile ("int $0x80" : "=a"(res) : "a"(syscall_nb));
-
-    return res;
-}
-
-inline u32 syscall1(int syscall_nb, u32 ebx) {
-    u32 res;
-
-    asm volatile ("int $0x80" : "=a"(res) : "a"(syscall_nb), "b"(ebx));
-
-    return res;
-}
-
-inline u32 syscall2(int syscall_nb, u32 ebx, u32 ecx) {
-    u32 res;
-
-    asm volatile ("int $0x80" : "=a"(res) : "a"(syscall_nb), "b"(ebx), "c"(ecx));
-
-    return res;
-}
-
-inline u32 syscall3(int syscall_nb, u32 ebx, u32 ecx, u32 edx) {
-    u32 res;
-
-    asm volatile ("int $0x80" : "=a"(res) : "a"(syscall_nb), "b"(ebx), "c"(ecx), "path"(edx));
-
-    return res;
-}
 
 #endif //KERNEL_SYSCALL_H

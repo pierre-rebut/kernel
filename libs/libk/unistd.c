@@ -23,50 +23,52 @@
 */
 
 #include <unistd.h>
+#include <err.h>
+
 #include "syscalls.h"
 
 int exit(int value) {
-    return ((int) syscall1(SYSCALL_EXIT, (u32) value));
+    return syscall1(SYSCALL_EXIT, (u32) value);
 }
 
 void *sbrk(ssize_t increment) {
-    return ((void *) syscall1(SYSCALL_SBRK, increment));
+    return (void *) syscall1(SYSCALL_SBRK, (u32) increment);
 }
 
 int getkey(void) {
-    return ((int) syscall0(SYSCALL_GETKEY));
+    return syscall0(SYSCALL_GETKEY);
 }
 
 unsigned long gettick(void) {
-    return ((unsigned long) syscall0(SYSCALL_GETTICK));
+    return (unsigned long) syscall0(SYSCALL_GETTICK);
 }
 
 int open(const char *pathname, int flags) {
-    return ((int) syscall2(SYSCALL_OPEN, (u32) pathname, flags));
+    return syscall2(SYSCALL_OPEN, (u32) pathname, (u32) flags);
 }
 
 ssize_t read(int fd, void *buf, size_t count) {
-    return ((ssize_t) syscall3(SYSCALL_READ, fd, (u32) buf, count));
+    return (ssize_t) syscall3(SYSCALL_READ, (u32) fd, (u32) buf, count);
 }
 
 int write(int fd, const void *s, size_t length) {
-    return ((int) syscall3(SYSCALL_WRITE, fd, (u32) s, length));
+    return syscall3(SYSCALL_WRITE, (u32) fd, (u32) s, length);
 }
 
 off_t seek(int filedes, off_t offset, int whence) {
-    return ((off_t) syscall3(SYSCALL_SEEK, filedes, offset, whence));
+    return (off_t) syscall3(SYSCALL_SEEK, (u32) filedes, (u32) offset, (u32) whence);
 }
 
 int close(int fd) {
-    return ((int) syscall1(SYSCALL_CLOSE, fd));
+    return syscall1(SYSCALL_CLOSE, (u32) fd);
 }
 
 int playsound(struct melody *melody, int repeat) {
-    return ((int) syscall2(SYSCALL_PLAYSOUND, (u32) melody, repeat));
+    return syscall2(SYSCALL_PLAYSOUND, (u32) melody, (u32) repeat);
 }
 
 int setvideo(int mode) {
-    return ((int) syscall1(SYSCALL_SETVIDEO, mode));
+    return syscall1(SYSCALL_SETVIDEO, (u32) mode);
 }
 
 void swap_frontbuffer(const void *buffer) {
@@ -74,26 +76,26 @@ void swap_frontbuffer(const void *buffer) {
 }
 
 int getmouse(int *x, int *y, int *buttons) {
-    return ((int) syscall3(SYSCALL_GETMOUSE, (u32) x, (u32) y, (u32) buttons));
+    return syscall3(SYSCALL_GETMOUSE, (u32) x, (u32) y, (u32) buttons);
 }
 
 int getkeymode(int mode) {
-    return ((int) syscall1(SYSCALL_GETKEYMODE, mode));
+    return syscall1(SYSCALL_GETKEYMODE, (u32) mode);
 }
 
 int usleep(u32 duration) {
-    return ((int) syscall1(SYSCALL_USLEEP, duration));
+    return syscall1(SYSCALL_USLEEP, duration);
 }
 
-u32 kill(pid_t pid) {
+int kill(pid_t pid) {
     return syscall1(SYSCALL_KILL, (u32) pid);
 }
 
 int waitpid(pid_t pid) {
-    return ((int) syscall1(SYSCALL_WAITPID, (u32) pid));
+    return syscall1(SYSCALL_WAITPID, (u32) pid);
 }
 
-u32 getpid() {
+pid_t getpid() {
     return syscall0(SYSCALL_GETPID);
 }
 
@@ -101,7 +103,7 @@ int sleep(u32 duration) {
     return usleep(duration * 1000);
 }
 
-u32 execve(const struct ExceveInfo *info) {
+pid_t execve(const struct ExceveInfo *info) {
     return syscall1(SYSCALL_EXECVE, (u32) info);
 }
 
@@ -117,8 +119,8 @@ int chdir(const char *path) {
     return syscall1(SYSCALL_CHDIR, (u32) path);
 }
 
-int mount(const char *mnt, const char *fstype, u32 arg) {
-    return syscall3(SYSCALL_MOUNT, (u32) mnt, (u32) fstype, arg);
+int mount(const char *fstype, const char *dev, const char *mnt) {
+    return syscall3(SYSCALL_MOUNT, (u32) fstype, (u32) dev, (u32) mnt);
 }
 
 int umount(const char *mnt) {
@@ -146,11 +148,11 @@ void sync() {
 }
 
 int mkdir(const char *file, mode_t mode) {
-    return (int) syscall2(SYSCALL_MKDIR, (u32) file, mode);
+    return syscall2(SYSCALL_MKDIR, (u32) file, mode);
 }
 
 int mkfile(const char *file) {
-    return (int) syscall1(SYSCALL_MKFILE, (u32) file);
+    return syscall1(SYSCALL_MKFILE, (u32) file);
 }
 
 int fchdir(int fd) {

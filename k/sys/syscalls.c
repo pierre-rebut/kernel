@@ -12,91 +12,91 @@
 #include <kstdio.h>
 #include <io/pipe.h>
 #include <string.h>
-#include <io/fs/ext2filesystem.h>
 #include <io/device/fscache.h>
+#include <errno-base.h>
 
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
 #define NB_SYSCALL 38
 
-static u32 sys_write(struct esp_context *ctx);
+static int sys_write(struct esp_context *ctx);
 
-static u32 sys_sbrk(struct esp_context *ctx);
+static int sys_sbrk(struct esp_context *ctx);
 
-static u32 sys_getkey(struct esp_context *ctx);
+static int sys_getkey(struct esp_context *ctx);
 
-static u32 sys_gettick(struct esp_context *ctx);
+static int sys_gettick(struct esp_context *ctx);
 
-static u32 sys_open(struct esp_context *ctx);
+static int sys_open(struct esp_context *ctx);
 
-static u32 sys_read(struct esp_context *ctx);
+static int sys_read(struct esp_context *ctx);
 
-static u32 sys_seek(struct esp_context *ctx);
+static int sys_seek(struct esp_context *ctx);
 
-static u32 sys_close(struct esp_context *ctx);
+static int sys_close(struct esp_context *ctx);
 
-static u32 sys_setvideo(struct esp_context *ctx);
+static int sys_setvideo(struct esp_context *ctx);
 
-static u32 sys_setVgaFrameBuffer(struct esp_context *ctx);
+static int sys_setVgaFrameBuffer(struct esp_context *ctx);
 
-static u32 sys_getMouse(struct esp_context *ctx);
+static int sys_getMouse(struct esp_context *ctx);
 
-static u32 sys_playsound(struct esp_context *ctx);
+static int sys_playsound(struct esp_context *ctx);
 
-static u32 sys_getkeymode(struct esp_context *ctx);
+static int sys_getkeymode(struct esp_context *ctx);
 
-static u32 sys_usleep(struct esp_context *ctx);
+static int sys_usleep(struct esp_context *ctx);
 
-static u32 sys_waitPid(struct esp_context *ctx);
+static int sys_waitPid(struct esp_context *ctx);
 
-static u32 sys_exit(struct esp_context *ctx);
+static int sys_exit(struct esp_context *ctx);
 
-static u32 sys_kill(struct esp_context *ctx);
+static int sys_kill(struct esp_context *ctx);
 
-static u32 sys_getPid(struct esp_context *ctx);
+static int sys_getPid(struct esp_context *ctx);
 
-static u32 sys_execve(struct esp_context *ctx);
+static int sys_execve(struct esp_context *ctx);
 
-static u32 sys_stat(struct esp_context *ctx);
+static int sys_stat(struct esp_context *ctx);
 
-static u32 sys_fstat(struct esp_context *ctx);
+static int sys_fstat(struct esp_context *ctx);
 
-static u32 sys_chdir(struct esp_context *ctx);
+static int sys_chdir(struct esp_context *ctx);
 
-static u32 sys_opendir(struct esp_context *ctx);
+static int sys_opendir(struct esp_context *ctx);
 
-static u32 sys_closedir(struct esp_context *ctx);
+static int sys_closedir(struct esp_context *ctx);
 
-static u32 sys_readdir(struct esp_context *ctx);
+static int sys_readdir(struct esp_context *ctx);
 
-static u32 sys_mount(struct esp_context *ctx);
+static int sys_mount(struct esp_context *ctx);
 
-static u32 sys_umount(struct esp_context *ctx);
+static int sys_umount(struct esp_context *ctx);
 
-static u32 sys_pipe(struct esp_context *ctx);
+static int sys_pipe(struct esp_context *ctx);
 
-static u32 sys_dup2(struct esp_context *ctx);
+static int sys_dup2(struct esp_context *ctx);
 
-static u32 sys_getcwd(struct esp_context *ctx);
+static int sys_getcwd(struct esp_context *ctx);
 
-static u32 sys_sysconf(struct esp_context *ctx);
+static int sys_sysconf(struct esp_context *ctx);
 
-static u32 sys_sync(struct esp_context *ctx);
+static int sys_sync(struct esp_context *ctx);
 
-static u32 sys_mkdir(struct esp_context *ctx);
+static int sys_mkdir(struct esp_context *ctx);
 
-static u32 sys_mkfile(struct esp_context *ctx);
+static int sys_mkfile(struct esp_context *ctx);
 
-static u32 sys_fchdir(struct esp_context *ctx);
+static int sys_fchdir(struct esp_context *ctx);
 
-static u32 sys_link(struct esp_context *ctx);
+static int sys_link(struct esp_context *ctx);
 
-static u32 sys_symlink(struct esp_context *ctx);
+static int sys_symlink(struct esp_context *ctx);
 
-static u32 sys_unlink(struct esp_context *ctx);
+static int sys_unlink(struct esp_context *ctx);
 
-typedef u32 (*syscall_t)(struct esp_context *);
+typedef int (*syscall_t)(struct esp_context *);
 
 static syscall_t syscall[] = {
         sys_exit,
@@ -152,58 +152,66 @@ static void syscall_handler(struct esp_context *ctx) {
     syscall_t fct = syscall[ctx->eax];
     if (fct == NULL) {
         klog("unhandled syscall %d\n", ctx->eax);
-        ctx->eax = 0;
+        ctx->eax = (u32) -EINTR;
         return;
     }
 
-    ctx->eax = fct(ctx);
+    ctx->eax = (u32) fct(ctx);
 }
 
 /*** SYSCALL FCT ***/
 
-static u32 sys_exit(struct esp_context *ctx) {
+static int sys_exit(struct esp_context *ctx) {
     (void) ctx;
-    return (u32) taskExit();
+    return taskExit();
 }
 
-static u32 sys_sbrk(struct esp_context *ctx) {
+static int sys_sbrk(struct esp_context *ctx) {
     return taskSetHeapInc((s32) ctx->ebx);
 }
 
-static u32 sys_getkey(struct esp_context *ctx) {
+static int sys_getkey(struct esp_context *ctx) {
     (void) ctx;
 
     struct Kobject *kobject = taskGetKObjectByFd(0);
     if (kobject == NULL)
-        return (u32) -1;
+        return -EBADF;
 
-    return (u32) consoleGetkey2(kobject->data);
+    return consoleGetkey2(kobject->data);
 }
 
-static u32 sys_gettick(struct esp_context *ctx) {
+static int sys_gettick(struct esp_context *ctx) {
     (void) ctx;
-    return (u32) gettick();
+    return (int) gettick();
 }
 
-static u32 sys_open(struct esp_context *ctx) {
+static int sys_open(struct esp_context *ctx) {
     int fd = taskGetAvailableFd(currentTask);
-    if (fd == -1)
-        return (u32) -1;
+    if (fd < 0)
+        return fd;
 
     struct FsPath *path = fsResolvePath((char *) ctx->ebx);
     if (!path) {
         if (!(ctx->ecx & O_CREAT))
-            return (u32) -1;
+            return -EACCES;
 
-        path = fsLink((const char *)ctx->ebx, NULL);
+        path = fsLink((const char *) ctx->ebx, NULL);
         if (!path)
-            return (u32) -1;
+            return -EIO;
     }
 
-    struct Kobject *obj = koCreate(KO_FS_FILE, path, ctx->ecx);
+    enum KObjectType type;
+    void *data = fsOpenFile(path, ctx->edx, (int *) &type);
+    if (data == NULL) {
+        fsPathDestroy(path);
+        return -EACCES;
+    }
+
+
+    struct Kobject *obj = koCreate(type, data, ctx->ecx);
     if (obj == NULL) {
         fsPathDestroy(path);
-        return (u32) -1;
+        return -ENOMEM;
     }
 
     taskSetKObjectByFd(fd, obj);
@@ -214,206 +222,216 @@ static u32 sys_open(struct esp_context *ctx) {
         fsResizeFile(path, 0);
     }
 
-
-    return (u32) fd;
+    return fd;
 }
 
-static u32 sys_read(struct esp_context *ctx) {
+static int sys_read(struct esp_context *ctx) {
     struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
     if (!obj)
-        return (u32) -1;
+        return -EBADF;
 
-    return (u32) koRead(obj, (void *) ctx->ecx, ctx->edx);
+    return koRead(obj, (void *) ctx->ecx, ctx->edx);
 }
 
-static u32 sys_write(struct esp_context *ctx) {
+static int sys_write(struct esp_context *ctx) {
     struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
     if (!obj)
-        return (u32) -1;
+        return -EBADF;
 
-    return (u32) koWrite(obj, (void *) ctx->ecx, ctx->edx);
+    return koWrite(obj, (void *) ctx->ecx, ctx->edx);
 }
 
-static u32 sys_seek(struct esp_context *ctx) {
+static int sys_seek(struct esp_context *ctx) {
     struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
     if (!obj)
-        return (u32) -1;
+        return -EBADF;
 
-    return (u32) koSeek(obj, (off_t) ctx->ecx, (int) ctx->edx);
+    return koSeek(obj, (off_t) ctx->ecx, (int) ctx->edx);
 }
 
-static u32 sys_close(struct esp_context *ctx) {
+static int sys_close(struct esp_context *ctx) {
     struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
     if (!obj)
-        return (u32) -1;
+        return -EBADF;
 
     currentTask->objectList[ctx->ebx] = NULL;
-    return (u32) koDestroy(obj);
+    return koDestroy(obj);
 }
 
-static u32 sys_setvideo(struct esp_context *ctx) {
-    return (u32) consoleSwitchVideoMode(currentTask->console, (enum ConsoleMode) ctx->ebx);
+static int sys_setvideo(struct esp_context *ctx) {
+    return consoleSwitchVideoMode(currentTask->console, (enum ConsoleMode) ctx->ebx);
 }
 
-static u32 sys_setVgaFrameBuffer(struct esp_context *ctx) {
-    return (u32) consoleSetVgaFrameBuffer(currentTask->console, (const void *) ctx->ebx);
+static int sys_setVgaFrameBuffer(struct esp_context *ctx) {
+    return consoleSetVgaFrameBuffer(currentTask->console, (const void *) ctx->ebx);
 }
 
-static u32 sys_getMouse(struct esp_context *ctx) {
+static int sys_getMouse(struct esp_context *ctx) {
     (void) ctx;
     return 0;
 }
 
-static u32 sys_playsound(struct esp_context *ctx) {
+static int sys_playsound(struct esp_context *ctx) {
     (void) ctx;
     return 0;
 }
 
-static u32 sys_getkeymode(struct esp_context *ctx) {
+static int sys_getkeymode(struct esp_context *ctx) {
     (void) ctx;
     return 0;
 }
 
-static u32 sys_usleep(struct esp_context *ctx) {
+static int sys_usleep(struct esp_context *ctx) {
     taskWaitEvent(TaskEventTimer, ctx->ebx);
     return 0;
 }
 
-static u32 sys_waitPid(struct esp_context *ctx) {
+static int sys_waitPid(struct esp_context *ctx) {
     taskWaitEvent(TaskEventWaitPid, ctx->ebx);
     return 0;
 }
 
-static u32 sys_kill(struct esp_context *ctx) {
-    return  (u32) taskKillByPid((pid_t) ctx->ebx);
+static int sys_kill(struct esp_context *ctx) {
+    return taskKillByPid((pid_t) ctx->ebx);
 }
 
-static u32 sys_getPid(struct esp_context *ctx) {
+static int sys_getPid(struct esp_context *ctx) {
     (void) ctx;
-    return (u32) taskGetpid();
+    return taskGetpid();
 }
 
-static u32 sys_execve(struct esp_context *ctx) {
+static int sys_execve(struct esp_context *ctx) {
     if (ctx->ebx == 0)
-        return (u32) -1;
+        return -EINVAL;
 
     LOG("execve\n");
-    return (u32) createProcess((const struct ExceveInfo *) ctx->ebx);
+    return createProcess((const struct ExceveInfo *) ctx->ebx);
 }
 
-static u32 sys_stat(struct esp_context *ctx) {
+static int sys_stat(struct esp_context *ctx) {
     struct FsPath *path = fsResolvePath((char *) ctx->ebx);
     if (!path)
-        return (u32) -1;
+        return -ENOENT;
 
     int tmp = fsStat(path, (void *) ctx->ecx);
     fsPathDestroy(path);
 
-    return (u32) tmp;
+    return tmp;
 }
 
-static u32 sys_fstat(struct esp_context *ctx) {
+static int sys_fstat(struct esp_context *ctx) {
     struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
     if (!obj)
-        return (u32) -1;
+        return -EBADF;
 
-    return (u32) fsStat(obj->data, (void *) ctx->ecx);
+    return fsStat(obj->data, (void *) ctx->ecx);
 }
 
-static u32 sys_chdir(struct esp_context *ctx) {
+static int sys_chdir(struct esp_context *ctx) {
     LOG("change dir: %s\n", (char *) ctx->ebx);
-    return  (u32) taskChangeDirectory((void *) ctx->ebx);
+    return taskChangeDirectory((void *) ctx->ebx);
 }
 
-static u32 sys_opendir(struct esp_context *ctx) {
+static int sys_opendir(struct esp_context *ctx) {
     int fd = taskGetAvailableFd(currentTask);
-    if (fd == -1)
-        return (u32) -1;
+    if (fd < 0)
+        return fd;
 
     struct FsPath *path = fsResolvePath((char *) ctx->ebx);
     if (!path)
-        return (u32) -1;
+        return -ENOENT;
 
     taskSetKObjectByFd(fd, koCreate(KO_FS_FOLDER, path, 0));
     LOG("opendir: %s (%d) refcount: %u\n", (char *) ctx->ebx, fd, path->refcount);
-    return (u32) fd;
+    return fd;
 }
 
-static u32 sys_readdir(struct esp_context *ctx) {
+static int sys_readdir(struct esp_context *ctx) {
     LOG("readdir: %d (%d)\n", ctx->ebx, ctx->edx);
     struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
     if (!obj)
-        return 0;
+        return -EBADF;
 
-    return (u32) fsPathReaddir(obj->data, (void *) ctx->ecx, ctx->edx);
+    return fsPathReaddir(obj->data, (void *) ctx->ecx, ctx->edx);
 }
 
-static u32 sys_closedir(struct esp_context *ctx) {
+static int sys_closedir(struct esp_context *ctx) {
     struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
-
     if (!obj)
-        return (u32) -1;
+        return -EBADF;
 
     LOG("closedir: %d\n", ctx->ebx);
     currentTask->objectList[ctx->ebx] = NULL;
-    return (u32) koDestroy(obj);
+    return koDestroy(obj);
 }
 
-static u32 sys_mount(struct esp_context *ctx) {
-    klog("mount: %s (%s)\n", (char *) ctx->ebx, (char *) ctx->ecx);
+static int sys_mount(struct esp_context *ctx) {
+    klog("mount %s on %s (%s)\n", (char *) ctx->ecx, (char *) ctx->edx, (char *) ctx->ebx);
     klog("mount: get fs by name\n");
-    struct Fs *fs = fsGetFileSystemByName((const char *) ctx->ecx);
+    struct Fs *fs = fsGetFileSystemByName((const char *) ctx->ebx);
     if (!fs)
-        return (u32) -1;
+        return -ENODEV;
 
     klog("mount: get fspath\n");
-    struct FsPath *path = fsResolvePath((char *) ctx->ebx);
+    struct FsPath *path = fsResolvePath((char *) ctx->edx);
     if (!path)
-        return (u32) -1;
+        return -ENOENT;
+
+    klog("mount: get device path\n");
+    struct FsPath *device = fsResolvePath((char *) ctx->ecx);
+    if (device == NULL) {
+        fsPathDestroy(path);
+        return -ENXIO;
+    }
 
     klog("mount: create new volume\n");
-    void *tmp = fsMountVolumeOn(path, fs, ctx->edx);
+    void *tmp = fsMountVolumeOn(path, fs, device);
     fsPathDestroy(path);
+    fsPathDestroy(device);
 
     if (tmp == NULL)
-        return (u32) -1;
+        return -EIO;
 
     klog("mount: end\n");
     return 0;
 }
 
-static u32 sys_umount(struct esp_context *ctx) {
+static int sys_umount(struct esp_context *ctx) {
     LOG("umount: %s\n", (char *) ctx->ebx);
 
     struct FsPath *path = fsResolvePath((char *) ctx->ebx);
     if (!path)
-        return (u32) -1;
+        return -ENOENT;
 
     LOG("umount: destroy volume\n");
     int tmp = fsUmountVolume(path);
     fsPathDestroy(path);
 
     LOG("umount end\n");
-    return (u32) tmp;
+    return tmp;
 }
 
-static u32 sys_pipe(struct esp_context *ctx) {
+static int sys_pipe(struct esp_context *ctx) {
     LOG("pipe\n");
 
     int pipe1 = taskGetAvailableFd(currentTask);
-    if (pipe1 == -1)
-        return (u32) -1;
+    if (pipe1 < 0)
+        return -pipe1;
 
-    taskSetKObjectByFd(pipe1, (void*) 0x80);
+    taskSetKObjectByFd(pipe1, (void *) 0x80);
 
     int pipe2 = taskGetAvailableFd(currentTask);
-    if (pipe2 == -1)
-        goto failure;
+    if (pipe2 < 0) {
+        taskSetKObjectByFd(pipe1, NULL);
+        return -pipe2;
+    }
 
     int *fd = (int *) ctx->ebx;
     struct Pipe *pipe = pipeCreate();
-    if (pipe == NULL)
-        goto failure;
+    if (pipe == NULL) {
+        taskSetKObjectByFd(pipe1, NULL);
+        return -ENOMEM;
+    }
 
     taskSetKObjectByFd(pipe1, koCreate(KO_PIPE, pipeAddref(pipe), O_RDONLY));
     taskSetKObjectByFd(pipe2, koCreate(KO_PIPE, pipeAddref(pipe), O_WRONLY));
@@ -423,21 +441,17 @@ static u32 sys_pipe(struct esp_context *ctx) {
 
     LOG("pipe end [%d, %d]\n", pipe1, pipe2);
     return 0;
-
-    failure:
-    taskSetKObjectByFd(pipe1, NULL);
-    return (u32) -1;
 }
 
-static u32 sys_dup2(struct esp_context *ctx) {
+static int sys_dup2(struct esp_context *ctx) {
     LOG("dup2: %u -> %u\n", ctx->ebx, ctx->ecx);
 
     if (ctx->ebx >= MAX_NB_FILE || ctx->ecx >= MAX_NB_FILE)
-        return (u32) -1;
+        return -EBADF;
 
     struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
     if (obj == NULL)
-        return (u32) -1;
+        return -EBADF;
 
     struct Kobject *obj2 = taskGetKObjectByFd(ctx->ecx);
     if (obj2 != NULL)
@@ -447,15 +461,15 @@ static u32 sys_dup2(struct esp_context *ctx) {
     return 0;
 }
 
-static u32 sys_getcwd(struct esp_context *ctx) {
+static int sys_getcwd(struct esp_context *ctx) {
     LOG("getcwd: %u\n", ctx->ecx);
-    char *tmp = (char *)ctx->ebx;
+    char *tmp = (char *) ctx->ebx;
     strcpy(tmp, "/tmp");
 
-    return ctx->ebx;
+    return 0;
 }
 
-static u32 sys_sysconf(struct esp_context *ctx) {
+static int sys_sysconf(struct esp_context *ctx) {
     LOG("sysconf: %u\n", ctx->ebx);
     switch (ctx->ebx) {
         case _SC_PHYS_PAGES:
@@ -463,43 +477,43 @@ static u32 sys_sysconf(struct esp_context *ctx) {
         case _SC_PAGESIZE:
             return PAGESIZE;
         default:
-            return  (u32) -1;
+            return -EPERM;
     };
 }
 
-static u32 sys_sync(struct esp_context *ctx) {
+static int sys_sync(struct esp_context *ctx) {
     (void) ctx;
     LOG("sync\n");
     fsCacheSync();
     return 0;
 }
 
-static u32 sys_mkdir(struct esp_context *ctx) {
+static int sys_mkdir(struct esp_context *ctx) {
     LOG("mkdir: %s\n", (char *) ctx->ebx);
 
-    void *tmp = fsMkdir((const char *)ctx->ebx);
-    return (u32) (tmp ? 0 : -1);
+    void *tmp = fsMkdir((const char *) ctx->ebx);
+    return (tmp ? 0 : -EPERM);
 }
 
-static u32 sys_mkfile(struct esp_context *ctx) {
+static int sys_mkfile(struct esp_context *ctx) {
     LOG("mkfile: %s\n", (char *) ctx->ebx);
 
-    void *tmp = fsResolvePath((const char *)ctx->ebx);
+    void *tmp = fsResolvePath((const char *) ctx->ebx);
     if (tmp) {
         fsPathDestroy(tmp);
-        return (u32) -1;
+        return -EEXIST;
     }
 
-    tmp = fsLink((const char *)ctx->ebx, NULL);
+    tmp = fsLink((const char *) ctx->ebx, NULL);
     fsPathDestroy(tmp);
-    return (u32) (tmp ? 0 : -1);
+    return (tmp ? 0 : -EIO);
 }
 
-static u32 sys_fchdir(struct esp_context *ctx) {
+static int sys_fchdir(struct esp_context *ctx) {
     LOG("fchdir: %d\n", ctx->ebx);
     struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
     if (!obj || obj->type != KO_FS_FOLDER)
-        return (u32) -1;
+        return -EBADF;
 
     fsPathDestroy(currentTask->currentDir);
 
@@ -509,31 +523,31 @@ static u32 sys_fchdir(struct esp_context *ctx) {
     return 0;
 }
 
-static u32 sys_link(struct esp_context *ctx) {
+static int sys_link(struct esp_context *ctx) {
     LOG("link: %s -> %s\n", (char *) ctx->ebx, (char *) ctx->ecx);
 
-    void *tmp = fsResolvePath((const char *)ctx->ecx);
+    void *tmp = fsResolvePath((const char *) ctx->ecx);
     if (tmp) {
         fsPathDestroy(tmp);
-        return (u32) -1;
+        return -EEXIST;
     }
 
-    tmp = fsLink((const char *)ctx->ecx, (const char *)ctx->ebx);
+    tmp = fsLink((const char *) ctx->ecx, (const char *) ctx->ebx);
     fsPathDestroy(tmp);
-    return (u32) (tmp ? 0 : -1);
+    return (tmp ? 0 : -EIO);
 }
 
-static u32 sys_symlink(struct esp_context *ctx) {
+static int sys_symlink(struct esp_context *ctx) {
     (void) ctx; // todo
 
     LOG("symlink: %s -> %s\n", (char *) ctx->ebx, (char *) ctx->ecx);
 
-    return (u32) -1;
+    return -EPERM;
 }
 
-static u32 sys_unlink(struct esp_context *ctx) {
+static int sys_unlink(struct esp_context *ctx) {
     (void) ctx; // todo
     LOG("unlink: %s\n", (char *) ctx->ebx);
 
-    return (u32) -1;
+    return -EPERM;
 }

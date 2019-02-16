@@ -3,11 +3,6 @@
 
 #include "types.h"
 
-typedef s32 ssize_t;
-typedef s32 off_t;
-typedef s32 pid_t;
-typedef unsigned short int u_short;
-
 struct melody {
     unsigned long freq;
     unsigned long duration;
@@ -114,19 +109,6 @@ enum SysConfigInfo {
 #define SEEK_END	2
 #define VIDEO_GRAPHIC	0
 #define VIDEO_TEXT	1
-
-struct ExceveInfo {
-    const char *cmdline;
-    const char **av;
-    const char **env;
-
-    int fd_in;
-    int fd_out;
-};
-
-#define INIT_EXECINFO() {0, 0, 0, -1, -1}
-
-#define STDIN_FILENO 0
 
 #define MAXPATHLEN 255
 

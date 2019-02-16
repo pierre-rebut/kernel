@@ -69,6 +69,33 @@ u32 listCountElem(struct List *lst) {
     return i;
 }
 
+void *listGetElem(struct List *lst, int (*fct)(void *, va_list), ...) {
+    if (!lst)
+        return NULL;
+
+    struct ListElem *elem = lst->begin;
+
+    va_list ap;
+    va_start(ap, fct);
+
+    while (elem) {
+        va_list ap2;
+        va_copy(ap2, ap);
+        int i = fct(elem->data, ap2);
+        va_end(ap2);
+
+        if (i > 0) {
+            va_end(ap);
+            return elem->data;
+        }
+
+        elem = elem->next;
+    }
+
+    va_end(ap);
+    return NULL;
+}
+
 void *listGetNextElem(struct List *lst) {
     if (!lst || lst->begin == NULL)
         return NULL;
