@@ -7,7 +7,6 @@
 #include <kstdio.h>
 #include <sys/allocator.h>
 #include <io/device/fscache.h>
-#include <io/serial.h>
 #include <io/pit.h>
 
 #include "ext2filesystem.h"
@@ -16,7 +15,7 @@
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
-static int ext2DeviceReadBlock(void *buf, u32 block, struct Ext2PrivData *priv) {
+static int ext2DeviceReadBlock(void *buf, u32 block, struct Ext2VolumeData *priv) {
     u32 sectors_per_block = priv->sectors_per_block;
     if (!sectors_per_block)
         sectors_per_block = 1;
@@ -29,18 +28,18 @@ static int ext2DeviceReadBlock(void *buf, u32 block, struct Ext2PrivData *priv) 
     return tmp;
 }
 
-static void ext2DeviceWriteBlock(const void *buf, u32 block, struct Ext2PrivData *priv) {
+static void ext2DeviceWriteBlock(const void *buf, u32 block, struct Ext2VolumeData *priv) {
     u32 sectors_per_block = priv->sectors_per_block;
     if (!sectors_per_block)
         sectors_per_block = 1;
 
-    klog("we want to write block %d which is sectors [%d; %d] (sector per block: %d)\n",
+    LOG("we want to write block %d which is sectors [%d; %d] (sector per block: %d)\n",
         block, block * sectors_per_block, block * sectors_per_block + sectors_per_block, sectors_per_block);
 
     fsCacheWrite(priv->device, buf, sectors_per_block, block * sectors_per_block);
 }
 
-static void ext2ReadInode(struct Ext2Inode *inode_buf, u32 inode, struct Ext2PrivData *priv) {
+static void ext2ReadInode(struct Ext2Inode *inode_buf, u32 inode, struct Ext2VolumeData *priv) {
     u32 bg = (inode - 1) / priv->sb.inodes_in_blockgroup;
 
     void *block_buf = kmalloc(priv->blocksize, 0, "blockBuf");
@@ -79,7 +78,7 @@ static void ext2ReadInode(struct Ext2Inode *inode_buf, u32 inode, struct Ext2Pri
     kfree(block_buf);
 }
 
-static void ext2WriteInode(struct Ext2Inode *inode_buf, u32 inode, struct Ext2PrivData *priv) {
+static void ext2WriteInode(struct Ext2Inode *inode_buf, u32 inode, struct Ext2VolumeData *priv) {
     u32 bg = (inode - 1) / priv->sb.inodes_in_blockgroup;
 
     void *block_buf = kmalloc(priv->blocksize, 0, "blockBuf");
@@ -120,7 +119,7 @@ static void ext2WriteInode(struct Ext2Inode *inode_buf, u32 inode, struct Ext2Pr
     kfree(block_buf);
 }
 
-static u32 ext2GetInodeBlock(u32 inode, u32 *b, u32 *ioff, struct Ext2PrivData *priv) {
+static u32 ext2GetInodeBlock(u32 inode, u32 *b, u32 *ioff, struct Ext2VolumeData *priv) {
     u32 bg = (inode - 1) / priv->sb.inodes_in_blockgroup;
     u32 i = 0;
     /* Now we have which BG the inode is in, load that desc */
@@ -145,7 +144,7 @@ static u32 ext2GetInodeBlock(u32 inode, u32 *b, u32 *ioff, struct Ext2PrivData *
     return 1;
 }
 
-static int ext2ReadSinglyLinked(u32 singlyBlockId, u32 blockid, void *buf, struct Ext2PrivData *priv) {
+static int ext2ReadSinglyLinked(u32 singlyBlockId, u32 blockid, void *buf, struct Ext2VolumeData *priv) {
     u32 *singlyBlock = kmalloc(priv->blocksize, 0, "singlyBlock");
     if (singlyBlock == NULL)
         return -1;
@@ -159,7 +158,7 @@ static int ext2ReadSinglyLinked(u32 singlyBlockId, u32 blockid, void *buf, struc
 
 #define SIZE_OF_SINGLY (priv->blocksize * priv->blocksize / 4)
 
-static int ext2ReadDoublyLinked(u32 doublyblockid, u32 blockid, void *buf, struct Ext2PrivData *priv) {
+static int ext2ReadDoublyLinked(u32 doublyblockid, u32 blockid, void *buf, struct Ext2VolumeData *priv) {
 
     u32 *doublyBlock = kmalloc(priv->blocksize, 0, "doublyBlock");
     if (doublyBlock == NULL)
@@ -174,7 +173,7 @@ static int ext2ReadDoublyLinked(u32 doublyblockid, u32 blockid, void *buf, struc
 
 #define SIZE_OF_DOUBLY (SIZE_OF_SINGLY * priv->blocksize)
 
-static int ext2ReadTriplyLinked(u32 triplyblockid, u32 blockid, void *buf, struct Ext2PrivData *priv) {
+static int ext2ReadTriplyLinked(u32 triplyblockid, u32 blockid, void *buf, struct Ext2VolumeData *priv) {
 
     u32 *triplyBlock = kmalloc(priv->blocksize, 0, "triplyBlock");
     if (triplyBlock == NULL)
@@ -189,16 +188,17 @@ static int ext2ReadTriplyLinked(u32 triplyblockid, u32 blockid, void *buf, struc
 
 static int ext2ReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
     LOG("[ext2] readblock: %u\n", blocknum);
-    struct Ext2PrivData *priv = path->volume->privateData;
-    struct Ext2Inode *pathInode = path->privateData;
+    struct Ext2VolumeData *priv = path->volume->privateData;
+    struct Ext2Inode pathInode;
 
-    if ((pathInode->type & 0xF000) == INODE_TYPE_DIRECTORY)
+    ext2ReadInode(&pathInode, path->inode, priv);
+    if ((pathInode.type & 0xF000) == INODE_TYPE_DIRECTORY)
         return -1;
 
     if (blocknum < 12) {
-        u32 b = pathInode->dbp[blocknum];
+        u32 b = pathInode.dbp[blocknum];
         if (b == 0) {
-            klog("[ext2] readblock EOF\n");
+            LOG("[ext2] readblock EOF\n");
             return 0;
         }
 
@@ -210,77 +210,80 @@ static int ext2ReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
         LOG("Reading block: %d\n", b);
         ext2DeviceReadBlock((void *) buffer, b, priv);
     } else if (blocknum - 12 < (priv->blocksize / sizeof(u32))) {
-        ext2ReadSinglyLinked(pathInode->singly_block, blocknum - 12, buffer, priv);
+        ext2ReadSinglyLinked(pathInode.singly_block, blocknum - 12, buffer, priv);
     } else if (blocknum - 12 - (priv->blocksize / sizeof(u32)) < SIZE_OF_SINGLY) {
         u32 tmp = blocknum - 12 - (priv->blocksize / sizeof(u32));
-        ext2ReadDoublyLinked(pathInode->doubly_block, tmp, buffer, priv);
+        ext2ReadDoublyLinked(pathInode.doubly_block, tmp, buffer, priv);
     } else {
         u32 tmp = blocknum - 12 - (priv->blocksize / sizeof(u32)) - SIZE_OF_SINGLY;
-        ext2ReadTriplyLinked(pathInode->triply_block, tmp, buffer, priv);
+        ext2ReadTriplyLinked(pathInode.triply_block, tmp, buffer, priv);
     }
 
-    return (pathInode->size / priv->blocksize == blocknum ? pathInode->size % priv->blocksize : priv->blocksize);
+    return (pathInode.size / priv->blocksize == blocknum ? pathInode.size % priv->blocksize : priv->blocksize);
 }
 
 static int ext2Stat(struct FsPath *path, struct stat *result) {
-    struct Ext2Inode *pathInode = path->privateData;
+    struct Ext2Inode pathInode;
+    struct Ext2VolumeData *priv = path->volume->privateData;
+    ext2ReadInode(&pathInode, path->inode, priv);
 
     result->st_ino = path->inode;
-    result->st_uid = pathInode->uid;
-    result->st_gid = pathInode->gid;
-    result->st_size = pathInode->size;
-    result->st_mode = pathInode->type;
-    result->st_nlink = pathInode->hardlinks;
+    result->st_uid = pathInode.uid;
+    result->st_gid = pathInode.gid;
+    result->st_size = pathInode.size;
+    result->st_mode = pathInode.type;
+    result->st_nlink = pathInode.hardlinks;
     result->st_blksize = path->volume->blockSize;
 
-    result->st_atim = pathInode->last_access;
-    result->st_mtim = pathInode->last_modif;
-    result->st_ctim = pathInode->create_time;
+    result->st_atim = pathInode.last_access;
+    result->st_mtim = pathInode.last_modif;
+    result->st_ctim = pathInode.create_time;
 
     return 0;
 }
 
-static struct dirent *ext2Readdir(struct FsPath *path, struct dirent *result) {
-    struct Ext2PrivData *priv = path->volume->privateData;
-    struct Ext2Inode *pathInode = path->privateData;
+static u32 ext2Readdir(struct FsPath *path, void *block, u32 nblock) {
+    if (nblock >= 12)
+        return 0;
 
-    if ((pathInode->type & 0xF000) != INODE_TYPE_DIRECTORY)
-        return NULL;
+    struct Ext2VolumeData *priv = path->volume->privateData;
+    struct Ext2Inode pathInode;
 
-    LOG("[ext2] readdir b=%d,tmp=%d\n", pathInode->tmpBreadir, pathInode->tmpDir);
+    ext2ReadInode(&pathInode, path->inode, priv);
+    if ((pathInode.type & 0xF000) != INODE_TYPE_DIRECTORY)
+        return 0;
 
-    if (pathInode->tmpBreadir == 12)
-        return NULL;
-
-    u32 b = pathInode->dbp[pathInode->tmpBreadir];
+    LOG("[ext2] readdir b=%d\n", nblock);
+    u32 b = pathInode.dbp[nblock];
     if (b == 0)
-        return NULL;
+        return 0;
 
     void *buf = kmalloc(priv->blocksize, 0, "newExt2Buf");
     if (buf == NULL)
-        return NULL;
+        return 0;
 
+    u32 size = 0;
     ext2DeviceReadBlock(buf, b, priv);
-    struct Ext2DirEntry *dir = (struct Ext2DirEntry *) (buf + pathInode->tmpDir);
+    struct Ext2DirEntry *dir = buf;
 
-    memcpy(result->d_name, &dir->reserved + 1, dir->namelength);
-    result->d_name[dir->namelength] = 0;
+    while ((u32) dir < (u32) buf + priv->blocksize && dir->inode != 0) {
+        struct dirent tmpDirent;
+        memcpy(tmpDirent.d_name, &dir->reserved + 1, dir->namelength);
+        tmpDirent.d_name[dir->namelength] = '\0';
+        tmpDirent.d_namlen = dir->namelength;
+        tmpDirent.d_reclen = sizeof(struct dirent);
+        tmpDirent.d_off = (size + 1) * sizeof(struct dirent);
+        tmpDirent.d_ino = dir->inode;
+        tmpDirent.d_type = FT_FILE;
 
-    result->d_ino = dir->inode;
-    result->d_type = FT_FILE;
-    result->d_namlen = dir->namelength;
-
-    LOG("dir size = %u, %X\n", dir->size, dir);
-    pathInode->tmpDir += dir->size;
-
-    dir = (struct Ext2DirEntry *) ((u32) dir + dir->size);
-    if ((u32) pathInode->tmpDir >= priv->blocksize || dir->inode == 0) {
-        pathInode->tmpDir = 0;
-        pathInode->tmpBreadir += 1;
+        dir = (struct Ext2DirEntry *) ((u32) dir + dir->size);
+        memcpy(block, &tmpDirent, sizeof(struct dirent));
+        block += sizeof(struct dirent);
+        size += 1;
     }
 
     kfree(buf);
-    return result;
+    return size;
 }
 
 static u32 ext2_read_directory(const char *filename, void *buf, u32 blocksize) {
@@ -302,7 +305,7 @@ static u32 ext2_read_directory(const char *filename, void *buf, u32 blocksize) {
     return 0;
 }
 
-static u32 ext2FindNewInodeId(struct Ext2PrivData *priv) {
+static u32 ext2FindNewInodeId(struct Ext2VolumeData *priv) {
     /* Algorithm: Loop through the block group descriptors,
      * and find the number of unalloc inodes
      */
@@ -342,7 +345,7 @@ static u32 ext2FindNewInodeId(struct Ext2PrivData *priv) {
     return id;
 }
 
-static void ext2AllocBlock(u32 *out, struct Ext2PrivData *priv) {
+static void ext2AllocBlock(u32 *out, struct Ext2VolumeData *priv) {
     /* Algorithm: Loop through block group descriptors,
      * find which bg has a free block
      * and set that.
@@ -372,7 +375,7 @@ static void ext2AllocBlock(u32 *out, struct Ext2PrivData *priv) {
 }
 
 static int ext2UpdateParentDir(struct Ext2DirEntry *entry, struct Ext2Inode *parentInode, struct FsPath *parentDir,
-                               void *block_buf, struct Ext2PrivData *priv) {
+                               void *block_buf, struct Ext2VolumeData *priv) {
     for (int i = 0; i < 12; i++) {
         if (parentInode->dbp[i] == 0 || parentInode->dbp[i] >= priv->sb.blocks) {
             u32 theblock = 0;
@@ -414,8 +417,87 @@ static int ext2UpdateParentDir(struct Ext2DirEntry *entry, struct Ext2Inode *par
     return 0;
 }
 
+struct FsPath *ext2Link(struct FsPath *nodeToLink, struct FsPath *parentDir, const char *filename) {
+    struct Ext2VolumeData *priv = parentDir->volume->privateData;
+    struct Ext2Inode parentInode;
+    ext2ReadInode(&parentInode, parentDir->inode, priv);
+
+    void *block_buf = kmalloc(priv->blocksize, 0, "blockbufext2");
+    if (block_buf == NULL)
+        return NULL;
+
+    u32 filenameSize = strlen(filename) + 1;
+    struct Ext2DirEntry *entry = kmalloc(sizeof(struct Ext2DirEntry) + filenameSize, 0, "ext2Dir");
+    if (entry == NULL)
+        goto failure_entry;
+
+    entry->size = sizeof(struct Ext2DirEntry) + filenameSize;
+    entry->reserved = 0;
+    entry->namelength = (u8) filenameSize;
+    memcpy(&entry->reserved + 1, filename, filenameSize);
+
+    u32 id;
+
+    struct Ext2Inode inode;
+    if (nodeToLink == NULL) {
+        LOG("[ext2] mkfile\n");
+        memset(&inode, 0, sizeof(struct Ext2Inode));
+
+        inode.hardlinks = 1;
+        inode.size = 0;
+        inode.type = INODE_TYPE_FILE | 0x100 | 0x080;
+        inode.disk_sectors = 2;
+        inode.last_modif = inode.last_access = inode.create_time = gettick();
+
+        id = ext2FindNewInodeId(priv);
+        LOG("[ext2] mkfile: new id = %u\n", id);
+    } else {
+        ext2ReadInode(&inode, nodeToLink->inode, priv);
+        if (!(inode.type & INODE_TYPE_FILE))
+            goto failure_inode;
+
+        id = nodeToLink->inode;
+        inode.hardlinks += 1;
+    }
+
+    entry->inode = id;
+
+    u32 block = 0; // The block where this inode should be written
+    u32 ioff = 0;  // Offset into the block function to sizeof(inode_t)
+    ext2GetInodeBlock(id, &block, &ioff, priv);
+    LOG("[ext2] link: block = %u, ioff = %u\n", block, ioff);
+
+    ext2DeviceReadBlock(block_buf, block, priv);
+
+    struct Ext2Inode *winode = (struct Ext2Inode *) block_buf + ioff;
+    memcpy(winode, &inode, sizeof(struct Ext2Inode));
+    ext2DeviceWriteBlock(block_buf, block, priv);
+
+    if (ext2UpdateParentDir(entry, &parentInode, parentDir, block_buf, priv) == 0)
+        goto failure_update;
+
+    struct FsPath *path = kmalloc(sizeof(struct FsPath), 0, "touchPathExt2");
+    if (path == NULL)
+        goto failure_update;
+
+    kfree(entry);
+    kfree(block_buf);
+
+    path->inode = id;
+    return path;
+
+    failure_update:
+    failure_inode:
+    kfree(entry);
+    failure_entry:
+    kfree(block_buf);
+    LOG("[ext2] link failure\n");
+    return NULL;
+}
+
+/*
 static struct FsPath *ext2Mkfile(struct FsPath *parentDir, const char *filename) {
-    struct Ext2PrivData *priv = parentDir->volume->privateData;
+    struct Ext2VolumeData *priv = parentDir->volume->privateData;
     struct Ext2Inode *parentInode = parentDir->privateData;
 
     void *block_buf = kmalloc(priv->blocksize, 0, "blockbufext2");
@@ -426,7 +508,7 @@ static struct FsPath *ext2Mkfile(struct FsPath *parentDir, const char *filename)
     if (inode == NULL)
         goto failure_inode;
 
-    klog("[ext2] mkfile\n");
+    LOG("[ext2] mkfile\n");
 
     memset(inode, 0, sizeof(struct Ext2Inode));
 
@@ -448,13 +530,13 @@ static struct FsPath *ext2Mkfile(struct FsPath *parentDir, const char *filename)
     memcpy(&entry->reserved + 1, filename, filenameSize);
 
     u32 id = ext2FindNewInodeId(priv);
-    klog("[ext2] mkfile: new id = %u\n", id);
+    LOG("[ext2] mkfile: new id = %u\n", id);
     entry->inode = id;
 
-    u32 block = 0; /* The block where this inode should be written */
-    u32 ioff = 0; /* Offset into the block function to sizeof(inode_t) */
+    u32 block = 0; // The block where this inode should be written
+    u32 ioff = 0;  // Offset into the block function to sizeof(inode_t)
     ext2GetInodeBlock(id, &block, &ioff, priv);
-    klog("[ext2] mkfile: block = %u, ioff = %u\n", block, ioff);
+    LOG("[ext2] mkfile: block = %u, ioff = %u\n", block, ioff);
 
     ext2DeviceReadBlock(block_buf, block, priv);
 
@@ -484,47 +566,49 @@ static struct FsPath *ext2Mkfile(struct FsPath *parentDir, const char *filename)
     kfree(block_buf);
     LOG("[ext2] mkfile failure\n");
     return NULL;
-}
+}*/
 
 static int ext2ResizeFile(struct FsPath *path, u32 newSize) {
-    struct Ext2PrivData *priv = path->volume->privateData;
-    struct Ext2Inode *pathInode = path->privateData;
+    struct Ext2VolumeData *priv = path->volume->privateData;
+    struct Ext2Inode pathInode;
 
     /* Locate and load the inode */
-    if (!(pathInode->type & INODE_TYPE_FILE))
+    ext2ReadInode(&pathInode, path->inode, priv);
+    if (!(pathInode.type & INODE_TYPE_FILE))
         return -1;
 
-    pathInode->size = newSize;
+    pathInode.size = newSize;
     LOG("[ext2] resize: %u (%u)\n", newSize, path->inode);
-    ext2WriteInode(pathInode, path->inode, priv);
+    ext2WriteInode(&pathInode, path->inode, priv);
     LOG("[ext2] resize end\n");
     path->size = newSize;
     return 0;
 }
 
 static int ext2WriteBlock(struct FsPath *path, const char *buffer, u32 blocknum) {
-    klog("[ext2] writeblock: %u\n", blocknum);
-    struct Ext2PrivData *priv = path->volume->privateData;
-    struct Ext2Inode *pathInode = path->privateData;
+    LOG("[ext2] writeblock: %u\n", blocknum);
+    struct Ext2VolumeData *priv = path->volume->privateData;
+    struct Ext2Inode pathInode;
 
     /* Locate and load the inode */
-    if (!(pathInode->type & INODE_TYPE_FILE))
+    ext2ReadInode(&pathInode, path->inode, priv);
+    if (!(pathInode.type & INODE_TYPE_FILE))
         return -1;
 
     u32 bid = 0;
     if (blocknum < 12)
-        bid = pathInode->dbp[blocknum];
+        bid = pathInode.dbp[blocknum];
     else {
         klog("[ext2] can not write more than 12kb\n"); // todo
         return -1;
     }
 
     if (bid == 0 || bid > priv->sb.blocks) {
-        klog("[ext2] writeblock: create new block\n");
+        LOG("[ext2] writeblock: create new block\n");
         ext2AllocBlock(&bid, priv);
-        pathInode->dbp[blocknum] = bid;
-        klog("[ext2] writeblock: id = %u\n", bid);
-        ext2WriteInode(pathInode, path->inode, priv);
+        pathInode.dbp[blocknum] = bid;
+        LOG("[ext2] writeblock: id = %u\n", bid);
+        ext2WriteInode(&pathInode, path->inode, priv);
     }
 
     ext2DeviceWriteBlock((void *) buffer, bid, priv);
@@ -532,13 +616,12 @@ static int ext2WriteBlock(struct FsPath *path, const char *buffer, u32 blocknum)
 }
 
 static struct FsPath *ext2Lookup(struct FsPath *path, const char *name) {
-    // todo need fix
     LOG("[ext2] Lookup: %s\n", name);
-    struct Ext2PrivData *priv = path->volume->privateData;
-    struct Ext2Inode *pathInode = path->privateData;
-    struct Ext2Inode *inode = NULL;
+    struct Ext2VolumeData *priv = path->volume->privateData;
+    struct Ext2Inode pathInode;
 
-    if ((pathInode->type & 0xF000) != INODE_TYPE_DIRECTORY)
+    ext2ReadInode(&pathInode, path->inode, priv);
+    if ((pathInode.type & 0xF000) != INODE_TYPE_DIRECTORY)
         return NULL;
 
     void *buf = kmalloc(priv->blocksize, 0, "newExt2Buf");
@@ -548,7 +631,7 @@ static struct FsPath *ext2Lookup(struct FsPath *path, const char *name) {
     u32 fileInode = 0;
 
     for (int i = 0; i < 12; i++) {
-        u32 b = pathInode->dbp[i];
+        u32 b = pathInode.dbp[i];
         LOG("test loop %d: %u\n", i, b);
         if (b == 0) {
             klog("[ext2] invalid dbp: %s\n", name);
@@ -564,22 +647,15 @@ static struct FsPath *ext2Lookup(struct FsPath *path, const char *name) {
     if (!fileInode)
         goto ext2LookupFaillure;
 
-    inode = kmalloc(sizeof(struct Ext2Inode), 0, "newInode");
-    if (inode == NULL)
-        goto ext2LookupFaillure;
-
     LOG("Found inode %s! %d\n", name, fileInode);
-    ext2ReadInode(inode, fileInode, priv);
+    struct Ext2Inode inode;
+    ext2ReadInode(&inode, fileInode, priv);
 
     struct FsPath *newPath = kmalloc(sizeof(struct FsPath), 0, "newExt2FsPath");
     if (newPath == NULL)
         goto ext2LookupFaillure;
 
-    inode->tmpBreadir = 0;
-    inode->tmpDir = 0;
-
-    newPath->privateData = inode;
-    newPath->size = inode->size;
+    newPath->size = inode.size;
     newPath->inode = fileInode;
 
     kfree(buf);
@@ -587,12 +663,11 @@ static struct FsPath *ext2Lookup(struct FsPath *path, const char *name) {
 
     ext2LookupFaillure:
     kfree(buf);
-    kfree(inode);
     return NULL;
 }
 
 static int ext2Umount(struct FsVolume *volume) {
-    struct Ext2PrivData *priv = volume->privateData;
+    struct Ext2VolumeData *priv = volume->privateData;
 
     fsCacheFlush(priv->device);
     deviceDestroy(priv->device);
@@ -603,22 +678,18 @@ static int ext2Umount(struct FsVolume *volume) {
 }
 
 static int ext2Close(struct FsPath *path) {
-    kfree(path->privateData);
     kfree(path);
     return 0;
 }
 
 static struct FsPath *ext2Root(struct FsVolume *volume) {
     LOG("[ext2] get root\n");
-    struct Ext2PrivData *priv = volume->privateData;
+    struct Ext2VolumeData *priv = volume->privateData;
+    struct Ext2Inode rootInode;
 
-    struct Ext2Inode *rootInode = kmalloc(sizeof(struct Ext2Inode), 0, "rootDataInode");
-    if (rootInode == NULL)
-        return NULL;
-
-    ext2ReadInode(rootInode, 2, priv);
-    if ((rootInode->type & 0xF000) != INODE_TYPE_DIRECTORY) {
-        klog("FATAL: Root directory is not a directory! (%X)\n", (rootInode->type & 0xF000));
+    ext2ReadInode(&rootInode, 2, priv);
+    if ((rootInode.type & 0xF000) != INODE_TYPE_DIRECTORY) {
+        klog("[ext2] FATAL: Root directory is not a directory! (%X)\n", (rootInode.type & 0xF000));
         goto ext2RootFaillure;
     }
 
@@ -626,20 +697,19 @@ static struct FsPath *ext2Root(struct FsVolume *volume) {
     if (rootPath == NULL)
         goto ext2RootFaillure;
 
-    rootPath->privateData = rootInode;
+    rootPath->privateData = 0;
     rootPath->size = 0;
     rootPath->inode = 2;
     return rootPath;
 
     ext2RootFaillure:
     klog("[ext2] get root dir faillure\n");
-    kfree(rootInode);
     return NULL;
 }
 
 static struct FsVolume *ext2Mount(u32 unit) {
     LOG("[ext2] mount volume unit %u:\n", unit);
-    struct Ext2PrivData *priv = NULL;
+    struct Ext2VolumeData *priv = NULL;
 
     u8 *buf = (u8 *) kmalloc(1024, 0, "newBuf");
     if (buf == NULL)
@@ -656,9 +726,9 @@ static struct FsVolume *ext2Mount(u32 unit) {
         goto ext2MountFaillure;
     }
 
-    LOG("Valid EXT2 signature!: %d, %d, %d\n", sb->state, sb->os_id, sb->major_version);
+    klog("Valid EXT2 signature!: %d, %d, %d\n", sb->state, sb->os_id, sb->major_version);
 
-    priv = (struct Ext2PrivData *) kmalloc(sizeof(struct Ext2PrivData), 0, "newstruct Ext2PrivData");
+    priv = (struct Ext2VolumeData *) kmalloc(sizeof(struct Ext2VolumeData), 0, "newstruct Ext2VolumeData");
     if (priv == NULL)
         goto ext2MountFaillure;
 
@@ -716,7 +786,7 @@ static struct Fs fs_ext2 = {
         .writeBlock = &ext2WriteBlock,
         .stat = &ext2Stat,
         .resizeFile = &ext2ResizeFile,
-        .mkfile = &ext2Mkfile
+        .link = &ext2Link
 };
 
 void initExt2FileSystem() {

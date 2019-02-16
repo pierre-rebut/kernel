@@ -217,34 +217,46 @@ static struct FsPath *kfsLookup(struct FsPath *path, const char *name) {
     return file;
 }
 
-static struct dirent *kfsReaddir(struct FsPath *path, struct dirent *result) {
-    struct kfs_inode *node = (struct kfs_inode *) path->privateData;
+u32 kfsReaddir(struct FsPath *path, void *block, u32 nblock) {
     struct kfs_superblock *kfs = (struct kfs_superblock *) KFS_MEM_POS;
-
-    struct dirent tmp;
+    LOG("[KFS] readdir: %u\n", nblock);
 
     cli();
     pagingSwitchPageDirectory(path->volume->privateData);
 
-    LOG("[KFS] readdir: %s\n", node->filename);
-    if (node->idx > kfs->inode_cnt) {
+    if (nblock > kfs->inode_cnt / DIRENT_BUFFER_NB) {
         pagingSwitchPageDirectory(currentTask->pageDirectory);
         sti();
-        return NULL;
+        return 0;
     }
 
-    strcpy(tmp.d_name, node->filename);
-    tmp.d_ino = node->idx;
-    tmp.d_type = FT_FILE;
-    result->d_namlen = strlen(node->filename);
+    struct kfs_inode *dir = (struct kfs_inode *) (KFS_MEM_POS + (kfs->inode_idx * KFS_BLK_SZ));
+    for (u32 i = 0; i < nblock; i++) {
+        dir = (struct kfs_inode *) (KFS_MEM_POS + (dir->next_inode * KFS_BLK_SZ));
+    }
 
-    path->privateData = (struct kfs_inode *) (KFS_MEM_POS + (node->next_inode * KFS_BLK_SZ));
+    u32 size = 0;
+    for (u32 i = 0; i < DIRENT_BUFFER_NB; i++) {
+        if (dir->next_inode == 0)
+            break;
+
+        struct dirent tmpDirent;
+        strcpy(tmpDirent.d_name, dir->filename);
+        tmpDirent.d_ino = dir->idx;
+        tmpDirent.d_type = FT_FILE;
+        tmpDirent.d_namlen = strlen(dir->filename);
+
+        memcpy(block, &tmpDirent, sizeof(struct dirent));
+        block += sizeof(struct dirent);
+        size += 1;
+
+        dir = (struct kfs_inode *) (KFS_MEM_POS + (dir->next_inode * KFS_BLK_SZ));
+    }
 
     pagingSwitchPageDirectory(currentTask->pageDirectory);
     sti();
 
-    memcpy(result, &tmp, sizeof(struct dirent));
-    return result;
+    return size;
 }
 
 static int kfsReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {

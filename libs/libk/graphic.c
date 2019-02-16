@@ -24,7 +24,7 @@
 #include "include/graphic.h"
 #include <stdlib.h>
 #include <err.h>
-#include "include/syscallw.h"
+#include "unistd.h"
 
 /*
  * offscreen buffer (for double buffering).

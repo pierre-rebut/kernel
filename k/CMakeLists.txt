@@ -20,7 +20,7 @@ set(K_FILES
         io/pic.c io/pic.h
         io/pit.c io/pit.h
         io/serial.c io/serial.h
-        sys/syscall.c sys/syscall.h
+        sys/syscalls.c sys/syscall.h
         task.c task.h
         io/terminal.c io/terminal.h
         io/fs/filesystem.c io/fs/filesystem.h

@@ -11,6 +11,8 @@
 #include "io/fs/filesystem.h"
 #include "sys/kobject.h"
 
+#define TASK_MAX_PID 1024
+
 struct Console;
 
 enum TaskPrivilege {

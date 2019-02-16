@@ -7,8 +7,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <kstd.h>
-#include <syscallw.h>
+#include <unistd.h>
 #include <string.h>
+#include <dirent.h>
 
 #include "fts.h"
 
@@ -513,7 +514,7 @@ static FTSENT *fts_build(register FTS *sp, int type) {
     register FTSENT *p, *head;
     register int nitems;
     FTSENT *cur, *tail;
-    int dirp;
+    DIR *dirp;
     void *adjaddr;
     int cderrno, descend, len, level, maxlen, nlinks, saved_errno;
     char *cp = NULL;
@@ -526,7 +527,7 @@ static FTSENT *fts_build(register FTS *sp, int type) {
      * If being called from fts_read, set the fts_info field.
      */
 
-    if ((dirp = opendir(cur->fts_accpath)) <= 0) {
+    if ((dirp = opendir(cur->fts_accpath)) == NULL) {
         if (type == BREAD) {
             cur->fts_info = FTS_DNR;
             cur->fts_errno = errno;
@@ -568,7 +569,7 @@ static FTSENT *fts_build(register FTS *sp, int type) {
      */
     cderrno = 0;
     if (nlinks || type == BREAD)
-        if (FCHDIR(sp, dirp)) {
+        if (FCHDIR(sp, dirp->fd)) {
             if (nlinks && type == BREAD)
                 cur->fts_errno = errno;
             cur->fts_flags |= FTS_DONTCHDIR;

@@ -24,7 +24,6 @@ struct Task *currentTask = NULL;
 struct Task *freeTimeTask = NULL;
 struct Task kernelTask = {0};
 
-#define TASK_MAX_PID 1024
 static struct Task *tasksTable[TASK_MAX_PID] = {0};
 
 void initTasking() {

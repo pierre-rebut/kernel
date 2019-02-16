@@ -18,7 +18,7 @@
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
-#define NB_SYSCALL 35
+#define NB_SYSCALL 38
 
 static u32 sys_write(struct esp_context *ctx);
 
@@ -90,6 +90,12 @@ static u32 sys_mkfile(struct esp_context *ctx);
 
 static u32 sys_fchdir(struct esp_context *ctx);
 
+static u32 sys_link(struct esp_context *ctx);
+
+static u32 sys_symlink(struct esp_context *ctx);
+
+static u32 sys_unlink(struct esp_context *ctx);
+
 typedef u32 (*syscall_t)(struct esp_context *);
 
 static syscall_t syscall[] = {
@@ -128,6 +134,9 @@ static syscall_t syscall[] = {
         sys_mkdir,
         sys_mkfile,
         sys_fchdir,
+        sys_link,
+        sys_symlink,
+        sys_unlink
 };
 
 static void syscall_handler(struct esp_context *ctx);
@@ -186,7 +195,7 @@ static u32 sys_open(struct esp_context *ctx) {
         if (!(ctx->ecx & O_CREAT))
             return (u32) -1;
 
-        path = fsMkfile((const char *)ctx->ebx);
+        path = fsLink((const char *)ctx->ebx, NULL);
         if (!path)
             return (u32) -1;
     }
@@ -331,12 +340,12 @@ static u32 sys_opendir(struct esp_context *ctx) {
 }
 
 static u32 sys_readdir(struct esp_context *ctx) {
-    LOG("readdir: %d\n", ctx->ebx);
+    LOG("readdir: %d (%d)\n", ctx->ebx, ctx->edx);
     struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
     if (!obj)
         return 0;
 
-    return (u32) fsPathReaddir(obj->data, (void *) ctx->ecx);
+    return (u32) fsPathReaddir(obj->data, (void *) ctx->ecx, ctx->edx);
 }
 
 static u32 sys_closedir(struct esp_context *ctx) {
@@ -481,7 +490,7 @@ static u32 sys_mkfile(struct esp_context *ctx) {
         return (u32) -1;
     }
 
-    tmp = fsMkfile((const char *)ctx->ebx);
+    tmp = fsLink((const char *)ctx->ebx, NULL);
     fsPathDestroy(tmp);
     return (u32) (tmp ? 0 : -1);
 }
@@ -498,4 +507,33 @@ static u32 sys_fchdir(struct esp_context *ctx) {
     currentTask->currentDir->refcount += 1;
 
     return 0;
+}
+
+static u32 sys_link(struct esp_context *ctx) {
+    LOG("link: %s -> %s\n", (char *) ctx->ebx, (char *) ctx->ecx);
+
+    void *tmp = fsResolvePath((const char *)ctx->ecx);
+    if (tmp) {
+        fsPathDestroy(tmp);
+        return (u32) -1;
+    }
+
+    tmp = fsLink((const char *)ctx->ecx, (const char *)ctx->ebx);
+    fsPathDestroy(tmp);
+    return (u32) (tmp ? 0 : -1);
+}
+
+static u32 sys_symlink(struct esp_context *ctx) {
+    (void) ctx; // todo
+
+    LOG("symlink: %s -> %s\n", (char *) ctx->ebx, (char *) ctx->ecx);
+
+    return (u32) -1;
+}
+
+static u32 sys_unlink(struct esp_context *ctx) {
+    (void) ctx; // todo
+    LOG("unlink: %s\n", (char *) ctx->ebx);
+
+    return (u32) -1;
 }

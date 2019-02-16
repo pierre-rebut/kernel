@@ -11,7 +11,8 @@
 #ifndef MY_LS_H_
 # define MY_LS_H_
 
-#include "../../../libs/include/types.h"
+#include <types.h>
+#include <dirent.h>
 
 typedef struct s_option {
     int all;
@@ -54,6 +55,6 @@ int get_total_ll(t_option *opt, char **tab, char *dir);
 
 char *my_directory(char *address, char *name);
 
-char **do_ls_allon(t_option *opt, int dirp, int nb_file);
+char **do_ls_allon(t_option *opt, DIR *dirp, int nb_file);
 
 #endif

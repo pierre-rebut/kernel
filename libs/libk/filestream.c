@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <err.h>
-#include <syscallw.h>
+#include <unistd.h>
 #include "filestream.h"
 
 #define STREAM_EOF 1
@@ -154,7 +154,7 @@ static int fileInternalWrite(FILE *stream) {
        i++;
     }
 
-    warn("file internal write: %d\n", i);
+    // warn("file internal write: %d\n", i);
 
     int size = write(stream->fd, tmpBuf, i);
     if (size < 0) {

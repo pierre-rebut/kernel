@@ -8,10 +8,12 @@
 ** Last update Sat Nov 29 14:35:28 2014 rebut_p
 */
 
-#include "../../libs/include/stdlib.h"
-#include "kstd.h"
 #include <string.h>
-#include <syscallw.h>
+#include <unistd.h>
+#include <stdlib.h>
+
+#include "kstd.h"
+
 
 #include "include/my_ls.h"
 
@@ -34,7 +36,7 @@ int my_swap(char **tab, int i, int *bool) {
     return (0);
 }
 
-char **do_ls_allon(t_option *opt, int dirp, int nb_file) {
+char **do_ls_allon(t_option *opt, DIR *dirp, int nb_file) {
     char **tab;
     struct dirent *entry;
     int i;

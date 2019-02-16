@@ -66,19 +66,32 @@ static struct FsPath *devLookup(struct FsPath *path, const char *name) {
     return file;
 }
 
-static struct dirent *devReaddir(struct FsPath *path, struct dirent *result) {
-    LOG("[dev] readdir\n");
-    struct DeviceDriver *driver = deviceGetDeviceDriverByIndex((u32) path->privateData);
-    if (driver == NULL)
-        return NULL;
+u32 devReaddir(struct FsPath *path, void *block, u32 nblock) {
+    (void) path;
 
-    sprintf(result->d_name, "%s", driver->name);
-    result->d_ino = (u32) path->privateData;
-    result->d_type = FT_FILE;
-    result->d_namlen = strlen(driver->name);
+    LOG("[dev] readdir: %u\n", nblock);
+    u32 size = 0;
+    u32 i = nblock * DIRENT_BUFFER_NB;
 
-    path->privateData += 1;
-    return result;
+    while (size < DIRENT_BUFFER_NB) {
+        struct DeviceDriver *driver = deviceGetDeviceDriverByIndex(i);
+        if (driver == NULL)
+            break;
+
+        struct dirent tmpDirent;
+        strcpy(tmpDirent.d_name, driver->name);
+        tmpDirent.d_namlen = strlen(tmpDirent.d_name);
+        tmpDirent.d_type = FT_FILE;
+        tmpDirent.d_ino = i;
+
+        memcpy(block, &tmpDirent, sizeof(struct dirent));
+        block += sizeof(struct dirent);
+
+        i++;
+        size++;
+    }
+
+    return size;
 }
 
 static struct Fs fs_devfs = {

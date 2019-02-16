@@ -168,10 +168,11 @@ int fsCacheWrite(struct Device *device, const void *buffer, int nblocks, int off
 
         fsCacheBlock = createFsCacheBlock(fsCache, data, nblocks, offset);
     } else {
-        klog("[fsCache] cache found\n");
+        klog("[fsCache] write: cache found\n");
         data = fsCacheBlock->data;
     }
 
+    klog("bite en bois: %d\n", offset);
     fsCacheBlock->updated = 1;
     memcpy(data, buffer, (u32) nblocks * fsCache->device->blockSize);
     return nblocks;
@@ -212,6 +213,7 @@ static void fsCacheSyncDevice(struct FsCache *fsCache) {
     while (tmpBlock != NULL) {
         if (tmpBlock->updated == 1) {
             tmpBlock->updated = 0;
+            klog("sync block: %s -> %d, %d\n", fsCache->device->driver->name, tmpBlock->offset, tmpBlock->nblocks);
             deviceWrite(fsCache->device, tmpBlock->data, tmpBlock->nblocks, tmpBlock->offset);
         }
 

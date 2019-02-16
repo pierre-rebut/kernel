@@ -22,11 +22,13 @@ struct Fs {
     int (*umount)(struct FsVolume *volume);
     int (*close)(struct FsPath *path);
     struct FsPath *(*mkdir)(struct FsPath *path, const char *name);
-    struct FsPath *(*mkfile)(struct FsPath *path, const char *name);
+    struct FsPath *(*link)(struct FsPath *nodeToLink, struct FsPath *parentDir, const char *name);
+    int (*unlink)(struct FsPath *parentDir, struct FsPath *path);
+
     int (*stat)(struct FsPath *path, struct stat *result);
 
     struct FsPath *(*lookup)(struct FsPath * path, const char *name);
-    struct dirent *(*readdir)(struct FsPath *path, struct dirent *result);
+    u32 (*readdir)(struct FsPath *path, void *block, u32 nblock);
     int (*rmdir)(struct FsPath *path, const char *name);
     int (*readBlock)(struct FsPath *path, char *buffer, u32 blocknum);
     int (*writeBlock)(struct FsPath *path, const char *buffer, u32 blocknum);
@@ -81,10 +83,13 @@ int fsWriteFile(struct FsPath *file, const char *buffer, u32 length, u32 offset)
 int fsStat(struct FsPath *file, struct stat *result);
 
 struct FsPath *fsGetPathByName(struct FsPath *path, const char *name);
-struct dirent *fsPathReaddir(struct FsPath *path, struct dirent *result);
+u32 fsPathReaddir(struct FsPath *path, void *block, u32 nblock);
 int fsRmdir(struct FsPath *path, const char *name);
 struct FsPath *fsMkdir(const char *name);
-struct FsPath *fsMkfile(const char *name);
+
+struct FsPath *fsLink(const char *name, const char *linkTo);
+struct FsPath *fsUnlink(const char *name);
+
 int fsPathDestroy(struct FsPath *path);
 int fsResizeFile(struct FsPath *path, u32 s);
 

@@ -21,40 +21,9 @@
 * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include <kstd.h>
-#include "include/syscallw.h"
 
-static inline u32 syscall0(int syscall_nb) {
-    u32 res;
-
-    asm volatile ("int $0x80" : "=a"(res) : "a"(syscall_nb));
-
-    return res;
-}
-
-static inline u32 syscall1(int syscall_nb, u32 ebx) {
-    u32 res;
-
-    asm volatile ("int $0x80" : "=a"(res) : "a"(syscall_nb), "b"(ebx));
-
-    return res;
-}
-
-static inline u32 syscall2(int syscall_nb, u32 ebx, u32 ecx) {
-    u32 res;
-
-    asm volatile ("int $0x80" : "=a"(res) : "a"(syscall_nb), "b"(ebx), "c"(ecx));
-
-    return res;
-}
-
-static inline u32 syscall3(int syscall_nb, u32 ebx, u32 ecx, u32 edx) {
-    u32 res;
-
-    asm volatile ("int $0x80" : "=a"(res) : "a"(syscall_nb), "b"(ebx), "c"(ecx), "path"(edx));
-
-    return res;
-}
+#include <unistd.h>
+#include "syscalls.h"
 
 int exit(int value) {
     return ((int) syscall1(SYSCALL_EXIT, (u32) value));
@@ -146,19 +115,6 @@ int fstat(int fd, struct stat *data) {
 
 int chdir(const char *path) {
     return syscall1(SYSCALL_CHDIR, (u32) path);
-}
-
-int opendir(const char *name) {
-    return syscall1(SYSCALL_OPENDIR, (u32) name);
-}
-
-int closedir(int repertoire) {
-    return syscall1(SYSCALL_CLOSEDIR, (u32) repertoire);
-}
-
-struct dirent *readdir(int repertoire) {
-    static struct dirent data = {0};
-    return (struct dirent *) syscall2(SYSCALL_READDIR, (u32) repertoire, (u32) &data);
 }
 
 int mount(const char *mnt, const char *fstype, u32 arg) {

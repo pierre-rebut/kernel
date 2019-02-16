@@ -10,7 +10,8 @@
 
 #include "kstd.h"
 #include <stdio.h>
-#include <syscallw.h>
+#include <unistd.h>
+#include <dirent.h>
 #include "include/my_ls.h"
 
 int set_zero(t_option *opt) {
@@ -52,16 +53,16 @@ int set_option(t_option *opt, char **av) {
 int print_ls(t_option *opt, char *dir) {
     int total;
     char **tab;
-    int dirp;
+    DIR *dirp;
     int nb_file;
 
     total = 0;
     nb_file = 0;
-    if ((dirp = opendir(dir)) == -1)
+    if ((dirp = opendir(dir)) == NULL)
         return (do_file(opt, dir));
     while (readdir(dirp) != NULL)
         nb_file++;
-    if ((dirp = opendir(dir)) == -1)
+    if ((dirp = opendir(dir)) == NULL)
         return (do_file(opt, dir));
     tab = do_ls_allon(opt, dirp, nb_file);
     total = get_total_ll(opt, tab, dir);
@@ -99,7 +100,7 @@ int do_ls(t_option *opt, char **av) {
 
 int main(int ac, char **av) {
     char **tab;
-    int dirp;
+    DIR *dirp;
     int i;
     t_option opt;
 
@@ -107,7 +108,7 @@ int main(int ac, char **av) {
     if (ac != 1)
         verife_option(&opt, av);
     else {
-        if ((dirp = opendir(".")) == -1)
+        if ((dirp = opendir(".")) == NULL)
             puts("Error1: no file or directory\n");
         else {
             tab = do_ls_allon(&opt, dirp, compte_nbfile("."));

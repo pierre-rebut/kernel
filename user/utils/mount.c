@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include "kstd.h"
 #include <string.h>
-#include <syscallw.h>
+#include <unistd.h>
 #include "../../libs/include/stdlib.h"
 
 void help() {

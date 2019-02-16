@@ -11,7 +11,7 @@
 #include "../../libs/include/stdlib.h"
 #include "kstd.h"
 #include <stdio.h>
-#include <syscallw.h>
+#include <unistd.h>
 #include "include/my_ls.h"
 
 int get_nbr_dir(char **av) {
@@ -54,9 +54,9 @@ int do_sort_file(char *str1, char *str2) {
 
 int compte_nbfile(char *str) {
     int nb;
-    int dirp;
+    DIR *dirp;
 
-    if ((dirp = opendir(str)) == -1)
+    if ((dirp = opendir(str)) == NULL)
         return (-1);
     nb = 0;
     while (readdir(dirp) != NULL)

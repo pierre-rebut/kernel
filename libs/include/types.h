@@ -82,6 +82,9 @@ struct stat {
     time_t st_ctim; // time last status changed
 };
 
+#define DIRENT_BUFFER_NB 15
+#define DIRENT_BUFFER_SIZE (DIRENT_BUFFER_NB * sizeof(struct dirent))
+
 struct dirent {
     u32 d_ino;
     u32 d_off;       // décalage jusqu'à la dirent suivante
@@ -89,6 +92,6 @@ struct dirent {
     enum FileType d_type;      // type du fichier
     u32 d_namlen;
     char d_name[256]; // nom du fichier
-};
+} __attribute__((packed));
 
 #endif

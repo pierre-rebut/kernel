@@ -80,9 +80,7 @@ struct Ext2Inode {
     u32 reserved1;
     u32 reserved2;
     u32 fragment_block;
-    u32 tmpBreadir;
-    u32 tmpDir;
-    u8 ossv2[4];
+    u8 ossv2[12];
 } __attribute__((packed));
 
 struct Ext2DirEntry {
@@ -93,7 +91,7 @@ struct Ext2DirEntry {
     /* name here */
 } __attribute__((packed));
 
-struct Ext2PrivData {
+struct Ext2VolumeData {
     struct Ext2Superblock sb;
     u32 first_bgd;
     u32 number_of_bgs;

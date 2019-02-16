@@ -9,7 +9,7 @@ static char const copyright[] =
 #include <err.h>
 #include <filestream.h>
 #include <kstd.h>
-#include <syscallw.h>
+#include <unistd.h>
 
 static int bflag, eflag, nflag, sflag, tflag, vflag;
 static int rval;

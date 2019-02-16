@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <err.h>
-#include <syscallw.h>
+#include <unistd.h>
 
 #include "functions.h"
 #include "define.h"

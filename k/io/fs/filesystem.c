@@ -135,11 +135,11 @@ struct FsPath *fsVolumeRoot(struct FsVolume *volume) {
     return pathRoot;
 }
 
-struct dirent *fsPathReaddir(struct FsPath *path, struct dirent *result) {
-    if (!path || !path->volume->fs->readdir)
-        return NULL;
-    LOG("readdir\n");
-    return path->volume->fs->readdir(path, result);
+u32 fsPathReaddir(struct FsPath *path, void *block, u32 nblock) {
+    if (!block || !path->volume->fs->readdir)
+        return 0;
+    LOG("readdir: %u\n", nblock);
+    return path->volume->fs->readdir(path, block, nblock);
 }
 
 static struct FsPath *fsPathLookup(struct FsPath *path, const char *name) {
@@ -289,7 +289,7 @@ struct FsPath *fsMkdir(const char *name) {
     return 0;
 }
 
-struct FsPath *fsMkfile(const char *name) {
+struct FsPath *fsLink(const char *name, const char *linkTo) {
     if (!name)
         return NULL;
 
@@ -315,12 +315,28 @@ struct FsPath *fsMkfile(const char *name) {
         parent->refcount += 1;
     }
 
-    if (parent == NULL || !parent->volume->fs->mkfile) {
+    if (parent == NULL || !parent->volume->fs->link) {
         kfree(f);
         return NULL;
     }
 
-    struct FsPath *path = parent->volume->fs->mkfile(parent, file);
+    struct FsPath *pathLinkTo = NULL;
+    if (linkTo) {
+        pathLinkTo = fsResolvePath(linkTo);
+        if (pathLinkTo == NULL) {
+            kfree(f);
+            return NULL;
+        }
+
+        if (pathLinkTo->volume != parent->volume) {
+            kfree(f);
+            fsPathDestroy(pathLinkTo);
+            return NULL;
+        }
+
+    }
+
+    struct FsPath *path = parent->volume->fs->link(pathLinkTo, parent, file);
     kfree(f);
 
     if (path == NULL) {
