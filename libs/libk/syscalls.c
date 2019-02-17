@@ -2,6 +2,7 @@
 // Created by rebut_p on 17/02/19.
 //
 
+#include <err.h>
 #include "syscalls.h"
 
 int syscall0(int syscall_nb) {
@@ -12,6 +13,7 @@ int syscall0(int syscall_nb) {
 
     if (res < 0) {
         errno = -res;
+        warn("syscall0: %u - %d\n", syscall_nb, errno);
         return -1;
     }
 
@@ -26,6 +28,7 @@ int syscall1(int syscall_nb, u32 ebx) {
 
     if (res < 0) {
         errno = -res;
+        warn("syscall1: %u - %d\n", syscall_nb, errno);
         return -1;
     }
 
@@ -40,6 +43,7 @@ int syscall2(int syscall_nb, u32 ebx, u32 ecx) {
 
     if (res < 0) {
         errno = -res;
+        warn("syscall2: %u - %d\n", syscall_nb, errno);
         return -1;
     }
 
@@ -54,6 +58,7 @@ int syscall3(int syscall_nb, u32 ebx, u32 ecx, u32 edx) {
 
     if (res < 0) {
         errno = -res;
+        warn("syscall3: %u - %d\n", syscall_nb, errno);
         return -1;
     }
 

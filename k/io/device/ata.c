@@ -7,10 +7,10 @@
 #include <string.h>
 #include <task.h>
 #include <sys/mutex.h>
+#include <io/pit.h>
 #include "ata.h"
 #include "io/io.h"
 #include "io/pic.h"
-#include "io/pit.h"
 #include "device.h"
 
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
@@ -39,6 +39,7 @@
 #define ATA_STATUS    7
 #define ATA_COMMAND    7
 #define ATA_CONTROL    0x206
+#define ATA_REG_ALTSTATUS  0x0C
 
 #define ATA_FLAGS_ECC    0x80    /* enable error correction */
 #define ATA_FLAGS_LBA    0x40    /* enable linear addressing */
@@ -76,7 +77,7 @@ static struct Mutex ata_mutex;
 
 static void ataInterruptHandler(struct esp_context *ctx) {
     (void) ctx;
-    LOG("[ATA] interrupt\n");
+    klog("[ATA] interrupt\n");
 }
 
 static void ataReset(int id) {
@@ -88,7 +89,6 @@ static void ataReset(int id) {
 
 static int ataWait(int id, int mask, int state) {
     clock_t start, elapsed;
-    int t;
 
     LOG("[ata] wait\n");
     clock_t timeout_millis = identify_in_progress ? ATA_IDENTIFY_TIMEOUT : ATA_TIMEOUT;
@@ -96,33 +96,35 @@ static int ataWait(int id, int mask, int state) {
     LOG("[ata] wait get start tick\n");
     start = gettick();
 
-    LOG("[ata] wait loop\n");
-    while (1) {
-        LOG("[ata] inb data\n");
-        t = inb(ata_base[id] + ATA_STATUS);
-        if ((t & mask) == state) {
-            LOG("[ata] return ok\n");
-            return 1;
-        }
-        if (t & ATA_STATUS_ERR) {
-            klog("ata: error\n");
-            ataReset(id);
-            return 0;
-        }
+    for (int i = 0; i < 4; i++)
+        inb(ata_base[id] + ATA_REG_ALTSTATUS);
+
+    retry:;
+    u8 status = inb(ata_base[id] + ATA_STATUS);
+    if (status & ATA_STATUS_BSY)
+        goto retry;
+
+    retry2:
+    status = inb(ata_base[id] + ATA_STATUS);
+    if (status & ATA_STATUS_ERR) {
+        klog("ERR set, device failure!\n");
+        return 0;
+    }
+
+    if ((status & mask) != state) {
         LOG("[ata] check time\n");
         elapsed = gettick() - start;
         if (elapsed > timeout_millis) {
             if (!identify_in_progress) {
-                klog("ata: timeout\n");
+                klog("[ata] wait timeout\n");
             }
             ataReset(id);
             LOG("[ata] wait end\n");
             return 0;
         }
-        LOG("[ata] wait event\n");
-        taskWaitEvent(TaskEventTimer, 1);
-        LOG("[ata] loop end\n");
+        goto retry2;
     }
+    return 1;
 }
 
 static void ataReadPio(int id, void *buffer, int size) {
@@ -353,7 +355,6 @@ void ataInit() {
                 continue;
 
             devName[3]++;
-            break;
         }
     }
 }

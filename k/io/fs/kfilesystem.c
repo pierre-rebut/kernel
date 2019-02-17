@@ -60,6 +60,8 @@ static struct FsPath *kfsRoot(struct FsVolume *volume) {
     rootPath->inode = 0;
     pagingSwitchPageDirectory(currentTask->pageDirectory);
     sti();
+
+    rootPath->type = FS_FOLDER;
     return rootPath;
 }
 
@@ -175,10 +177,12 @@ static struct FsPath *kfsLookup(struct FsPath *path, const char *name) {
     struct kfs_inode *node;
     u32 filesize = 0;
     u32 inode = 0;
+    enum FS_TYPE type = FS_FILE;
 
-    if (*name == 0 || strcmp(name, ".") == 0)
+    if (*name == 0 || strcmp(name, ".") == 0) {
         node = path->privateData;
-    else {
+        type = FS_FOLDER;
+    } else {
         cli();
         pagingSwitchPageDirectory(path->volume->privateData);
         node = getFileINode(name);
@@ -202,6 +206,7 @@ static struct FsPath *kfsLookup(struct FsPath *path, const char *name) {
     file->mode = S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
     file->size = filesize;
     file->inode = inode;
+    file->type = type;
     return file;
 }
 
@@ -295,10 +300,8 @@ static int kfsReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
     return -1;
 }
 
-static void *kfsOpenFile(struct FsPath *path, int *type) {
-    if (type)
-        *type = KO_FS_FILE;
-    return path;
+static struct Kobject *kfsOpenFile(struct FsPath *path) {
+    return koCreate((path->type == FS_FILE ? KO_FS_FILE : KO_FS_FOLDER), path, 0);
 }
 
 static struct Fs fs_kfs = {

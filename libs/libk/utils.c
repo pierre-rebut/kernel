@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <utils.h>
 #include <stdlib.h>
+#include <alloc.h>
 
 static const int maxscale = 7;
 
@@ -169,12 +170,12 @@ static struct {
  *	are set, return the empty string.
  */
 char *fflagstostr(u_long flags) {
-    char *string;
+    /*char *string;
     char *sp, *dp;
     u_long setflags;
     int i;
 
-    /*if ((string = (char *) malloc(nmappings * (longestflaglen + 1))) == NULL)
+    if ((string = (char *) malloc(nmappings * (longestflaglen + 1))) == NULL)
         return (NULL);
 
     setflags = flags;
@@ -188,7 +189,8 @@ char *fflagstostr(u_long flags) {
             setflags &= ~mapping[i].flag;
         }
     }*/
-    dp = malloc(1);
+    (void) flags;
+    char *dp = malloc(1);
     *dp = '\0';
     return (dp);
 }

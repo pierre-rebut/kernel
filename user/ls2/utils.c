@@ -3,11 +3,9 @@
 //
 
 #include <stdio.h>
-#include <string.h>
 #include <filestream.h>
 #include <unistd.h>
 
-#include "ls.h"
 #include "extern.h"
 
 int prn_normal(const char *s) {
@@ -184,14 +182,14 @@ void usage(void) {
 
 const char *user_from_uid(uid_t user, int t) {
     static const char *root = "root";
-    (void)t;
+    (void) t;
     (void) user;
     return root;
 }
 
 const char *group_from_gid(gid_t grp, int t) {
     static const char *root = "root";
-    (void)t;
+    (void) t;
     (void) grp;
     return root;
 }

@@ -11,6 +11,7 @@
 #include <string.h>
 #include <dirent.h>
 #include <fts.h>
+#include <alloc.h>
 
 #include "fts.h"
 

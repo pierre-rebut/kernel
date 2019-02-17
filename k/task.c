@@ -255,7 +255,7 @@ pid_t createProcess(const struct ExceveInfo *info) {
         return -ENOENT;
     }
 
-    if (fsOpenFile(file, S_IXUSR, NULL) == NULL) {
+    if ((file->mode & S_IXUSR) != S_IXUSR) {
         fsPathDestroy(file);
         return -EACCES;
     }

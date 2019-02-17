@@ -8,6 +8,7 @@
 #include <kstd.h>
 
 enum KObjectType {
+    KO_UNDEFINED,
     KO_FS_FILE,
     KO_FS_FOLDER,
     KO_CONS_STD,

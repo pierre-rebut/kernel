@@ -15,7 +15,7 @@ void *realloc(void *ptr, size_t len);
 
 void *calloc(size_t len, size_t);
 
-void free(void *ptr);
+void free(const void *ptr);
 
 void show_alloc_mem();
 

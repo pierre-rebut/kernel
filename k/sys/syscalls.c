@@ -9,6 +9,7 @@
 #include "io/libvga.h"
 #include "physical-memory.h"
 #include "time.h"
+#include "allocator.h"
 
 #include <kstdio.h>
 #include <io/pipe.h>
@@ -223,27 +224,21 @@ static int sys_open(struct esp_context *ctx) {
             return -EIO;
     }
 
-    enum KObjectType type;
-    void *data = fsOpenFile(path, ctx->ecx, (int *) &type);
-    if (data == NULL) {
-        fsPathDestroy(path);
+    struct Kobject *obj = fsOpenFile(path, ctx->ecx);
+    if (obj == NULL) {
         return -EACCES;
     }
 
-    struct Kobject *obj = koCreate(type, data, ctx->ecx);
-    if (obj == NULL) {
-        fsPathDestroy(path);
-        return -ENOMEM;
+    if (obj->type == KO_FS_FILE) {
+        if (ctx->ecx & O_APPEND)
+            obj->offset = ((struct FsPath*)(obj->data))->size;
+        else if (ctx->ecx & O_TRUNC) {
+            fsResizeFile(obj->data, 0);
+        }
     }
 
     taskSetKObjectByFd(fd, obj);
-    LOG("open: %s (%d)\n", (char *) ctx->ebx, fd);
-    if (ctx->ecx & O_APPEND)
-        obj->offset = path->size;
-    else if (ctx->ecx & O_TRUNC) {
-        fsResizeFile(path, 0);
-    }
-
+    klog("open: %s (%d)\n", (char *) ctx->ebx, fd);
     return fd;
 }
 
@@ -276,7 +271,7 @@ static int sys_close(struct esp_context *ctx) {
     if (!obj)
         return -EBADF;
 
-    currentTask->objectList[ctx->ebx] = NULL;
+    taskSetKObjectByFd(ctx->ebx, NULL);
     return koDestroy(obj);
 }
 
@@ -355,6 +350,7 @@ static int sys_chdir(struct esp_context *ctx) {
 }
 
 static int sys_opendir(struct esp_context *ctx) {
+    klog("opendir: %s\n", (const char *)ctx->ebx);
     int fd = taskGetAvailableFd(currentTask);
     if (fd < 0)
         return fd;
@@ -383,7 +379,7 @@ static int sys_closedir(struct esp_context *ctx) {
         return -EBADF;
 
     LOG("closedir: %d\n", ctx->ebx);
-    currentTask->objectList[ctx->ebx] = NULL;
+    taskSetKObjectByFd(ctx->ebx, NULL);
     return koDestroy(obj);
 }
 
@@ -532,7 +528,7 @@ static int sys_mkfile(struct esp_context *ctx) {
 }
 
 static int sys_fchdir(struct esp_context *ctx) {
-    LOG("fchdir: %d\n", ctx->ebx);
+    klog("fchdir: %d\n", ctx->ebx);
     struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
     if (!obj || obj->type != KO_FS_FOLDER)
         return -EBADF;

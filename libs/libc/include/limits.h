@@ -15,5 +15,10 @@
 #   define LLONG_MAX    9223372036854775807LL
 #   define LLONG_MIN    (-LLONG_MAX - 1LL)
 
+#   define LONG_MAX     2147483647L
+#  define LONG_MIN      (-LONG_MAX - 1L)
+
+#   define ULONG_MAX    4294967295UL
+
 
 #endif //KERNEL_LIMIT_H

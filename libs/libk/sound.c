@@ -24,6 +24,7 @@
 #include "include/sound.h"
 #include <stdlib.h>
 #include <unistd.h>
+#include <alloc.h>
 
 struct melody *load_sound(const char *path)
 {

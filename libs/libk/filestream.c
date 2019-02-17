@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <err.h>
 #include <unistd.h>
+#include <alloc.h>
 #include "filestream.h"
 
 #define STREAM_EOF 1

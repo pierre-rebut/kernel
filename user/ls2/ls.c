@@ -8,12 +8,10 @@
 #include <fts.h>
 #include <getopt.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <limits.h>
 #include <getnbr.h>
-#include <filestream.h>
 #include <utils.h>
 #include <scanf.h>
 #include <alloc.h>
@@ -197,9 +195,9 @@ int main(int argc, char *argv[]) {
         termwidth = 80;
         if ((p = getenv("COLUMNS")) != NULL && *p != '\0')
             termwidth = strtonum(p, 0, INT_MAX, &errstr);
-       /* else if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &win) != -1 &&
-                 win.ws_col > 0)
-            termwidth = win.ws_col;*/
+        /* else if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &win) != -1 &&
+                  win.ws_col > 0)
+             termwidth = win.ws_col;*/
         f_nonprint = 1;
     } else {
         f_singlecol = 1;
@@ -494,7 +492,7 @@ int main(int argc, char *argv[]) {
         else {
             (void) notused;
             // (void) getbsize(&notused, &blocksize);
-            blocksize /= 512;
+            blocksize = 512;
         }
     }
     /* Select a sort function. */
@@ -576,7 +574,9 @@ static void traverse(int argc, char *argv[], int options) {
     ch_options = !f_recursive && !f_label &&
                  options & FTS_NOSTAT ? FTS_NAMEONLY : 0;
 
-    while ((p = fts_read(ftsp)) != NULL)
+    warn("on fait des test\n");
+    while ((p = fts_read(ftsp)) != NULL) {
+        warn("au moin sa read\n");
         switch (p->fts_info) {
             case FTS_DC:
                 warn("%s: directory causes a cycle", p->fts_name);
@@ -614,8 +614,10 @@ static void traverse(int argc, char *argv[], int options) {
             default:
                 break;
         }
+    }
+
     if (errno)
-        err("fts_read");
+        err("fts_read: %s\n", strerror(errno));
 }
 
 /*
@@ -733,7 +735,7 @@ static void display(const FTSENT *p, FTSENT *list, int options) {
     for (cur = list, entries = 0; cur; cur = cur->fts_link) {
         if (cur->fts_info == FTS_ERR || cur->fts_info == FTS_NS) {
             warn("%s: %s",
-                  cur->fts_name, strerror(cur->fts_errno));
+                 cur->fts_name, strerror(cur->fts_errno));
             cur->fts_number = NO_PRINT;
             rval = 1;
             continue;
@@ -857,7 +859,7 @@ static void display(const FTSENT *p, FTSENT *list, int options) {
                     if (labelstrlen > maxlabelstr)
                         maxlabelstr = labelstrlen;
                 } else*/
-                    labelstrlen = 0;
+                labelstrlen = 0;
 
                 if ((np = malloc(sizeof(NAMES) + labelstrlen +
                                  ulen + glen + flen + 4)) == NULL)
@@ -892,6 +894,8 @@ static void display(const FTSENT *p, FTSENT *list, int options) {
         ++entries;
     }
 
+    warn("divided by toto\n");
+
     /*
      * If there are no entries to display, we normally stop right
      * here.  However, we must continue if we have to display the
@@ -912,20 +916,22 @@ static void display(const FTSENT *p, FTSENT *list, int options) {
         d.s_group = maxgroup;
         d.s_inode = snprintf(NULL, 0, "%ju", maxinode);
         d.s_nlink = snprintf(NULL, 0, "%lu", maxnlink);
-        sizelen = f_humanval ? HUMANVALSTR_LEN :
-                  snprintf(NULL, 0, "%ju", maxsize);
+        sizelen = f_humanval ? HUMANVALSTR_LEN : snprintf(NULL, 0, "%ju", maxsize);
         if (d.s_size < sizelen)
             d.s_size = sizelen;
         d.s_user = maxuser;
     }
     if (f_thousands)            /* make space for commas */
         d.s_size += (d.s_size - 1) / 3;
+    warn("divided by end\n");
     printfcn(&d);
     output = 1;
 
     if (f_longform)
         for (cur = list; cur; cur = cur->fts_link)
             free(cur->fts_pointer);
+
+    warn("divided by end\n");
 }
 
 /*

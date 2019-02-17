@@ -46,12 +46,12 @@ static int skipws(int *counter, FILE *stream) {
 int _input(FILE *stream, const char *format, va_list arglist) {
     char table[RANGESETSIZE];           // Which chars allowed for %[], %s
     char fltbuf[CVTBUFSIZE + 1];        // ASCII buffer for floats
-    unsigned long number;               // Temp hold-value
-    unsigned long long num64;           // Temp for 64-bit integers
-    void *pointer;                      // Points to user data receptacle
-    void *start;                        // Indicate non-empty string
+    unsigned long number = 0;               // Temp hold-value
+    unsigned long long num64 = 0;           // Temp for 64-bit integers
+    void *pointer = NULL;                      // Points to user data receptacle
+    void *start = NULL;                        // Indicate non-empty string
 
-    char *scanptr;             // For building "table" data
+    char *scanptr = NULL;             // For building "table" data
     int ch = 0;
 
     int charcount;                      // Total number of chars read
@@ -69,7 +69,7 @@ int _input(FILE *stream, const char *format, va_list arglist) {
     char negative;                      // Flag for '-' detected
     char suppress;                      // Don't assign anything
     char match;                         // Flag: !0 if any fields matched
-    va_list arglistsave;                // Save arglist value
+    va_list arglistsave = 0;                // Save arglist value
 
     char rngch;                // Used while scanning range
     char last;                 // Also for %[a-z]
@@ -416,9 +416,9 @@ int _input(FILE *stream, const char *format, va_list arglist) {
                                 ++count;
                                 assign_num:
                                 if (integer64) {
-                                    *(long long *) pointer = (unsigned long long) num64;
+                                    *(long long *) pointer = num64;
                                 } else if (longone) {
-                                    *(long *) pointer = (unsigned long) number;
+                                    *(long *) pointer = number;
                                 } else {
                                     *(short *) pointer = (unsigned short) number;
                                 }

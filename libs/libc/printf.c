@@ -298,7 +298,7 @@ int sprintf(char *buf, const char *fmt, ...) {
 int snprintf(char *buf, u32 size, const char *format, ...) {
     va_list args;
     int i;
-    char buffer[4096];
+    char buffer[1024];
 
     va_start(args, format);
     i = vsprintf(buffer, format, args);

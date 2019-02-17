@@ -70,14 +70,20 @@ struct FsVolume *fsVolumeOpen(struct Fs *fs, struct FsPath *dev) {
     return volume;
 }
 
-void *fsOpenFile(struct FsPath *path, int mode, int *type) {
+struct Kobject *fsOpenFile(struct FsPath *path, int mode) {
     if (!path || !path->volume->fs->openFile)
         return NULL;
 
+    (void) mode;
     //if (~(path->mode) & mode)
-     //   return NULL;
+    //   return NULL;
 
-    return path->volume->fs->openFile(path, type);
+    struct Kobject *obj = path->volume->fs->openFile(path);
+    if (obj == NULL)
+        return NULL;
+
+    obj->mode = mode;
+    return obj;
 }
 
 struct FsMountVolume *fsMountVolumeOn(struct FsPath *mntPoint, struct Fs *fs, struct FsPath *devicePath) {

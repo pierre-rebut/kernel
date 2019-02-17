@@ -597,6 +597,7 @@ static struct FsPath *ext2Lookup(struct FsPath *path, const char *name) {
     newPath->size = inode.size;
     newPath->mode = (u16) (inode.type & 0x1FF);
     newPath->inode = fileInode;
+    newPath->type = ((inode.type & 0xF000) == INODE_TYPE_DIRECTORY ? FS_FOLDER : FS_FILE);
 
     kfree(buf);
     return newPath;
@@ -640,6 +641,7 @@ static struct FsPath *ext2Root(struct FsVolume *volume) {
     rootPath->privateData = 0;
     rootPath->size = 0;
     rootPath->inode = 2;
+    rootPath->type = FS_FOLDER;
     return rootPath;
 
     ext2RootFaillure:
@@ -711,17 +713,17 @@ struct FsVolume *ext2MountDevice(struct Device *device) {
 }
 
 static struct FsVolume *ext2Mount(struct FsPath *dev) {
-    struct Device *device = fsOpenFile(dev, S_IRUSR, NULL);
+    struct Kobject *device = fsOpenFile(dev, S_IRUSR);
     if (device == NULL)
         return NULL;
 
-    return ext2MountDevice(device);
+    void *v = ext2MountDevice(device->data);
+    koDestroy(device);
+    return v;
 }
 
-static void *ext2OpenFile(struct FsPath *path, int *type) {
-    if (type)
-        *type = KO_FS_FILE;
-    return path;
+static struct Kobject *ext2OpenFile(struct FsPath *path) {
+    return koCreate((path->type == FS_FILE ? KO_FS_FILE : KO_FS_FOLDER), path, 0);
 }
 
 static struct Fs fs_ext2 = {

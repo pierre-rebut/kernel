@@ -24,6 +24,7 @@
 #include "include/graphic.h"
 #include <stdlib.h>
 #include <err.h>
+#include <alloc.h>
 #include "unistd.h"
 
 /*

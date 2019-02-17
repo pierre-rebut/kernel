@@ -31,7 +31,7 @@ char *strcpy(char *dest, const char *src) {
 }
 
 u32 strlen(const char *s) {
-    const char *p = s;
+    register const char *p = s;
 
     while (*p)
         p++;
@@ -132,8 +132,8 @@ u32 str_begins_with(const char *str, const char *with) {
     return ret;
 }
 
-char *strstr(register char *string, char *substring) {
-    register char *a, *b;
+const char *strstr(register const char *string, char *substring) {
+    register const char *a, *b;
 
     /* First scan quickly through the two strings looking for a
      * single-character match.  When it's found, then compare the

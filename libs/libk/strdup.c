@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdlib.h>
+#include <alloc.h>
 
 char *strdup(const char *s) {
     char *r = NULL;

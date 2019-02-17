@@ -15,10 +15,13 @@
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
-static int procReadProcess(pid_t pid, void *buffer, u32 size) {
+static int procReadProcess(pid_t pid, void *buffer, u32 size, int offset) {
     struct Task *task = getTaskByPid(pid);
     if (!task)
         return -1;
+
+    if (offset != 0)
+        return 0;
 
     return snprintf(buffer, size, "pid:%u\ncmdline:%s\nprivilege:%s\nevent:%d,%lu,%u\n",
                    task->pid,
@@ -28,8 +31,11 @@ static int procReadProcess(pid_t pid, void *buffer, u32 size) {
     );
 }
 
-static int procReadInfo(int data, char *buffer, u32 size) {
+static int procReadInfo(int data, char *buffer, u32 size, int offset) {
     int read;
+    if (offset != 0)
+        return 0;
+
     switch (data) {
         case 0:
             read = snprintf(buffer, size, "%s,%u,%u\n", fsRootVolume->fs->name, fsRootVolume->refcount,
@@ -77,17 +83,15 @@ static int procReadInfo(int data, char *buffer, u32 size) {
 }
 
 int procRead(struct ProcPath *proc, void *buffer, int size, int offset) {
-    (void) offset;
-
     LOG("[proc] readblock: %u\n", blocknum);
-    if (!proc)
+    if (!proc || offset != 0)
         return -1;
 
     switch (proc->type) {
         case PP_PROC:
-            return procReadProcess(proc->data, buffer, (u32) size);
+            return procReadProcess(proc->data, buffer, (u32) size, offset);
         case PP_INFO:
-            return procReadInfo(proc->data, buffer, (u32) size);
+            return procReadInfo(proc->data, buffer, (u32) size, offset);
         default:
             return -1;
     }

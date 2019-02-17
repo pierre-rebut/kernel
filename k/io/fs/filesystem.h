@@ -12,6 +12,11 @@ typedef s32 off_t;
 #define MAX_NB_FILE 255
 #define MAX_NB_FOLDER 50
 
+enum FS_TYPE {
+    FS_FOLDER,
+    FS_FILE
+};
+
 struct FsVolume;
 
 struct Fs {
@@ -35,7 +40,7 @@ struct Fs {
     int (*writeBlock)(struct FsPath *path, const char *buffer, u32 blocknum);
     int (*resizeFile)(struct FsPath *path, u32 newSize);
 
-    void *(*openFile)(struct FsPath *path, int *type);
+    struct Kobject *(*openFile)(struct FsPath *path);
 
     struct Fs *next;
 };
@@ -61,6 +66,7 @@ struct FsMountVolume {
 struct FsPath {
     u32 inode;
     u16 mode;
+    enum FS_TYPE type;
 
     struct FsVolume *volume;
     u32 size;
@@ -80,7 +86,7 @@ struct FsVolume *fsVolumeOpen(struct Fs *fs, struct FsPath *dev);
 struct FsMountVolume *fsGetMountedVolumeByNode(struct FsVolume *v, u32 inode);
 struct FsPath *fsVolumeRoot(struct FsVolume *volume);
 int fsVolumeClose(struct FsVolume *volume);
-;
+
 int fsReadFile(struct FsPath *file, char *buffer, u32 length, u32 offset);
 int fsWriteFile(struct FsPath *file, const char *buffer, u32 length, u32 offset);
 
@@ -98,7 +104,7 @@ struct FsPath *fsUnlink(const char *name);
 int fsPathDestroy(struct FsPath *path);
 int fsResizeFile(struct FsPath *path, u32 s);
 
-void *fsOpenFile(struct FsPath *path, int mode, int *type);
+struct Kobject *fsOpenFile(struct FsPath *path, int mode);
 
 extern struct FsMountVolume *fsMountedVolumeList;
 extern struct FsVolume *fsRootVolume;

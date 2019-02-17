@@ -24,6 +24,7 @@ static struct FsPath *devRoot(struct FsVolume *volume) {
     rootPath->size = 0;
     rootPath->privateData = 0;
     rootPath->inode = 0;
+    rootPath->type = FS_FOLDER;
     return rootPath;
 }
 
@@ -53,9 +54,6 @@ static int devClose(struct FsPath *path) {
 static struct FsPath *devLookup(struct FsPath *path, const char *name) {
     (void) path;
 
-    if (*name != 0 && strcmp(name, ".") != 0)
-        return NULL;
-
     LOG("[dev] lookup enter\n");
     struct FsPath *file = kmalloc(sizeof(struct FsPath), 0, "FsPath");
     if (!file)
@@ -64,6 +62,7 @@ static struct FsPath *devLookup(struct FsPath *path, const char *name) {
     if (*name == 0 || strcmp(name, ".") == 0) {
         file->privateData = NULL;
         file->inode = 0;
+        file->type = FS_FOLDER;
     } else {
         file->privateData = deviceGetByName(name);
         if (file->privateData == NULL) {
@@ -72,6 +71,7 @@ static struct FsPath *devLookup(struct FsPath *path, const char *name) {
         }
 
         file->inode = 1;
+        file->type = FS_FILE;
     }
 
     file->size = 0;
@@ -107,16 +107,21 @@ static int devReaddir(struct FsPath *path, void *block, u32 nblock) {
     return size;
 }
 
-static void *devOpenFile(struct FsPath *dev, int *type) {
-    if (dev->inode == 0)
+static struct Kobject *devOpenFile(struct FsPath *dev) {
+    struct Kobject *obj = koCreate(KO_UNDEFINED, NULL, 0);
+    if (obj == NULL)
         return NULL;
 
-    if (type)
-        *type = KO_DEVICE;
+    if (dev->type == FS_FOLDER) {
+        obj->type = KO_FS_FOLDER;
+        obj->data = dev;
+    } else {
+        obj->type = KO_DEVICE;
+        obj->data = dev->privateData;
+        fsPathDestroy(dev);
+    }
 
-    void *tmp = dev->privateData;
-    fsPathDestroy(dev);
-    return tmp;
+    return obj;
 }
 
 static struct Fs fs_devfs = {

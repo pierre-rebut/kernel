@@ -5,6 +5,8 @@
 #ifndef KERNEL_EXTERN_H
 #define KERNEL_EXTERN_H
 
+#include "ls.h"
+
 int acccmp(const FTSENT *, const FTSENT *);
 
 int revacccmp(const FTSENT *, const FTSENT *);
@@ -69,6 +71,7 @@ extern bool	 explicitansi;
 extern int termwidth;
 
 const char *group_from_gid(gid_t grp, int t);
+
 const char *user_from_uid(uid_t user, int t);
 
 #endif //KERNEL_EXTERN_H

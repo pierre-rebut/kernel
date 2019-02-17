@@ -8,6 +8,7 @@
 #include <io/device/device.h>
 #include <io/device/proc.h>
 #include <errno-base.h>
+#include <include/kstdio.h>
 #include "kobject.h"
 #include "allocator.h"
 #include "console.h"
@@ -26,6 +27,8 @@ struct Kobject *koCreate(enum KObjectType type, void *data, int mode) {
 }
 
 s32 koRead(struct Kobject *obj, void *buffer, u32 size) {
+    klog("bite de read: %p\n", obj);
+
     int mode = obj->mode & 3;
     if (mode != O_RDONLY && mode != O_RDWR)
         return -EPERM;
@@ -45,7 +48,7 @@ s32 koRead(struct Kobject *obj, void *buffer, u32 size) {
             actual = deviceRead(obj->data, buffer, size / deviceBlockSize(obj->data), obj->offset);
             break;
         case KO_PROC:
-            actual = procRead(obj->data, buffer, size, 0);
+            actual = procRead(obj->data, buffer, size, obj->offset);
             break;
         default:
             return -EPERM;
@@ -96,6 +99,7 @@ struct Kobject *koDupplicate(struct Kobject *obj) {
 }
 
 int koDestroy(struct Kobject *obj) {
+    klog("bite de destroy: %p\n", obj);
     obj->refcount -= 1;
 
     if (obj->refcount == 0) {

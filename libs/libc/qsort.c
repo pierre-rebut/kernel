@@ -111,9 +111,9 @@ void qsort(void *a, size_t n, size_t es, int (*cmp)(const void *, const void *))
     }
 
     pn = a + n * es;
-    r = (int) min(pa - (char *) a, pb - pa);
+    r = (int) min((u32)(pa - (char *) a), (u32)(pb - pa));
     vecswap(a, pb - r, r);
-    r = (int) min(pd - pc, pn - pd - es);
+    r = (int) min((u32)(pd - pc), (u32)(pn - pd - es));
     vecswap(pb, pn - r, r);
     if ((r = (int)(pb - pa)) > (int) es)
         qsort(a, r / es, es, cmp);

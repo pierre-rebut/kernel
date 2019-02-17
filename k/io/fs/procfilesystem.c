@@ -39,6 +39,7 @@ static struct FsPath *procRoot(struct FsVolume *volume) {
     (void) volume;
     rootPath->privateData = &(staticProcData[0]);
     rootPath->inode = 0;
+    rootPath->type = FS_FOLDER;
     return rootPath;
 }
 
@@ -103,8 +104,12 @@ static struct FsPath *procLookup(struct FsPath *path, const char *name) {
         }
 
         if (procPath == NULL) {
+            char *err;
+            int pid = strtol(name, &err, 10);
+            if (err == name || *err != '\0')
+                return NULL;
+
             struct Task *task;
-            int pid = atoi(name);
             if (pid == 0)
                 task = &kernelTask;
             else
@@ -134,6 +139,7 @@ static struct FsPath *procLookup(struct FsPath *path, const char *name) {
     file->mode = S_IRUSR | S_IRGRP | S_IROTH;
     file->size = 0;
     file->inode = 0;
+    file->type = (procPath->type == PP_FOLDER ? FS_FOLDER : FS_FILE);
     return file;
 }
 
@@ -181,17 +187,22 @@ static int procReaddir(struct FsPath *path, void *block, u32 nblock) {
     return size;
 }
 
-static void *procOpenFile(struct FsPath *proc, int *type) {
+static struct Kobject *procOpenFile(struct FsPath *proc) {
     struct ProcPath *p = proc->privateData;
-    if (p->type == PP_FOLDER)
+    struct Kobject *obj = koCreate(KO_UNDEFINED, NULL, 0);
+    if (obj == NULL)
         return NULL;
 
-    if (type)
-        *type = KO_PROC;
+    if (p->type == PP_FOLDER) {
+        obj->type = KO_FS_FOLDER;
+        obj->data = proc;
+    } else {
+        obj->type = KO_PROC;
+        obj->data = p;
+        fsPathDestroy(proc);
+    }
 
-    void *tmp = proc->privateData;
-    fsPathDestroy(proc);
-    return tmp;
+    return obj;
 }
 
 static struct Fs fs_procfs = {

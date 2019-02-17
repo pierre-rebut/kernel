@@ -10,7 +10,7 @@ char *strdup(const char *s) {
         return NULL;
 
     char *r = NULL;
-    char *p = NULL;
+    register char *p = NULL;
 
     r = kmalloc(strlen(s) + 1, 0, "strdup");
     if (!r)

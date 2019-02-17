@@ -23,12 +23,12 @@ void delete_all(t_header *tmp) {
     }
 }
 
-void free(void *ptr) {
+void free(const void *ptr) {
     t_header *pos;
     t_header *tmp;
 
     if (ptr != NULL && g_begin != NULL) {
-        pos = ptr - sizeof(t_header);
+        pos = (void *) (ptr - sizeof(t_header));
         pos->is_free = FREE;
         if (pos->next != NULL && pos->next->is_free == FREE) {
             pos->size += pos->next->size + sizeof(t_header);
