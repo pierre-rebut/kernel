@@ -74,8 +74,8 @@ void *fsOpenFile(struct FsPath *path, int mode, int *type) {
     if (!path || !path->volume->fs->openFile)
         return NULL;
 
-    if (~(path->mode) & mode)
-        return NULL;
+    //if (~(path->mode) & mode)
+     //   return NULL;
 
     return path->volume->fs->openFile(path, type);
 }
@@ -300,7 +300,7 @@ struct FsPath *fsMkdir(const char *name) {
     return 0;
 }
 
-struct FsPath *fsLink(const char *name, const char *linkTo) {
+static char *fsMkLink(const char *name, struct FsPath **parent) {
     if (!name)
         return NULL;
 
@@ -318,37 +318,30 @@ struct FsPath *fsLink(const char *name, const char *linkTo) {
         return NULL;
     }
 
-    struct FsPath *parent;
     if (ret)
-        parent = fsResolvePath(f);
+        *parent = fsResolvePath(f);
     else {
-        parent = currentTask->currentDir;
-        parent->refcount += 1;
+        *parent = currentTask->currentDir;
+        (*parent)->refcount += 1;
     }
 
-    if (parent == NULL || !parent->volume->fs->link) {
-        kfree(f);
+    char *res = strdup(file);
+    kfree(f);
+    return res;
+}
+
+struct FsPath *fsMkFile(const char *name, mode_t mode) {
+    struct FsPath *parent;
+
+    char *filename = fsMkLink(name, &parent);
+    if (filename == NULL || parent == NULL || parent->volume->fs->mkfile == NULL) {
+        kfree(filename);
+        fsPathDestroy(parent);
         return NULL;
     }
 
-    struct FsPath *pathLinkTo = NULL;
-    if (linkTo) {
-        pathLinkTo = fsResolvePath(linkTo);
-        if (pathLinkTo == NULL) {
-            kfree(f);
-            return NULL;
-        }
-
-        if (pathLinkTo->volume != parent->volume) {
-            kfree(f);
-            fsPathDestroy(pathLinkTo);
-            return NULL;
-        }
-
-    }
-
-    struct FsPath *path = parent->volume->fs->link(pathLinkTo, parent, file);
-    kfree(f);
+    struct FsPath *path = parent->volume->fs->mkfile(parent, filename, mode);
+    kfree(filename);
 
     if (path == NULL) {
         fsPathDestroy(parent);
@@ -359,8 +352,46 @@ struct FsPath *fsLink(const char *name, const char *linkTo) {
     fsPathDestroy(parent);
     path->size = 0;
     path->refcount = 1;
-
     return path;
+}
+
+struct FsPath *fsLink(const char *name, const char *linkTo) {
+    if (linkTo == NULL)
+        return NULL;
+
+    struct FsPath *pathLinkTo = fsResolvePath(linkTo);
+    if (pathLinkTo == NULL)
+        return NULL;
+
+    struct FsPath *parent;
+    char *filename = fsMkLink(name, &parent);
+    if (filename == NULL || parent == NULL || !parent->volume->fs->link)
+        goto failure;
+
+    if (pathLinkTo->volume != parent->volume)
+        goto failure;
+
+    struct FsPath *path = parent->volume->fs->link(pathLinkTo, parent, filename);
+    kfree(filename);
+    fsPathDestroy(pathLinkTo);
+
+    if (path == NULL) {
+        fsPathDestroy(parent);
+        return NULL;
+    }
+
+    path->volume = parent->volume;
+    fsPathDestroy(parent);
+    path->size = 0;
+    path->refcount = 1;
+    return path;
+
+    failure:
+    klog("[fs] link failure\n");
+    kfree(filename);
+    fsPathDestroy(parent);
+    fsPathDestroy(pathLinkTo);
+    return NULL;
 }
 
 int fsRmdir(struct FsPath *path, const char *name) {

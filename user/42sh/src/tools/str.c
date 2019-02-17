@@ -9,12 +9,10 @@
 */
 
 #include <string.h>
-#include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
 
 #include "functions.h"
-#include "define.h"
 
 int check_pipe(t_cmd *lst) {
     t_cmd *tmp;
@@ -53,7 +51,5 @@ int my_putfd(char *str, int fd) {
     int len;
 
     len = strlen(str);
-    if (fd != -1)
-        return (write(fd, str, len));
-    return (FAIL);
+    return (write(fd, str, len));
 }

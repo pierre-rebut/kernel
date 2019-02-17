@@ -53,5 +53,7 @@ int syscall3(int syscall_nb, u32 ebx, u32 ecx, u32 edx);
 #define SYSCALL_LINK            37
 #define SYSCALL_SYMLINK         38
 #define SYSCALL_UNLINK          39
+#define SYSCALL_ISATTY          40
+#define SYSCALL_TIME            41
 
 #endif //KERNEL_SYSCALL_H

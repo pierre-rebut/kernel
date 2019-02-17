@@ -419,7 +419,7 @@ static int ext2UpdateParentDir(struct Ext2DirEntry *entry, struct Ext2Inode *par
     return 0;
 }
 
-struct FsPath *ext2Link(struct FsPath *nodeToLink, struct FsPath *parentDir, const char *filename) {
+static struct FsPath *ext2InternalLink(u32 id, struct Ext2Inode *inode, struct FsPath *parentDir, const char *filename) {
     struct Ext2VolumeData *priv = parentDir->volume->privateData;
     struct Ext2Inode parentInode;
     ext2ReadInode(&parentInode, parentDir->inode, priv);
@@ -438,30 +438,6 @@ struct FsPath *ext2Link(struct FsPath *nodeToLink, struct FsPath *parentDir, con
     entry->namelength = (u8) filenameSize;
     memcpy(&entry->reserved + 1, filename, filenameSize);
 
-    u32 id;
-
-    struct Ext2Inode inode;
-    if (nodeToLink == NULL) {
-        LOG("[ext2] mkfile\n");
-        memset(&inode, 0, sizeof(struct Ext2Inode));
-
-        inode.hardlinks = 1;
-        inode.size = 0;
-        inode.type = INODE_TYPE_FILE | 0x100 | 0x080;
-        inode.disk_sectors = 2;
-        inode.last_modif = inode.last_access = inode.create_time = gettick();
-
-        id = ext2FindNewInodeId(priv);
-        LOG("[ext2] mkfile: new id = %u\n", id);
-    } else {
-        ext2ReadInode(&inode, nodeToLink->inode, priv);
-        if ((inode.type & 0xF000) != INODE_TYPE_FILE)
-            goto failure_inode;
-
-        id = nodeToLink->inode;
-        inode.hardlinks += 1;
-    }
-
     entry->inode = id;
 
     u32 block = 0; // The block where this inode should be written
@@ -472,7 +448,7 @@ struct FsPath *ext2Link(struct FsPath *nodeToLink, struct FsPath *parentDir, con
     ext2DeviceReadBlock(block_buf, block, priv);
 
     struct Ext2Inode *winode = (struct Ext2Inode *) block_buf + ioff;
-    memcpy(winode, &inode, sizeof(struct Ext2Inode));
+    memcpy(winode, inode, sizeof(struct Ext2Inode));
     ext2DeviceWriteBlock(block_buf, block, priv);
 
     if (ext2UpdateParentDir(entry, &parentInode, parentDir, block_buf, priv) == 0)
@@ -489,7 +465,6 @@ struct FsPath *ext2Link(struct FsPath *nodeToLink, struct FsPath *parentDir, con
     return path;
 
     failure_update:
-    failure_inode:
     kfree(entry);
     failure_entry:
     kfree(block_buf);
@@ -497,78 +472,40 @@ struct FsPath *ext2Link(struct FsPath *nodeToLink, struct FsPath *parentDir, con
     return NULL;
 }
 
-/*
-static struct FsPath *ext2Mkfile(struct FsPath *parentDir, const char *filename) {
+static struct FsPath *ext2MkFile(struct FsPath *parentDir, const char *filename, mode_t mode) {
+    u32 id;
+    struct Ext2Inode inode;
     struct Ext2VolumeData *priv = parentDir->volume->privateData;
-    struct Ext2Inode *parentInode = parentDir->privateData;
-
-    void *block_buf = kmalloc(priv->blocksize, 0, "blockbufext2");
-    if (block_buf == NULL)
-        return NULL;
-
-    struct Ext2Inode *inode = kmalloc(sizeof(struct Ext2Inode), 0, "inodeExt2");
-    if (inode == NULL)
-        goto failure_inode;
-
     LOG("[ext2] mkfile\n");
 
-    memset(inode, 0, sizeof(struct Ext2Inode));
+    memset(&inode, 0, sizeof(struct Ext2Inode));
 
-    inode->hardlinks = 1;
-    inode->size = 0;
-    inode->type = INODE_TYPE_FILE | 0x100 | 0x080;
-    inode->disk_sectors = 2;
-    inode->last_modif = inode->last_access = inode->create_time = gettick();
+    inode.hardlinks = 1;
+    inode.size = 0;
+    inode.type = (u16) (INODE_TYPE_FILE | mode);
+    inode.disk_sectors = 2;
+    inode.last_modif = inode.last_access = inode.create_time = gettick();
 
-
-    u32 filenameSize = strlen(filename) + 1;
-    struct Ext2DirEntry *entry = kmalloc(sizeof(struct Ext2DirEntry) + filenameSize, 0, "ext2Dir");
-    if (entry == NULL)
-        goto failure_entry;
-
-    entry->size = sizeof(struct Ext2DirEntry) + filenameSize;
-    entry->reserved = 0;
-    entry->namelength = (u8) filenameSize;
-    memcpy(&entry->reserved + 1, filename, filenameSize);
-
-    u32 id = ext2FindNewInodeId(priv);
+    id = ext2FindNewInodeId(priv);
     LOG("[ext2] mkfile: new id = %u\n", id);
-    entry->inode = id;
 
-    u32 block = 0; // The block where this inode should be written
-    u32 ioff = 0;  // Offset into the block function to sizeof(inode_t)
-    ext2GetInodeBlock(id, &block, &ioff, priv);
-    LOG("[ext2] mkfile: block = %u, ioff = %u\n", block, ioff);
+    return ext2InternalLink(id, &inode, parentDir, filename);
+}
 
-    ext2DeviceReadBlock(block_buf, block, priv);
+static struct FsPath *ext2Link(struct FsPath *nodeToLink, struct FsPath *parentDir, const char *filename) {
+    struct Ext2VolumeData *priv = parentDir->volume->privateData;
+    struct Ext2Inode inode;
+    u32 id;
 
-    struct Ext2Inode *winode = (struct Ext2Inode*) block_buf + ioff;
-    memcpy(winode, inode, sizeof(struct Ext2Inode));
-    ext2DeviceWriteBlock(block_buf, block, priv);
+    ext2ReadInode(&inode, nodeToLink->inode, priv);
+    if ((inode.type & 0xF000) != INODE_TYPE_FILE)
+        return NULL;
 
-    if (ext2UpdateParentDir(entry, parentInode, parentDir, block_buf, priv) == 0)
-        goto failure_update;
+    id = nodeToLink->inode;
+    inode.hardlinks += 1;
 
-    struct FsPath *path = kmalloc(sizeof(struct FsPath), 0, "touchPathExt2");
-    if (path == NULL)
-        goto failure_update;
-
-    kfree(entry);
-    kfree(block_buf);
-
-    path->inode = id;
-    path->privateData = inode;
-    return path;
-
-    failure_update:
-    kfree(entry);
-    failure_entry:
-    kfree(inode);
-    failure_inode:
-    kfree(block_buf);
-    LOG("[ext2] mkfile failure\n");
-    return NULL;
-}*/
+    return ext2InternalLink(id, &inode, parentDir, filename);
+}
 
 static int ext2ResizeFile(struct FsPath *path, u32 newSize) {
     struct Ext2VolumeData *priv = path->volume->privateData;
@@ -800,6 +737,7 @@ static struct Fs fs_ext2 = {
         .writeBlock = &ext2WriteBlock,
         .stat = &ext2Stat,
         .resizeFile = &ext2ResizeFile,
+        .mkfile = &ext2MkFile,
         .link = &ext2Link
 };
 

@@ -136,7 +136,7 @@ FTS *fts_open(char *const *argv, int options, int (*compar)(const FTSENT **, con
      * and ".." are all fairly nasty problems.  Note, if we can't get the
      * descriptor we run anyway, just more slowly.
      */
-    if (!ISSET(FTS_NOCHDIR) && (sp->fts_rfd = open(".", O_RDONLY)) < 0)
+    if (!ISSET(FTS_NOCHDIR) && (sp->fts_rfd = open(".", O_RDONLY, 0)) < 0)
         SET(FTS_NOCHDIR);
 
     return (sp);
@@ -258,7 +258,7 @@ FTSENT *fts_read(register FTS *sp) {
         (p->fts_info == FTS_SL || p->fts_info == FTS_SLNONE)) {
         p->fts_info = fts_stat(sp, p, 1);
         if (p->fts_info == FTS_D && !ISSET(FTS_NOCHDIR)) {
-            if ((p->fts_symfd = open(".", O_RDONLY)) < 0) {
+            if ((p->fts_symfd = open(".", O_RDONLY, 0)) < 0) {
                 p->fts_errno = errno;
                 p->fts_info = FTS_ERR;
             } else {
@@ -349,7 +349,7 @@ FTSENT *fts_read(register FTS *sp) {
         if (p->fts_instr == FTS_FOLLOW) {
             p->fts_info = fts_stat(sp, p, 1);
             if (p->fts_info == FTS_D && !ISSET(FTS_NOCHDIR)) {
-                if ((p->fts_symfd = open(".", O_RDONLY)) < 0) {
+                if ((p->fts_symfd = open(".", O_RDONLY, 0)) < 0) {
                     p->fts_errno = errno;
                     p->fts_info = FTS_ERR;
                 } else {
@@ -486,7 +486,7 @@ FTSENT *fts_children(register FTS *sp, int instr) {
         ISSET(FTS_NOCHDIR))
         return (sp->fts_child = fts_build(sp, instr));
 
-    if ((fd = open(".", O_RDONLY)) < 0)
+    if ((fd = open(".", O_RDONLY, 0)) < 0)
         return (NULL);
     sp->fts_child = fts_build(sp, instr);
     if (fchdir(fd))

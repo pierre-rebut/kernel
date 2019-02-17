@@ -8,7 +8,7 @@ static inline char *med3(char *, char *, char *, int (*)(const void *, const voi
 
 static inline void swapfunc(char *, char *, int, int);
 
-#define min(a, b)    (a) < (b) ? a : b
+#define min(a, b)    ((a) < (b) ? (a) : (b))
 
 /*
  * Qsort routine from Bentley & McIlroy's "Engineering a Sort Function".
@@ -111,13 +111,13 @@ void qsort(void *a, size_t n, size_t es, int (*cmp)(const void *, const void *))
     }
 
     pn = a + n * es;
-    r = min(pa - (char *) a, pb - pa);
+    r = (int) min(pa - (char *) a, pb - pa);
     vecswap(a, pb - r, r);
-    r = min(pd - pc, pn - pd - es);
+    r = (int) min(pd - pc, pn - pd - es);
     vecswap(pb, pn - r, r);
-    if ((r = pb - pa) > es)
+    if ((r = (int)(pb - pa)) > (int) es)
         qsort(a, r / es, es, cmp);
-    if ((r = pd - pc) > es) {
+    if ((r = (int)(pd - pc)) > (int) es) {
         /* Iterate rather than recurse to save stack space */
         a = pn - r;
         n = r / es;

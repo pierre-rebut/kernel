@@ -69,12 +69,8 @@ int env_call(int fd, t_cmd *cmd, t_env *env) {
         return FAIL;
 
     while (env->env[i] != NULL) {
-        if (my_putfd(env->env[i], fd) == FAIL) {
-            printf("42sh : access denied\n");
-            return FAIL;
-        }
-        if (my_putfd("\n", fd) == FAIL)
-            return FAIL;
+        my_putfd(env->env[i], fd);
+        my_putfd("\n", fd);
         i++;
     }
     return SUCCESS;
@@ -129,10 +125,7 @@ int echo(int fd, t_cmd *cmd, t_env *env) {
         bool = 1;
     }
     while (cmd->args[++i]) {
-        if (my_putfd(cmd->args[i], fd) == FAIL) {
-            printf("42sh : access denied\n");
-            return (FAIL);
-        }
+        my_putfd(cmd->args[i], fd);
         if (cmd->args[i + 1] != NULL)
             my_putfd(" ", fd);
     }

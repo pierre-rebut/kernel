@@ -105,12 +105,6 @@ char *my_getenv(char *, char **);
 int my_getenv_line(char *, char **);
 
 /*
-** get_next_line.c
-*/
-
-char *get_next_line(const int fd);
-
-/*
 ** parser
 */
 

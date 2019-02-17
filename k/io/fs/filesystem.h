@@ -22,6 +22,7 @@ struct Fs {
     int (*umount)(struct FsVolume *volume);
     int (*close)(struct FsPath *path);
     struct FsPath *(*mkdir)(struct FsPath *path, const char *name);
+    struct FsPath *(*mkfile)(struct FsPath *parentDir, const char *name, mode_t mode);
     struct FsPath *(*link)(struct FsPath *nodeToLink, struct FsPath *parentDir, const char *name);
     int (*unlink)(struct FsPath *parentDir, struct FsPath *path);
 
@@ -90,6 +91,7 @@ int fsPathReaddir(struct FsPath *path, void *block, u32 nblock);
 int fsRmdir(struct FsPath *path, const char *name);
 struct FsPath *fsMkdir(const char *name);
 
+struct FsPath *fsMkFile(const char *name, mode_t mode);
 struct FsPath *fsLink(const char *name, const char *linkTo);
 struct FsPath *fsUnlink(const char *name);
 

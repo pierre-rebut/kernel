@@ -3,9 +3,15 @@
 
 #include <stddef.h>
 
+#define isspace(c) ((c) == '\t' || (c) == '\n' || (c) == '\v' || (c) == '\f' || (c) == '\r' || (c) == ' ')
+#define isdigit(c) ((c) >= '0' && (c) <= '9')
+#define isupper(c) ((c) >= 'A' && (c) <= 'Z')
 #define isascii(c) ((c) >= 0 && (c) < 128)
 #define isprint(c) ((c) >= 20 && (c) <= 126)
-#define isalpha(c) (((c) >= 'a' && (c) <= 'z') || ((c) >= 'A' && (c) <= 'Z'));
+#define isalpha(c) (((c) >= 'A' && (c) <= 'Z') || ((c) >= 'a' || (c) <= 'z'))
+#define isxdigit(c) (((c) >= '0' && (c) <= '9') || ((c) >= 'a' && (c) <= 'f') || ((c) >= 'A' && (c) <= 'F'))
+
+#define howmany(x, y)  (((x) + ((y) - 1)) / (y))
 
 #define	__S_IFMT	0170000
 #define	__S_ISTYPE(mode, mask)	(((mode) & __S_IFMT) == (mask))
@@ -25,6 +31,7 @@
 # define S_ISFIFO(mode)	 __S_ISTYPE((mode), __S_IFIFO)
 # define S_ISLNK(mode)	 __S_ISTYPE((mode), __S_IFLNK)
 
+#define S_IFREG __S_IFREG
 #define S_IFIFO __S_IFIFO
 #define S_IFSOCK __S_IFSOCK
 #define S_IFCHR __S_IFCHR
@@ -63,6 +70,7 @@ struct stat {
     u16 st_uid;         /* User ID of owner */
     u16 st_gid;         /* Group ID of owner */
     u32 st_size;        /* Total size, in bytes */
+    u32 st_blocks;
     u32 st_blksize;     /* Block size for filesystem I/O */
 
     time_t st_atim; // time last access

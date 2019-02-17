@@ -20,5 +20,6 @@ struct tm {
 
 void cmosTime(struct tm *ptm);
 int getCurrentDateAndTime(char *buf, u32 size);
+time_t mktime(struct tm *ptm);
 
 #endif //KERNEL_EPITA_TIME_H

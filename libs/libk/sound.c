@@ -34,7 +34,7 @@ struct melody *load_sound(const char *path)
 	char *magic = ".KSF";
 	char buf[5];
 
-	if ((fd = open(path, O_RDONLY)) < 0)
+	if ((fd = open(path, O_RDONLY, 0)) < 0)
 		return NULL;
 
 	buf[4] = 0;

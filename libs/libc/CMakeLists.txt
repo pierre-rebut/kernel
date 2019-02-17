@@ -10,6 +10,6 @@ set(LIBC_SOURCE
         ../include/kstd.h ../include/string.h
         ../include/stdio.h ../include/stdlib.h
         ../include/types.h
-        qsort.c ../include/errno-base.h ../include/stddef.h ../include/stdarg.h)
+        qsort.c ../include/errno-base.h ../include/stddef.h ../include/stdarg.h ../include/limits.h)
 
 add_library(stdc STATIC ${LIBC_SOURCE})

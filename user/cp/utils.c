@@ -42,7 +42,7 @@ int copy_file(const FTSENT *entp, int dne) {
 
     from_fd = to_fd = -1;
     if (!lflag && !sflag &&
-        (from_fd = open(entp->fts_path, O_RDONLY)) == -1) {
+        (from_fd = open(entp->fts_path, O_RDONLY, 0)) == -1) {
         warn("%s", entp->fts_path);
         return (1);
     }
@@ -83,14 +83,14 @@ int copy_file(const FTSENT *entp, int dne) {
              */
             (void) unlink(to.p_path);
             if (!lflag && !sflag) {
-                to_fd = open(to.p_path, O_WRONLY | O_TRUNC | O_CREAT);
+                to_fd = open(to.p_path, O_WRONLY | O_TRUNC | O_CREAT, 0x180);
             }
         } else if (!lflag && !sflag) {
             /* Overwrite existing destination file name. */
-            to_fd = open(to.p_path, O_WRONLY | O_TRUNC);
+            to_fd = open(to.p_path, O_WRONLY | O_TRUNC, 0);
         }
     } else if (!lflag && !sflag) {
-        to_fd = open(to.p_path, O_WRONLY | O_TRUNC | O_CREAT);
+        to_fd = open(to.p_path, O_WRONLY | O_TRUNC | O_CREAT, 0x180);
     }
 
     if (!lflag && !sflag && to_fd == -1) {

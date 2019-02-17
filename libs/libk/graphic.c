@@ -444,7 +444,7 @@ struct bitmap_header {
 struct image *load_image(const char *path) {
     struct bitmap_header bmp;
 
-    int fd = open(path, 0);
+    int fd = open(path, O_RDONLY, 0);
     if (fd < 0)
         return NULL;
 

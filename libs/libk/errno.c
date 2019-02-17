@@ -4,7 +4,7 @@
 
 #include "errno.h"
 
-#define NB_ERRNO 29
+#define NB_ERRNO 30
 
 static const char *errnoStr[] = {
         "Operation not permitted",
@@ -34,7 +34,9 @@ static const char *errnoStr[] = {
         "Broken pipe",
         "Resource deadlock would occur",
         "File name too long",
-        "Directory not empty"
+        "Directory not empty",
+        "Too many symbolic links encountered",
+        "Math result not representable"
 };
 
 int errno = 0;

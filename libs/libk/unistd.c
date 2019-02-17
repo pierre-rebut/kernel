@@ -27,6 +27,14 @@
 
 #include "syscalls.h"
 
+uid_t getuid() {
+    return 0;
+}
+
+int isatty(int fd) {
+    return syscall1(SYSCALL_ISATTY, (u32) fd);
+}
+
 int exit(int value) {
     return syscall1(SYSCALL_EXIT, (u32) value);
 }
@@ -43,8 +51,8 @@ unsigned long gettick(void) {
     return (unsigned long) syscall0(SYSCALL_GETTICK);
 }
 
-int open(const char *pathname, int flags) {
-    return syscall2(SYSCALL_OPEN, (u32) pathname, (u32) flags);
+int open(const char *pathname, int flags, mode_t mode) {
+    return syscall3(SYSCALL_OPEN, (u32) pathname, (u32) flags, mode);
 }
 
 ssize_t read(int fd, void *buf, size_t count) {

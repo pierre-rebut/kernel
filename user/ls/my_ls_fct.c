@@ -20,8 +20,9 @@ int do_file(t_option *opt, char *file) {
     char *direc;
     int fd;
 
-    if ((fd = open(file, O_RDONLY)) == -1)
+    if ((fd = open(file, O_RDONLY, 0)) == -1)
         return (0);
+    close(fd);
     if (opt->ll == 1) {
         direc = my_directory2(file);
         format_ll2(direc, file);

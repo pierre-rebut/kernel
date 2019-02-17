@@ -18,7 +18,6 @@ set(SOURCE
         src/tools/str.c
         src/tools/my_epur_cmd.c
         src/tools/my_wordtab.c
-        src/tools/get_next_line.c
         src/parsing/check_expr_cmplx.c
         src/parsing/check.c
         src/parsing/new_check.c

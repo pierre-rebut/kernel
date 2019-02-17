@@ -36,5 +36,6 @@
 
 #define	ENOTEMPTY	28	/* Directory not empty */
 #define	ELOOP		29	/* Too many symbolic links encountered */
+#define ERANGE      30  /* Math result not representable */
 
 #endif //KERNEL_ERRNO_BASE_H

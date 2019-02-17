@@ -12,6 +12,7 @@
 #include "kstd.h"
 #include <stdio.h>
 #include <unistd.h>
+#include <err.h>
 #include "include/my_ls.h"
 
 int get_nbr_dir(char **av) {
@@ -61,6 +62,7 @@ int compte_nbfile(char *str) {
     nb = 0;
     while (readdir(dirp) != NULL)
         nb++;
+    closedir(dirp);
     return (nb);
 }
 

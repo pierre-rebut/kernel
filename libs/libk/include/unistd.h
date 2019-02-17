@@ -7,6 +7,8 @@
 
 #include <kstd.h>
 
+char *getenv(const char *name);
+
 /*
 ** syscalls
 */
@@ -15,7 +17,7 @@ int exit(int value);
 void *sbrk(ssize_t increment);
 int getkey(void);
 unsigned long gettick(void);
-int open(const char *pathname, int flags);
+int open(const char *pathname, int flags, mode_t mode);
 ssize_t read(int fd, void *buf, size_t count);
 int write(int fd, const void *s, size_t length);
 off_t seek(int filedes, off_t offset, int whence);
@@ -50,5 +52,7 @@ int fchmod(int, mode_t mode);
 int link(const char *, const char *);
 int symlink(const char *, const char *);
 int unlink(const char *name);
+uid_t getuid();
+int isatty(int fd);
 
 #endif //KERNEL_SYSCALLW_H

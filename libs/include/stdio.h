@@ -28,6 +28,7 @@
 #include <types.h>
 
 #define EOF (-1)
+#define BUFSIZ 8192
 
 int putchar(char c);
 int puts(const char *s);

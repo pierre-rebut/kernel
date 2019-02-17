@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <err.h>
 #include "include/my_ls.h"
 
 int set_zero(t_option *opt) {
@@ -57,11 +58,7 @@ int print_ls(t_option *opt, char *dir) {
     int nb_file;
 
     total = 0;
-    nb_file = 0;
-    if ((dirp = opendir(dir)) == NULL)
-        return (do_file(opt, dir));
-    while (readdir(dirp) != NULL)
-        nb_file++;
+    nb_file = compte_nbfile(dir);
     if ((dirp = opendir(dir)) == NULL)
         return (do_file(opt, dir));
     tab = do_ls_allon(opt, dirp, nb_file);
@@ -109,7 +106,7 @@ int main(int ac, char **av) {
         verife_option(&opt, av);
     else {
         if ((dirp = opendir(".")) == NULL)
-            puts("Error1: no file or directory\n");
+            err("Error1: no file or directory\n");
         else {
             tab = do_ls_allon(&opt, dirp, compte_nbfile("."));
             i = -1;

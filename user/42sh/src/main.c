@@ -10,6 +10,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <filestream.h>
 
 #include "define.h"
 #include "functions.h"
@@ -81,7 +82,7 @@ int main(int ac, char **av, char **env) {
     //    return (FAIL);
     while (42) {
         puts("$> ");
-        if ((cmd = get_next_line(0)) == NULL) {
+        if ((cmd = getline(stdin)) == NULL) {
             free_tab(tenv.env);
             puts("exit\n");
             return (exit_val);

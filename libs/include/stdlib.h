@@ -30,6 +30,10 @@ int atoi(const char *str);
 
 long atol(const char *str);
 
+double atof(const char *string);
+
+double strtod(char *str, char **ptr);
+
 void *malloc(size_t size);
 
 void *realloc(void *ptr, size_t size);

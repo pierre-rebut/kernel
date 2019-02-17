@@ -107,7 +107,7 @@ int main(int argc, char **argv) {
 
     if (*argv != NULL) {
         for (; *argv != NULL; argv++) {
-            FILE *file = fopen(*argv, O_RDONLY);
+            FILE *file = fopen(*argv, O_RDONLY, 0);
 
             if (file == NULL) {
                 printf("%s: %s: %s\n", progname, *argv, strerror(ENOENT));

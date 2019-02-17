@@ -45,7 +45,6 @@ char *strdup(const char *str);
 char *strchr(const char *p, int ch);
 char *strtok(char *s, const char *delim);
 u32 strcspn(const char *s1, register const char *s2);
-char isspace(char c);
 int strcontain(const char *s1, char c);
 int strncontain(const char *s, char c, u32 n);
 
@@ -54,8 +53,11 @@ u32 str_backspace(char *str, char c, char **);
 u32 strsplit(char *str, char delim);
 u32 str_begins_with(const char *str, const char *with);
 
+char *strstr(register char *string, char *substring);
 char *strrchr(const char *cp, int ch);
 size_t strlcpy(char *dst, const char *src, size_t siz);
 char *strncat(char *s1, const char *s2, size_t n);
+
+void strmode(register mode_t mode, register char *p);
 
 #endif				/* !STRING_H_ */

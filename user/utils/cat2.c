@@ -10,6 +10,7 @@ static char const copyright[] =
 #include <filestream.h>
 #include <kstd.h>
 #include <unistd.h>
+#include <errno.h>
 
 static int bflag, eflag, nflag, sflag, tflag, vflag;
 static int rval;
@@ -88,10 +89,10 @@ static void scanfiles(char *argv[], int cooked) {
             fd = STDIN_FILENO;
         } else {
             filename = path;
-            fd = open(path, O_RDONLY);
+            fd = open(path, O_RDONLY, 0);
         }
         if (fd < 0) {
-            printf("cat: %s: Aucun fichier ou dossier de ce type\n", path);
+            printf("cat: %s: %s\n", path, strerror(errno));
             rval = 1;
         } else if (cooked) {
             if (fd == STDIN_FILENO)

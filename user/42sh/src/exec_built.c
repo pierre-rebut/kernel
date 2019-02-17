@@ -11,6 +11,8 @@
 #include <kstd.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
+#include <stdio.h>
 
 #include "struct.h"
 #include "define.h"
@@ -35,9 +37,9 @@ int redir_out_fd(t_cmd *lst) {
     int fd;
     
     if (lst->redir_out[0] == '>')
-        fd = open(lst->redir_out + 1, O_WRONLY | O_CREAT | O_APPEND);
+        fd = open(lst->redir_out + 1, O_WRONLY | O_CREAT | O_APPEND, 0x180);
     else
-        fd = open(lst->redir_out, O_WRONLY | O_CREAT | O_TRUNC);
+        fd = open(lst->redir_out, O_WRONLY | O_CREAT | O_TRUNC, 0x180);
     return (fd);
 }
 
@@ -51,6 +53,11 @@ int exec_built(t_cmd *lst, t_env *env) {
                 fd = lst->next->pipefd[1];
             else if (lst->redir_out != NULL)
                 fd = redir_out_fd(lst);
+
+            if (fd < 0) {
+                printf("42sh : %s\n", strerror(errno));
+                return FAIL;
+            }
 
             int res = lstCmd[i].fct(fd, lst, env);
             if (fd > 2)

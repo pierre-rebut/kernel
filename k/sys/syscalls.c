@@ -8,6 +8,7 @@
 #include "syscall.h"
 #include "io/libvga.h"
 #include "physical-memory.h"
+#include "time.h"
 
 #include <kstdio.h>
 #include <io/pipe.h>
@@ -18,7 +19,7 @@
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
-#define NB_SYSCALL 38
+#define NB_SYSCALL 41
 
 static int sys_write(struct esp_context *ctx);
 
@@ -96,6 +97,10 @@ static int sys_symlink(struct esp_context *ctx);
 
 static int sys_unlink(struct esp_context *ctx);
 
+static int sys_isatty(struct esp_context *ctx);
+
+static int sys_time(struct esp_context *ctx);
+
 typedef int (*syscall_t)(struct esp_context *);
 
 static syscall_t syscall[] = {
@@ -136,7 +141,9 @@ static syscall_t syscall[] = {
         sys_fchdir,
         sys_link,
         sys_symlink,
-        sys_unlink
+        sys_unlink,
+        sys_isatty,
+        sys_time
 };
 
 static void syscall_handler(struct esp_context *ctx);
@@ -195,18 +202,17 @@ static int sys_open(struct esp_context *ctx) {
         if (!(ctx->ecx & O_CREAT))
             return -EACCES;
 
-        path = fsLink((const char *) ctx->ebx, NULL);
+        path = fsMkFile((const char *) ctx->ebx, ctx->edx);
         if (!path)
             return -EIO;
     }
 
     enum KObjectType type;
-    void *data = fsOpenFile(path, ctx->edx, (int *) &type);
+    void *data = fsOpenFile(path, ctx->ecx, (int *) &type);
     if (data == NULL) {
         fsPathDestroy(path);
         return -EACCES;
     }
-
 
     struct Kobject *obj = koCreate(type, data, ctx->ecx);
     if (obj == NULL) {
@@ -550,4 +556,31 @@ static int sys_unlink(struct esp_context *ctx) {
     LOG("unlink: %s\n", (char *) ctx->ebx);
 
     return -EPERM;
+}
+
+static int sys_isatty(struct esp_context *ctx) {
+    struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
+    if (!obj)
+        return -EBADF;
+
+    return (obj->type == KO_CONS_STD || obj->type == KO_CONS_ERROR);
+}
+
+static int sys_time(struct esp_context *ctx) {
+    time_t *tlc = (time_t*)ctx->ebx;
+    if (tlc == NULL)
+        return -EINVAL;
+
+    time_t res = 0;
+    struct tm cmostime;
+    cmosTime(&cmostime);
+
+    res += cmostime.second;
+    res += cmostime.minute * 60;
+    res += cmostime.hour * 3600;
+    res += (cmostime.weekday - 1) * 86400;
+    res += (cmostime.month - 1) * 86400 * 4;
+    res += ((cmostime.century * 100 + cmostime.year) - 1970) * 86400 * 4 * 12;
+    *tlc = res;
+    return res;
 }
