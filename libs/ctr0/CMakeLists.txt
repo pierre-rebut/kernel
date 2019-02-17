@@ -1,4 +1,4 @@
-include_directories(${CMAKE_SOURCE_DIR}/libs/include)
+include_directories(${CMAKE_SOURCE_DIR}/libs/libc/include)
 include_directories(${CMAKE_SOURCE_DIR}/libs/libk/include)
 
 set(CRT0_SOURCE

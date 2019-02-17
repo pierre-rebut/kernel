@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <dirent.h>
+#include <fts.h>
 
 #include "fts.h"
 
@@ -814,8 +815,8 @@ static FTSENT *fts_sort(FTS *sp, FTSENT *head, register int nitems) {
      */
     if (nitems > sp->fts_nitems) {
         sp->fts_nitems = nitems + 40;
-        if ((sp->fts_array = realloc(sp->fts_array,
-                                     (size_t)(sp->fts_nitems * sizeof(FTSENT * )))) == NULL) {
+        sp->fts_array = realloc(sp->fts_array, (size_t)(sp->fts_nitems * sizeof(FTSENT * )));
+        if (sp->fts_array == NULL) {
             sp->fts_nitems = 0;
             return (head);
         }
@@ -880,7 +881,9 @@ static void fts_lfree(register FTSENT *head) {
  */
 static int fts_palloc(FTS *sp, size_t more) {
     sp->fts_pathlen += more + 256;
+    warn("bite de realloc: %d\n", sp->fts_pathlen);
     sp->fts_path = realloc(sp->fts_path, (size_t) sp->fts_pathlen);
+    warn("bite de end\n");
     return (sp->fts_path == NULL);
 }
 

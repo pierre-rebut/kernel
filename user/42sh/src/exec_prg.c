@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <alloc.h>
 
 #include "struct.h"
 #include "define.h"

@@ -34,14 +34,6 @@ double atof(const char *string);
 
 double strtod(char *str, char **ptr);
 
-void *malloc(size_t size);
-
-void *realloc(void *ptr, size_t size);
-
-void free(const void *ptr);
-
-void *calloc(size_t nmemb, size_t size);
-
 void qsort(void *, size_t, size_t, int (*)(const void *, const void *));
 
 #endif                /* !STDLIB_H_ */

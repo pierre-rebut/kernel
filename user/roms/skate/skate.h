@@ -26,7 +26,7 @@
 
 #include "graphic.h"
 #include "sound.h"
-#include "../../../libs/include/stdlib.h"
+#include <alloc.h>
 
 enum e_gfx {
 	TRICK_NONE = 0,

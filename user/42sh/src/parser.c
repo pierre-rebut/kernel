@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <alloc.h>
 
 #include "define.h"
 #include "functions.h"

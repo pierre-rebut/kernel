@@ -8,7 +8,7 @@
 ** Last update Sun Nov 30 15:25:01 2014 rebut_p
 */
 
-#include "../../libs/include/stdlib.h"
+#include <alloc.h>
 #include <string.h>
 #include <stdio.h>
 

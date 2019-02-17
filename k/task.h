@@ -106,7 +106,8 @@ pid_t taskGetpid();
 pid_t taskKillByPid(pid_t pid);
 struct Task *getTaskByPid(pid_t pid);
 
-u32 taskSetHeapInc(s32 size);
+u32 taskHeapInc(s32 size);
+int taskHeapSet(u32 addr);
 
 int taskChangeDirectory(const char *directory);
 

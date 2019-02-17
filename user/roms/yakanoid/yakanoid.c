@@ -24,7 +24,7 @@
 #include <unistd.h>
 #include "graphic.h"
 #include "sound.h"
-#include "../../../libs/include/stdlib.h"
+#include <alloc.h>
 
 static void splash_screen(void)
 {

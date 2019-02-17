@@ -9,6 +9,7 @@
 */
 
 #include <stdlib.h>
+#include <alloc.h>
 
 #include "struct.h"
 #include "define.h"

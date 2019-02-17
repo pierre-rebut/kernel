@@ -522,7 +522,7 @@ u32 taskSwitch(struct Task *newTask) {
     return newTask->esp;
 }
 
-u32 taskSetHeapInc(s32 inc) {
+u32 taskHeapInc(s32 inc) {
     if (currentTask->pid == 0)
         return 0;
 
@@ -554,6 +554,18 @@ u32 taskSetHeapInc(s32 inc) {
     heap->pos += inc;
     return heap->start + brk;
 }
+
+int taskHeapSet(u32 addr) {
+    if (currentTask->pid == 0 || addr % PAGESIZE != 0)
+        return -EFAULT;
+
+    struct Heap *heap = &currentTask->heap;
+    if (addr == heap->pos)
+        return 0;
+
+    return (taskHeapInc(addr - heap->pos) != 0 ? 0 : -ENOMEM);
+}
+
 
 struct Task *getTaskByPid(pid_t pid) {
     if (pid > TASK_MAX_PID || pid < 0)

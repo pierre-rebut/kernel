@@ -21,10 +21,12 @@
 * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+#include <stdlib.h>
+#include <alloc.h>
 #include <unistd.h>
+
 #include "graphic.h"
 #include "sound.h"
-#include "../../../libs/include/stdlib.h"
 
 /*
  * the splash screen with yaka face.

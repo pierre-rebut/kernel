@@ -8,7 +8,7 @@
 ** Last update Sun Nov 30 17:42:58 2014 rebut_p
 */
 
-#include "../../libs/include/stdlib.h"
+#include <alloc.h>
 #include "kstd.h"
 #include <stdio.h>
 #include <unistd.h>

@@ -11,6 +11,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <alloc.h>
 
 #include "kstd.h"
 

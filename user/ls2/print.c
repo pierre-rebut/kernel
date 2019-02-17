@@ -231,8 +231,8 @@ printcol(const DISPLAY *dp)
 	 * of pointers.
 	 */
 	if (dp->entries > lastentries) {
-		if ((narray =
-		    realloc(array, dp->entries * sizeof(FTSENT *))) == NULL) {
+		narray = realloc(array, dp->entries * sizeof(FTSENT *));
+		if (narray == NULL) {
 			warn(NULL);
 			printscol(dp);
 			return;

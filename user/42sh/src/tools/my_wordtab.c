@@ -9,6 +9,7 @@
 */
 
 #include <stdlib.h>
+#include <alloc.h>
 
 int len_tab(const char *str, char param) {
     int num;

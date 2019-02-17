@@ -39,6 +39,10 @@ int exit(int value) {
     return syscall1(SYSCALL_EXIT, (u32) value);
 }
 
+int brk(void *addr) {
+    return syscall1(SYSCALL_BRK, (u32) addr);
+}
+
 void *sbrk(ssize_t increment) {
     return (void *) syscall1(SYSCALL_SBRK, (u32) increment);
 }
@@ -159,8 +163,8 @@ int mkdir(const char *file, mode_t mode) {
     return syscall2(SYSCALL_MKDIR, (u32) file, mode);
 }
 
-int mkfile(const char *file) {
-    return syscall1(SYSCALL_MKFILE, (u32) file);
+int mkfile(const char *file, mode_t mode) {
+    return syscall2(SYSCALL_MKFILE, (u32) file, (u32) mode);
 }
 
 int fchdir(int fd) {

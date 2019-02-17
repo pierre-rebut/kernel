@@ -1,4 +1,4 @@
-include_directories(${CMAKE_SOURCE_DIR}/libs/include)
+include_directories(include)
 
 set(LIBC_SOURCE
         mem.c
@@ -7,9 +7,9 @@ set(LIBC_SOURCE
         string.c
         stringn.c
         printf.c
-        ../include/kstd.h ../include/string.h
-        ../include/stdio.h ../include/stdlib.h
-        ../include/types.h
-        qsort.c ../include/errno-base.h ../include/stddef.h ../include/stdarg.h ../include/limits.h)
+        include/kstd.h include/string.h
+        include/stdio.h include/stdlib.h
+        include/types.h
+        qsort.c include/errno-base.h include/stddef.h include/stdarg.h include/limits.h)
 
 add_library(stdc STATIC ${LIBC_SOURCE})

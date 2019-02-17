@@ -19,9 +19,15 @@
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
-#define NB_SYSCALL 41
+#define NB_SYSCALL 43
+
+static int sys_notimplemented(struct esp_context *ctx);
+
+static int sys_exit(struct esp_context *ctx);
 
 static int sys_write(struct esp_context *ctx);
+
+static int sys_brk(struct esp_context *ctx);
 
 static int sys_sbrk(struct esp_context *ctx);
 
@@ -50,8 +56,6 @@ static int sys_getkeymode(struct esp_context *ctx);
 static int sys_usleep(struct esp_context *ctx);
 
 static int sys_waitPid(struct esp_context *ctx);
-
-static int sys_exit(struct esp_context *ctx);
 
 static int sys_kill(struct esp_context *ctx);
 
@@ -105,6 +109,7 @@ typedef int (*syscall_t)(struct esp_context *);
 
 static syscall_t syscall[] = {
         sys_exit,
+        sys_brk,
         sys_sbrk,
         sys_getkey,
         sys_gettick,
@@ -139,6 +144,8 @@ static syscall_t syscall[] = {
         sys_mkdir,
         sys_mkfile,
         sys_fchdir,
+        sys_notimplemented, // todo chmod
+        sys_notimplemented, // todo fchmod
         sys_link,
         sys_symlink,
         sys_unlink,
@@ -158,12 +165,17 @@ static void syscall_handler(struct esp_context *ctx) {
 
     syscall_t fct = syscall[ctx->eax];
     if (fct == NULL) {
-        klog("unhandled syscall %d\n", ctx->eax);
+        klog("[syscall] unhandled %d\n", ctx->eax);
         ctx->eax = (u32) -EINTR;
         return;
     }
 
     ctx->eax = (u32) fct(ctx);
+}
+
+static int sys_notimplemented(struct esp_context *ctx) {
+    klog("[syscall] %u: not implemented\n", ctx->eax);
+    return -EINTR;
 }
 
 /*** SYSCALL FCT ***/
@@ -173,8 +185,12 @@ static int sys_exit(struct esp_context *ctx) {
     return taskExit();
 }
 
+static int sys_brk(struct esp_context *ctx) {
+    return taskHeapSet(ctx->ebx);
+}
+
 static int sys_sbrk(struct esp_context *ctx) {
-    return taskSetHeapInc((s32) ctx->ebx);
+    return taskHeapInc((s32) ctx->ebx);
 }
 
 static int sys_getkey(struct esp_context *ctx) {
@@ -510,7 +526,7 @@ static int sys_mkfile(struct esp_context *ctx) {
         return -EEXIST;
     }
 
-    tmp = fsLink((const char *) ctx->ebx, NULL);
+    tmp = fsMkFile((const char *) ctx->ebx, ctx->ecx);
     fsPathDestroy(tmp);
     return (tmp ? 0 : -EIO);
 }

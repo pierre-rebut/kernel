@@ -10,6 +10,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <alloc.h>
 
 #include "struct.h"
 #include "functions.h"

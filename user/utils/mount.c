@@ -7,7 +7,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
-#include "../../libs/include/stdlib.h"
+#include <alloc.h>
 
 void help() {
     printf("mount <fs type> <arg> <mount point>\n");

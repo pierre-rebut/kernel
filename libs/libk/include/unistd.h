@@ -14,6 +14,7 @@ char *getenv(const char *name);
 */
 
 int exit(int value);
+int brk(void *addr);
 void *sbrk(ssize_t increment);
 int getkey(void);
 unsigned long gettick(void);
@@ -44,7 +45,7 @@ int dup2(int o, int n);
 char *getcwd(char *buf, u32 size);
 long sysconf(int name);
 void sync();
-int mkfile(const char *);
+int mkfile(const char *, mode_t mode);
 int mkdir(const char *, mode_t mode);
 int fchdir(int fd);
 int chmod(const char *path, mode_t mode);

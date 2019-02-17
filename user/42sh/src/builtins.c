@@ -12,6 +12,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <alloc.h>
 
 #include "functions.h"
 #include "define.h"

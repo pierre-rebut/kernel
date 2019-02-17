@@ -8,6 +8,7 @@
 #include <filestream.h>
 #include <stdlib.h>
 #include <string.h>
+#include <alloc.h>
 #include "extern.h"
 
 #define    cp_pct(x, y)    ((y == 0) ? 0 : (int)(100.0 * (x) / (y)))
@@ -217,7 +218,7 @@ int copy_file(const FTSENT *entp, int dne) {
 }
 
 int copy_link(const FTSENT *p, int exists) {
-    int len;
+    // int len;
     char llink[MAXPATHLEN];
 
     if (exists && nflag) {
@@ -387,6 +388,9 @@ int preserve_fd_acls(int source_fd, int dest_fd) {
 }
 
 int preserve_dir_acls(struct stat *fs, char *source_dir, char *dest_dir) {
+    (void) fs;
+    (void) source_dir;
+    (void) dest_dir;
     /*acl_t(*aclgetf)(
     const char *, acl_type_t);
     int (*aclsetf)(const char *, acl_type_t, acl_t);

@@ -12,7 +12,7 @@ int main(int ac, char **av) {
     }
 
     for (int i = 1; i < ac; i++)
-        mkfile(av[i]);
+        mkfile(av[i], 0);
 
     return 0;
 }

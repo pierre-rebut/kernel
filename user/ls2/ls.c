@@ -16,6 +16,7 @@
 #include <filestream.h>
 #include <utils.h>
 #include <scanf.h>
+#include <alloc.h>
 
 #ifdef COLORLS
 #include <termcap.h>

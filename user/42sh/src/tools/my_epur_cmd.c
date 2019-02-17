@@ -10,6 +10,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <alloc.h>
 #include "functions.h"
 
 int add_separ_line(char *new, const char *str, int *i, int cpt) {
