@@ -249,7 +249,7 @@ static int sys_open(struct esp_context *ctx)
     }
 
     taskSetKObjectByFd(fd, obj);
-    klog("open: %s (%d)\n", (char *) ctx->ebx, fd);
+    LOG("open: %s (%d)\n", (char *) ctx->ebx, fd);
     return fd;
 }
 
@@ -385,7 +385,6 @@ static int sys_chdir(struct esp_context *ctx)
 
 static int sys_opendir(struct esp_context *ctx)
 {
-    klog("opendir: %s\n", (const char *) ctx->ebx);
     int fd = taskGetAvailableFd(currentTask);
     if (fd < 0)
         return fd;
@@ -425,25 +424,24 @@ static int sys_closedir(struct esp_context *ctx)
 
 static int sys_mount(struct esp_context *ctx)
 {
-    klog("mount %s on %s (%s)\n", (char *) ctx->ecx, (char *) ctx->edx, (char *) ctx->ebx);
-    klog("mount: get fs by name\n");
+    LOG("mount %s on %s (%s)\n", (char *) ctx->ecx, (char *) ctx->edx, (char *) ctx->ebx);
     struct Fs *fs = fsGetFileSystemByName((const char *) ctx->ebx);
     if (!fs)
         return -ENODEV;
 
-    klog("mount: get fspath\n");
+    LOG("mount: get fspath\n");
     struct FsPath *path = fsResolvePath((char *) ctx->edx);
     if (!path)
         return -ENOENT;
 
-    klog("mount: get device path\n");
+    LOG("mount: get device path\n");
     struct FsPath *device = fsResolvePath((char *) ctx->ecx);
     if (device == NULL) {
         fsPathDestroy(path);
         return -ENXIO;
     }
 
-    klog("mount: create new volume\n");
+    LOG("mount: create new volume\n");
     void *tmp = fsMountVolumeOn(path, fs, device);
     fsPathDestroy(path);
     fsPathDestroy(device);
@@ -451,7 +449,7 @@ static int sys_mount(struct esp_context *ctx)
     if (tmp == NULL)
         return -EIO;
 
-    klog("mount: end\n");
+    LOG("mount: end\n");
     return 0;
 }
 

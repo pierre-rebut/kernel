@@ -9,9 +9,9 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-#include <filestream.h>
 #include <utils.h>
 #include <alloc.h>
+#include <filestream.h>
 
 #ifdef COLORLS
 #include <ctype.h>
@@ -83,7 +83,7 @@ printscol(const DISPLAY *dp)
         if (IS_NOPRINT(p))
             continue;
         (void) printaname(p, dp->s_inode, dp->s_block);
-        (void) putchar('\n');
+        (void) fputchar(stdout, '\n');
     }
 }
 
@@ -98,7 +98,7 @@ printname(const char *name)
     else if (f_nonprint)
         return prn_printable(name);
     else
-        return printf(name);
+        return fprintf(stdout, name);
 }
 
 static void
@@ -123,8 +123,7 @@ compute_abbreviated_month_size(void)
         padding_for_month[i] = month_max_size - months_width[i];
 }
 
-void
-printlong(const DISPLAY *dp)
+void printlong(const DISPLAY *dp)
 {
     struct stat *sp;
     FTSENT *p;
@@ -136,29 +135,28 @@ printlong(const DISPLAY *dp)
 
     if ((dp->list == NULL || dp->list->fts_level != FTS_ROOTLEVEL) &&
         (f_longform || f_size)) {
-        (void) printf("total %lu\n", howmany(dp->btotal, blocksize));
+        (void) fprintf(stdout, "total %lu\n", howmany(dp->btotal, blocksize));
     }
+
 
     for (p = dp->list; p; p = p->fts_link) {
         if (IS_NOPRINT(p))
             continue;
+
         sp = p->fts_statp;
         if (f_inode)
-            (void) printf("%*ju ",
-                          dp->s_inode, (unsigned long int) sp->st_ino);
+            (void) fprintf(stdout, "%*ju ", dp->s_inode, (unsigned long int) sp->st_ino);
         if (f_size)
-            (void) printf("%*jd ",
-                          dp->s_block, howmany(sp->st_blocks, blocksize));
+            (void) fprintf(stdout, "%*jd ", dp->s_block, howmany(sp->st_blocks, blocksize));
         strmode(sp->st_mode, buf);
         aclmode(buf, p);
         np = p->fts_pointer;
-        (void) printf("%s %*ju %-*s  %-*s  ", buf, dp->s_nlink,
-                      (unsigned long int) sp->st_nlink, dp->s_user, np->user, dp->s_group,
-                      np->group);
+        (void) fprintf(stdout, "%s %*u %-*s  %-*s  ", buf, dp->s_nlink, (unsigned int) sp->st_nlink,
+                      dp->s_user, np->user, dp->s_group, np->group);
         if (f_flags)
-            (void) printf("%-*s ", dp->s_flags, np->flags);
+            (void) fprintf(stdout, "%-*s ", dp->s_flags, np->flags);
         if (f_label)
-            (void) printf("%-*s ", dp->s_label, np->label);
+            (void) fprintf(stdout, "%-*s ", dp->s_label, np->label);
 
         printsize(dp->s_size, sp->st_size);
         if (f_accesstime)
@@ -180,7 +178,7 @@ printlong(const DISPLAY *dp)
             (void) printtype(sp->st_mode);
         if (S_ISLNK(sp->st_mode))
             printlink(p);
-        (void) putchar('\n');
+        (void) fputchar(stdout, '\n');
     }
 }
 
@@ -195,17 +193,17 @@ void printstream(const DISPLAY *dp)
         /* XXX strlen does not take octal escapes into account. */
         if (strlen(p->fts_name) + chcnt +
             (p->fts_link ? 2 : 0) >= (unsigned) termwidth) {
-            putchar('\n');
+            fputchar(stdout, '\n');
             chcnt = 0;
         }
         chcnt += printaname(p, dp->s_inode, dp->s_block);
         if (p->fts_link) {
-            printf(", ");
+            fprintf(stdout, ", ");
             chcnt += 2;
         }
     }
     if (chcnt)
-        putchar('\n');
+        fputchar(stdout, '\n');
 }
 
 void
@@ -270,7 +268,7 @@ printcol(const DISPLAY *dp)
 
     if ((dp->list == NULL || dp->list->fts_level != FTS_ROOTLEVEL) &&
         (f_longform || f_size)) {
-        (void) printf("total %lu\n", howmany(dp->btotal, blocksize));
+        (void) fprintf(stdout, "total %lu\n", howmany(dp->btotal, blocksize));
     }
 
     base = 0;
@@ -291,12 +289,12 @@ printcol(const DISPLAY *dp)
                    <= endcol) {
                 if (f_sortacross && col + 1 >= numcols)
                     break;
-                (void) putchar(f_notabs ? ' ' : '\t');
+                (void) fputchar(stdout, f_notabs ? ' ' : '\t');
                 chcnt = cnt;
             }
             endcol += colwidth;
         }
-        (void) putchar('\n');
+        (void) fputchar(stdout, '\n');
     }
 }
 
@@ -315,10 +313,10 @@ static int printaname(const FTSENT *p, u_long inodefield, u_long sizefield)
     sp = p->fts_statp;
     chcnt = 0;
     if (f_inode)
-        chcnt += printf("%*ju ",
+        chcnt += fprintf(stdout, "%*ju ",
                         (int) inodefield, (unsigned long int) sp->st_ino);
     if (f_size)
-        chcnt += printf("%*jd ",
+        chcnt += fprintf(stdout, "%*jd ",
                         (int) sizefield, howmany(sp->st_blocks, blocksize));
 #ifdef COLORLS
     if (f_color)
@@ -392,7 +390,7 @@ static int printtype(u_int mode)
 
     if (f_slash) {
         if ((mode & S_IFMT) == S_IFDIR) {
-            (void) putchar('/');
+            (void) fputchar(stdout, '/');
             return (1);
         }
         return (0);
@@ -400,22 +398,22 @@ static int printtype(u_int mode)
 
     switch (mode & S_IFMT) {
         case S_IFDIR:
-            (void) putchar('/');
+            (void) fputchar(stdout, '/');
             return (1);
         case S_IFIFO:
-            (void) putchar('|');
+            (void) fputchar(stdout, '|');
             return (1);
         case S_IFLNK:
-            (void) putchar('@');
+            (void) fputchar(stdout, '@');
             return (1);
         case S_IFSOCK:
-            (void) putchar('=');
+            (void) fputchar(stdout, '=');
             return (1);
         default:
             break;
     }
     if (mode & (S_IXUSR | S_IXGRP | S_IXOTH)) {
-        (void) putchar('*');
+        (void) fputchar(stdout, '*');
         return (1);
     }
     return (0);
@@ -425,7 +423,7 @@ static int printtype(u_int mode)
 static int
 putch(int c)
 {
-    (void)putchar(c);
+    (void)fputchar(stdout, c);
     return 0;
 }
 
@@ -462,15 +460,15 @@ static void
 printcolor_ansi(Colors c)
 {
 
-    printf("\033[");
+    fprintf(stdout, "\033[");
 
     if (colors[c].bold)
-        printf("1");
+        fprintf(stdout, "1");
     if (colors[c].num[0] != -1)
-        printf(";3%d", colors[c].num[0]);
+        fprintf(stdout, ";3%d", colors[c].num[0]);
     if (colors[c].num[1] != -1)
-        printf(";4%d", colors[c].num[1]);
-    printf("m");
+        fprintf(stdout, ";4%d", colors[c].num[1]);
+    fprintf(stdout, "m");
 }
 
 static void
@@ -495,7 +493,7 @@ static void
 endcolor_ansi(void)
 {
 
-    printf("\33[m");
+    fprintf(stdout, "\33[m");
 }
 
 static void
@@ -621,11 +619,11 @@ static void printlink(const FTSENT *p)
         (void) snprintf(name, sizeof(name),
                         "%s/%s", p->fts_parent->fts_accpath, p->fts_name);
     /*if ((lnklen = readlink(name, path, sizeof(path) - 1)) == -1) {
-        (void)fprintf(stderr, "\nls: %s: %s\n", name, strerror(errno));
+        (void)ffprintf(stdout, stderr, "\nls: %s: %s\n", name, strerror(errno));
         return;
     }
     path[lnklen] = '\0';
-    (void)printf(" -> ");
+    (void)fprintf(stdout, " -> ");
     (void)printname(path);*/
 }
 
@@ -640,13 +638,14 @@ static void printsize(size_t width, off_t bytes)
         char buf[HUMANVALSTR_LEN - 1 + 1];
 
         humanize_number(buf, sizeof(buf), (long long) bytes, "", HN_AUTOSCALE, HN_B | HN_NOSPACE | HN_DECIMAL);
-        (void) printf("%*s ", (u_int) width, buf);
+        (void) fprintf(stdout, "%*s ", (u_int) width, buf);
     } else if (f_thousands) {        /* with commas */
         /* This format assignment needed to work round gcc bug. */
         const char *format = "%*j'd ";
-        (void) printf(format, (u_int) width, bytes);
-    } else
-        (void) printf("%*jd ", (u_int) width, bytes);
+        (void) fprintf(stdout, format, (u_int) width, bytes);
+    } else {
+        (void) fprintf(stdout, "%*d ", (u_int) width, bytes);
+    }
 }
 
 /*

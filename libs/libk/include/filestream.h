@@ -49,6 +49,8 @@ size_t fwrite(const char *buf, size_t size, size_t nmemb, FILE *stream);
 
 int fprintf(FILE *stream, const char *fmt, ...);
 
+int fputs(FILE *stream, const char *str);
+
 int fputchar(FILE *stream, char c);
 
 char *getline(FILE *stream);

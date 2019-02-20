@@ -11,7 +11,7 @@
 
 DIR *opendir(const char *name)
 {
-    warn("[dirent] open dir: %s\n", name);
+    // warn("[dirent] open dir: %s\n", name);
     int fd = syscall1(SYSCALL_OPENDIR, (u32) name);
     if (fd < 0) {
         return NULL;
@@ -29,7 +29,7 @@ DIR *opendir(const char *name)
 
 int closedir(DIR *dirp)
 {
-    warn("[dirent] close dir\n");
+    // warn("[dirent] close dir\n");
     if (dirp == NULL)
         return -1;
 

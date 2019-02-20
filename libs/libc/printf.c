@@ -308,7 +308,7 @@ int snprintf(char *buf, u32 size, const char *format, ...)
     i = vsprintf(buffer, format, args);
     va_end(args);
 
-    if (i > 0) {
+    if (i > 0 && buf) {
         i = MIN((u32) i, size);
         memcpy(buf, buffer, (u32) i);
     }

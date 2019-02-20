@@ -39,7 +39,7 @@ int prn_normal(const char *s)
 
 int prn_printable(const char *s)
 {
-    return puts(s);
+    return fputs(stdout, s);
     /*mbstate_t mbs;
     wchar_t wc;
     int i, n;
@@ -119,7 +119,7 @@ size_t len_octal(const char *s, int len)
 
 int prn_octal(const char *s)
 {
-    return puts(s);
+    return fputs(stdout, s);
     /*static const char esc[] = "\\\\\"\"\aa\bb\ff\nn\rr\tt\vv";
     const char *p;
     mbstate_t mbs;

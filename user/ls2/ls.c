@@ -866,8 +866,7 @@ static void display(const FTSENT *p, FTSENT *list, int options)
                 } else*/
                 labelstrlen = 0;
 
-                if ((np = malloc(sizeof(NAMES) + labelstrlen +
-                                 ulen + glen + flen + 4)) == NULL)
+                if ((np = malloc(sizeof(NAMES) + labelstrlen +  ulen + glen + flen + 4)) == NULL)
                     err("malloc");
 
                 np->user = &np->data[0];
@@ -875,12 +874,9 @@ static void display(const FTSENT *p, FTSENT *list, int options)
                 np->group = &np->data[ulen + 1];
                 (void) strcpy(np->group, group);
 
-                if (S_ISCHR(sp->st_mode) ||
-                    S_ISBLK(sp->st_mode)) {
-                    sizelen = snprintf(NULL, 0, "%#jx", (u_long) 0 /* sp->st_rdev */);
-                    if (d.s_size < sizelen)
-                        d.s_size = sizelen;
-                }
+                sizelen = snprintf(NULL, 0, "%u", maxsize);
+                if (d.s_size < sizelen)
+                    d.s_size = sizelen;
 
                 if (f_flags) {
                     np->flags = &np->data[ulen + glen + 2];
@@ -928,8 +924,9 @@ static void display(const FTSENT *p, FTSENT *list, int options)
     }
     if (f_thousands)            /* make space for commas */
         d.s_size += (d.s_size - 1) / 3;
-    warn("divided by end\n");
+    warn("divided by bite\n");
     printfcn(&d);
+    warn("divided by flop\n");
     output = 1;
 
     if (f_longform)

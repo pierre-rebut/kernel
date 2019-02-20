@@ -220,9 +220,6 @@ void strmode(register mode_t mode, register char *p)
     else
         *p++ = '-';
     switch (mode & (S_IXUSR | S_ISUID)) {
-        case 0:
-            *p++ = '-';
-            break;
         case S_IXUSR:
             *p++ = 'x';
             break;
@@ -232,6 +229,8 @@ void strmode(register mode_t mode, register char *p)
         case S_IXUSR | S_ISUID:
             *p++ = 's';
             break;
+        default:
+            *p++ = '-';
     }
     /* group */
     if (mode & S_IRGRP)
@@ -243,9 +242,6 @@ void strmode(register mode_t mode, register char *p)
     else
         *p++ = '-';
     switch (mode & (S_IXGRP | S_ISGID)) {
-        case 0:
-            *p++ = '-';
-            break;
         case S_IXGRP:
             *p++ = 'x';
             break;
@@ -255,6 +251,8 @@ void strmode(register mode_t mode, register char *p)
         case S_IXGRP | S_ISGID:
             *p++ = 's';
             break;
+        default:
+            *p++ = '-';
     }
     /* other */
     if (mode & S_IROTH)
@@ -266,9 +264,6 @@ void strmode(register mode_t mode, register char *p)
     else
         *p++ = '-';
     switch (mode & (S_IXOTH | S_ISVTX)) {
-        case 0:
-            *p++ = '-';
-            break;
         case S_IXOTH:
             *p++ = 'x';
             break;
@@ -278,6 +273,8 @@ void strmode(register mode_t mode, register char *p)
         case S_IXOTH | S_ISVTX:
             *p++ = 't';
             break;
+        default:
+            *p++ = '-';
     }
     *p++ = ' ';        /* will be a '+' if ACL's implemented */
     *p = '\0';

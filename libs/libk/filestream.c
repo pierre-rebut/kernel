@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <alloc.h>
+#include <string.h>
 #include "filestream.h"
 
 #define STREAM_EOF 1
@@ -252,6 +253,13 @@ int fprintf(FILE *stream, const char *fmt, ...)
         fwrite(printf_buf, (u32) printed, 1, stream);
 
     return printed;
+}
+
+int fputs(FILE *stream, const char *str) {
+    if (stream == NULL || stream->flags != 0)
+        return -1;
+
+    return fwrite(str, strlen(str), 1, stream);
 }
 
 int fputchar(FILE *stream, char c)
