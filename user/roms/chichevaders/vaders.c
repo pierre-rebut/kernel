@@ -25,7 +25,8 @@
 #include "graphic.h"
 #include "sound.h"
 
-struct monster {
+struct monster
+{
     int x;
     int y;
     int alive;
@@ -35,7 +36,8 @@ struct monster {
  * the splash screen with sexy chiche's face.
  */
 
-static int splash_screen(void) {
+static int splash_screen(void)
+{
     unsigned long t;
     struct image *imgchiche = load_image("/chiche_big.bmp");
     struct image *imgchef = load_image("/chef_big.bmp");
@@ -109,7 +111,8 @@ static int splash_screen(void) {
  * game loop.
  */
 
-static void game_loop(struct image *img) {
+static void game_loop(struct image *img)
+{
     unsigned long t;
     int p;
     int w, dw;
@@ -354,7 +357,8 @@ static void game_loop(struct image *img) {
  * game entry point.
  */
 
-int main(void) {
+int main(void)
+{
     switch_graphic();
 
     while (1) {

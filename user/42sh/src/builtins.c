@@ -17,7 +17,8 @@
 #include "functions.h"
 #include "define.h"
 
-static int my_setenv(char *name, char *value, t_env *env) {
+static int my_setenv(char *name, char *value, t_env *env)
+{
     int i;
     char *new_env_var;
 
@@ -44,7 +45,8 @@ static int my_setenv(char *name, char *value, t_env *env) {
     return SUCCESS;
 }
 
-int cd_call(int fd, t_cmd *cmd, t_env *env) {
+int cd_call(int fd, t_cmd *cmd, t_env *env)
+{
     char *old_path;
     char *new_path;
 
@@ -60,7 +62,8 @@ int cd_call(int fd, t_cmd *cmd, t_env *env) {
     return SUCCESS;
 }
 
-int env_call(int fd, t_cmd *cmd, t_env *env) {
+int env_call(int fd, t_cmd *cmd, t_env *env)
+{
     (void) cmd;
 
     int i;
@@ -77,14 +80,16 @@ int env_call(int fd, t_cmd *cmd, t_env *env) {
     return SUCCESS;
 }
 
-int setenv_call(int fd, t_cmd *cmd, t_env *env) {
+int setenv_call(int fd, t_cmd *cmd, t_env *env)
+{
     (void) fd;
 
     char *name = cmd->args[1], *value = cmd->args[2];
     return my_setenv(name, value, env);
 }
 
-int unsetenv_call(int fd, t_cmd *cmd, t_env *env) {
+int unsetenv_call(int fd, t_cmd *cmd, t_env *env)
+{
     (void) fd;
 
     char *var = cmd->args[1];
@@ -111,7 +116,8 @@ int unsetenv_call(int fd, t_cmd *cmd, t_env *env) {
     return SUCCESS;
 }
 
-int echo(int fd, t_cmd *cmd, t_env *env) {
+int echo(int fd, t_cmd *cmd, t_env *env)
+{
     (void) env;
 
     char bool;
@@ -136,7 +142,8 @@ int echo(int fd, t_cmd *cmd, t_env *env) {
     return SUCCESS;
 }
 
-int sync_call(int fd, t_cmd *cmd, t_env *env) {
+int sync_call(int fd, t_cmd *cmd, t_env *env)
+{
     (void) fd;
     (void) cmd;
     (void) env;

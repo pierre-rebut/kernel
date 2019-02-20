@@ -8,14 +8,14 @@
 ** Last update Sat Jun  6 14:29:20 2015 dourch_m
 */
 
-#ifndef		DEFINE_H_
-# define	DEFINE_H_
+#ifndef        DEFINE_H_
+# define    DEFINE_H_
 
-# define	ERROR_FILS	(-42)
-# define	FAIL		(-1)
-# define	ERROR_REDIR	(-2)
-# define	ERROR_NULL	(-3)
-# define	SUCCESS		(0)
-# define	NULL_CHAIN	(0)
+# define    ERROR_FILS    (-42)
+# define    FAIL        (-1)
+# define    ERROR_REDIR    (-2)
+# define    ERROR_NULL    (-3)
+# define    SUCCESS        (0)
+# define    NULL_CHAIN    (0)
 
-#endif		/* !DEFINE_H_ */
+#endif        /* !DEFINE_H_ */

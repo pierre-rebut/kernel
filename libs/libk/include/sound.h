@@ -32,4 +32,4 @@ struct melody *load_sound(const char *path);
 
 void clear_sound(struct melody *melody);
 
-#endif				/* !SOUND_H_ */
+#endif                /* !SOUND_H_ */

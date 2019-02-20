@@ -10,13 +10,13 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <err.h>
 #include <alloc.h>
 
 #include "define.h"
 #include "functions.h"
 
-int find_char(char *str, char *c) {
+int find_char(char *str, char *c)
+{
     int i;
 
     i = 0;
@@ -25,7 +25,8 @@ int find_char(char *str, char *c) {
     return (i);
 }
 
-char *strdup_to_char(char *str, char *chara) {
+char *strdup_to_char(char *str, char *chara)
+{
     char *ret;
     int i;
 
@@ -43,7 +44,8 @@ char *strdup_to_char(char *str, char *chara) {
     return (epur_str(ret));
 }
 
-char *my_strndup(const char *str, int lim) {
+char *my_strndup(const char *str, int lim)
+{
     char *ret;
     int i;
 
@@ -59,7 +61,8 @@ char *my_strndup(const char *str, int lim) {
     return (ret);
 }
 
-int check_error(int redir, char *ex_cplx, int pipe) {
+int check_error(int redir, char *ex_cplx, int pipe)
+{
     if (redir == ERROR_NULL) {
         printf("Invalid null command.\n");
         return (FAIL);
@@ -80,7 +83,8 @@ int check_error(int redir, char *ex_cplx, int pipe) {
     return (SUCCESS);
 }
 
-int check_expr_cmplx(char *ex_cplx, int pipe) {
+int check_expr_cmplx(char *ex_cplx, int pipe)
+{
     char *expr;
     int redir;
 

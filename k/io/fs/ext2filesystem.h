@@ -18,7 +18,8 @@
 #define INODE_TYPE_SYMLINK 0xA000
 #define INODE_TYPE_SOCKET 0xC000
 
-struct Ext2Superblock {
+struct Ext2Superblock
+{
     u32 inodes;
     u32 blocks;
     u32 reserved_for_root;
@@ -49,7 +50,8 @@ struct Ext2Superblock {
     u8 unused[934];
 } __attribute__((packed));
 
-struct Ext2BlockGroupDesc {
+struct Ext2BlockGroupDesc
+{
     u32 block_of_block_usage_bitmap;
     u32 block_of_inode_usage_bitmap;
     u32 block_of_inode_table;
@@ -59,7 +61,8 @@ struct Ext2BlockGroupDesc {
     u8 unused[14];
 } __attribute__((packed));
 
-struct Ext2Inode {
+struct Ext2Inode
+{
     u16 type;
     u16 uid;
     u32 size;
@@ -83,7 +86,8 @@ struct Ext2Inode {
     u8 ossv2[12];
 } __attribute__((packed));
 
-struct Ext2DirEntry {
+struct Ext2DirEntry
+{
     u32 inode;
     u16 size;
     u8 namelength;
@@ -91,7 +95,8 @@ struct Ext2DirEntry {
     /* name here */
 } __attribute__((packed));
 
-struct Ext2VolumeData {
+struct Ext2VolumeData
+{
     struct Ext2Superblock sb;
     u32 first_bgd;
     u32 number_of_bgs;
@@ -102,6 +107,7 @@ struct Ext2VolumeData {
 };
 
 void initExt2FileSystem();
+
 struct FsVolume *ext2MountDevice(struct Device *device);
 
 #endif //KERNEL_EXT2FILESYSTEM_H

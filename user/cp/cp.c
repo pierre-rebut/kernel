@@ -5,26 +5,28 @@
 #include <errno.h>
 #include <unistd.h>
 #include <getopt.h>
-#include <types.h>
 #include <err.h>
 #include <string.h>
 #include <stdio.h>
 
 #include "extern.h"
 
-#define	STRIP_TRAILING_SLASH(p) {					\
-	while ((p).p_end > (p).p_path + 1 && (p).p_end[-1] == '/')	\
-	*--(p).p_end = 0;						\
+#define    STRIP_TRAILING_SLASH(p) {                    \
+    while ((p).p_end > (p).p_path + 1 && (p).p_end[-1] == '/')    \
+    *--(p).p_end = 0;                        \
 }
 
 static char emptystring[] = "";
 
-PATH_T to = { to.p_path, emptystring, "" };
+PATH_T to = {to.p_path, emptystring, ""};
 
 int fflag, iflag, lflag, nflag, pflag, sflag, vflag;
 static int Rflag, rflag;
 
-enum op { FILE_TO_FILE, FILE_TO_DIR, DIR_TO_DNE };
+enum op
+{
+    FILE_TO_FILE, FILE_TO_DIR, DIR_TO_DNE
+};
 
 static int copy(char *[], enum op, int);
 
@@ -123,8 +125,7 @@ int main(int argc, char *argv[])
         *to.p_end = 0;
     }
     have_trailing_slash = (to.p_end[-1] == '/');
-    if (have_trailing_slash)
-    STRIP_TRAILING_SLASH(to);
+    if (have_trailing_slash) STRIP_TRAILING_SLASH(to);
     to.target_end = to.p_end;
 
     /* Set end of argument list for fts(3). */
@@ -177,7 +178,7 @@ int main(int argc, char *argv[])
         if (have_trailing_slash && type == FILE_TO_FILE) {
             if (r == -1) {
                 err("directory %s does not exist",
-                     to.p_path);
+                    to.p_path);
             } else
                 err("%s is not a directory", to.p_path);
         }
@@ -215,15 +216,14 @@ static int copy(char *argv[], enum op type, int fts_options)
             case FTS_DNR:
             case FTS_ERR:
                 warn("%s: %s",
-                      curr->fts_path, strerror(curr->fts_errno));
+                     curr->fts_path, strerror(curr->fts_errno));
                 badcp = rval = 1;
                 continue;
-            case FTS_DC:			/* Warn, continue. */
+            case FTS_DC:            /* Warn, continue. */
                 warn("%s: directory causes a cycle", curr->fts_path);
                 badcp = rval = 1;
                 continue;
-            default:
-                ;
+            default:;
         }
 
         /*
@@ -254,7 +254,7 @@ static int copy(char *argv[], enum op type, int fts_options)
                 if (type != DIR_TO_DNE) {
                     p = strrchr(curr->fts_path, '/');
                     base = (p == NULL) ? 0 :
-                           (int)(p - curr->fts_path + 1);
+                           (int) (p - curr->fts_path + 1);
 
                     if (!strcmp(&curr->fts_path[base],
                                 ".."))
@@ -271,11 +271,11 @@ static int copy(char *argv[], enum op type, int fts_options)
             *target_mid = 0;
             if (target_mid - to.p_path + nlen >= MAXPATHLEN) {
                 warn("%s%s: name too long (not copied)",
-                      to.p_path, p);
+                     to.p_path, p);
                 badcp = rval = 1;
                 continue;
             }
-            (void)strncat(target_mid, p, nlen);
+            (void) strncat(target_mid, p, nlen);
             to.p_end = target_mid + nlen;
             *to.p_end = 0;
             STRIP_TRAILING_SLASH(to);
@@ -322,17 +322,17 @@ static int copy(char *argv[], enum op type, int fts_options)
         else {
             if (to_stat.st_ino == curr->fts_statp->st_ino) {
                 warn("%s and %s are identical (not copied).",
-                      to.p_path, curr->fts_path);
+                     to.p_path, curr->fts_path);
                 badcp = rval = 1;
                 if (S_ISDIR(curr->fts_statp->st_mode))
-                    (void)fts_set(ftsp, curr, FTS_SKIP);
+                    (void) fts_set(ftsp, curr, FTS_SKIP);
                 continue;
             }
             if (!S_ISDIR(curr->fts_statp->st_mode) &&
                 S_ISDIR(to_stat.st_mode)) {
                 warn("cannot overwrite directory %s with "
-                              "non-directory %s",
-                      to.p_path, curr->fts_path);
+                     "non-directory %s",
+                     to.p_path, curr->fts_path);
                 badcp = rval = 1;
                 continue;
             }
@@ -355,8 +355,8 @@ static int copy(char *argv[], enum op type, int fts_options)
             case S_IFDIR:
                 if (!Rflag) {
                     warn("%s is a directory (not copied).",
-                          curr->fts_path);
-                    (void)fts_set(ftsp, curr, FTS_SKIP);
+                         curr->fts_path);
+                    (void) fts_set(ftsp, curr, FTS_SKIP);
                     badcp = rval = 1;
                     break;
                 }
@@ -394,7 +394,7 @@ static int copy(char *argv[], enum op type, int fts_options)
                 break;
             case S_IFSOCK:
                 warn("%s is a socket (not copied).",
-                      curr->fts_path);
+                     curr->fts_path);
                 break;
             case S_IFIFO:
                 if (Rflag && !sflag) {

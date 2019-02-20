@@ -9,13 +9,15 @@
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
-void mutexReset(struct Mutex *mtx) {
+void mutexReset(struct Mutex *mtx)
+{
     mtx->locked = 0;
     mtx->currentTask = NULL;
     mtx->lstTasksLocked = NULL;
 }
 
-int mutexLock(struct Mutex *mtx) {
+int mutexLock(struct Mutex *mtx)
+{
     LOG("[MTX] lock\n");
     char tmpTaskswitching = taskSwitching;
     taskSwitching = 0;
@@ -50,7 +52,8 @@ int mutexLock(struct Mutex *mtx) {
     return 0;
 }
 
-int mutexTryLock(struct Mutex *mtx) {
+int mutexTryLock(struct Mutex *mtx)
+{
     LOG("[MTX] trylock\n");
     char tmpTaskswitching = taskSwitching;
     taskSwitching = 0;
@@ -69,7 +72,8 @@ int mutexTryLock(struct Mutex *mtx) {
     return value;
 }
 
-int mutexForceUnlock(struct Mutex *mtx) {
+int mutexForceUnlock(struct Mutex *mtx)
+{
     LOG("[MTX] unlock\n");
     char tmpTaskswitching = taskSwitching;
     taskSwitching = 0;
@@ -91,7 +95,8 @@ int mutexForceUnlock(struct Mutex *mtx) {
     return 0;
 }
 
-int mutexUnlock(struct Mutex *mtx) {
+int mutexUnlock(struct Mutex *mtx)
+{
     if (mtx->currentTask != currentTask) {
         LOG("[MTX] unlock failed\n");
         return -1;

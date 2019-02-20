@@ -3,14 +3,14 @@
 //
 
 #include <dirent.h>
-#include <stdlib.h>
 #include <string.h>
 #include <err.h>
 #include <alloc.h>
 
 #include "syscalls.h"
 
-DIR *opendir(const char *name) {
+DIR *opendir(const char *name)
+{
     warn("[dirent] open dir: %s\n", name);
     int fd = syscall1(SYSCALL_OPENDIR, (u32) name);
     if (fd < 0) {
@@ -27,7 +27,8 @@ DIR *opendir(const char *name) {
     return dirp;
 }
 
-int closedir(DIR *dirp) {
+int closedir(DIR *dirp)
+{
     warn("[dirent] close dir\n");
     if (dirp == NULL)
         return -1;
@@ -41,7 +42,8 @@ int closedir(DIR *dirp) {
     return res;
 }
 
-struct dirent *readdir(DIR *dirp) {
+struct dirent *readdir(DIR *dirp)
+{
     if (dirp == NULL)
         return NULL;
 

@@ -27,7 +27,8 @@ count_t total_wcount = 0;
 count_t total_lcount = 0;
 
 /* Output counters for given file */
-void report(char *file, count_t ccount, count_t wcount, count_t lcount) {
+void report(char *file, count_t ccount, count_t wcount, count_t lcount)
+{
     if (lflag) {
         fprintf(stdout, "%6lu ", lcount);
     }
@@ -42,7 +43,8 @@ void report(char *file, count_t ccount, count_t wcount, count_t lcount) {
 }
 
 /* Return true if C is a valid word constituent */
-static int isword(unsigned char c) {
+static int isword(unsigned char c)
+{
     return isalpha(c);
 }
 
@@ -54,7 +56,8 @@ static int isword(unsigned char c) {
 
 /* Get next word from the input stream. Return 0 on end
    of file or error condition. Return 1 otherwise. */
-int getword(FILE *fp) {
+int getword(FILE *fp)
+{
     int c;
 
     if (feof(fp))
@@ -77,11 +80,13 @@ int getword(FILE *fp) {
     return c != EOF;
 }
 
-static void usage(void) {
+static void usage(void)
+{
     err("usage: wc [-lcw?] [file ...]\n");
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
     int ch;
     char *progname = argv[0];
 

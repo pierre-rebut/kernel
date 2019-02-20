@@ -33,7 +33,6 @@
 #include <time.h>
 #include <getopt.h>
 #include <libgen.h>
-#include <zconf.h>
 
 #include "kfs.h"
 
@@ -51,7 +50,8 @@ static int verbose;
         } \
     } while (0)
 
-static ssize_t kfs_write(int fd, const void *buf, size_t len, off_t off) {
+static ssize_t kfs_write(int fd, const void *buf, size_t len, off_t off)
+{
     ssize_t rc = pwrite(fd, buf, len, off * KFS_BLK_SZ);
 
     if (rc < 0)
@@ -64,7 +64,8 @@ static ssize_t kfs_write(int fd, const void *buf, size_t len, off_t off) {
  * @brief Write superblock to rom.
  */
 static void
-kfs_write_superblock(int romfd, const char *fsname, u32 blk_cnt, u32 files_cnt) {
+kfs_write_superblock(int romfd, const char *fsname, u32 blk_cnt, u32 files_cnt)
+{
     struct kfs_superblock sblock = {
             .magic = KFS_MAGIC,
 #ifdef DEBUG
@@ -90,7 +91,8 @@ kfs_write_superblock(int romfd, const char *fsname, u32 blk_cnt, u32 files_cnt) 
  *    fill kfs_block structure.
  * @return filled kfs_block or NULL if EOF reached.
  */
-static ssize_t kfs_read_block(int fd, struct kfs_block *blk) {
+static ssize_t kfs_read_block(int fd, struct kfs_block *blk)
+{
     ssize_t rc = read(fd, blk->data, sizeof(blk->data));
     if (rc < 0)
         err(1, "read error");
@@ -108,7 +110,8 @@ static ssize_t kfs_read_block(int fd, struct kfs_block *blk) {
  * @return the next available block index;
  */
 static u32
-kfs_write_inode(int romfd, int fd, struct kfs_inode *inode, u32 blk_idx) {
+kfs_write_inode(int romfd, int fd, struct kfs_inode *inode, u32 blk_idx)
+{
     for (size_t i = 0; i < KFS_DIRECT_BLK; ++blk_idx, ++i) {
         struct kfs_block blk = {0};
 
@@ -166,7 +169,8 @@ kfs_write_inode(int romfd, int fd, struct kfs_inode *inode, u32 blk_idx) {
  * @brief Write every file to rom from blkoff offset.
  */
 static u32
-kfs_write_files(int romfd, char **files, size_t nb_files, size_t blkoff) {
+kfs_write_files(int romfd, char **files, size_t nb_files, size_t blkoff)
+{
     size_t inode_off = blkoff;
     size_t blk_idx = nb_files + blkoff;
 
@@ -213,7 +217,8 @@ kfs_write_files(int romfd, char **files, size_t nb_files, size_t blkoff) {
     return blk_idx;
 }
 
-static inline void usage(void) {
+static inline void usage(void)
+{
     extern const char *__progname;
 
     fprintf(stderr, "usage: %s [-volume] [-n name] -o rom_file files...\n",
@@ -222,7 +227,8 @@ static inline void usage(void) {
     exit(1);
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
     char *rom_file = NULL;
     char *rom_name = NULL;
     int opt;

@@ -10,12 +10,12 @@
 
 #include "kstd.h"
 #include <stdio.h>
-#include <unistd.h>
 #include <dirent.h>
 #include <err.h>
 #include "include/my_ls.h"
 
-int set_zero(t_option *opt) {
+int set_zero(t_option *opt)
+{
     opt->all = 0;
     opt->ll = 0;
     opt->rr = 0;
@@ -25,7 +25,8 @@ int set_zero(t_option *opt) {
     return (0);
 }
 
-int set_option(t_option *opt, char **av) {
+int set_option(t_option *opt, char **av)
+{
     int i;
     int u;
 
@@ -51,7 +52,8 @@ int set_option(t_option *opt, char **av) {
     return (0);
 }
 
-int print_ls(t_option *opt, char *dir) {
+int print_ls(t_option *opt, char *dir)
+{
     int total;
     char **tab;
     DIR *dirp;
@@ -70,7 +72,8 @@ int print_ls(t_option *opt, char *dir) {
     return (1);
 }
 
-int do_ls(t_option *opt, char **av) {
+int do_ls(t_option *opt, char **av)
+{
     int i;
     int nb;
 
@@ -95,7 +98,8 @@ int do_ls(t_option *opt, char **av) {
     return (0);
 }
 
-int main(int ac, char **av) {
+int main(int ac, char **av)
+{
     char **tab;
     DIR *dirp;
     int i;

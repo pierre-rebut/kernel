@@ -22,7 +22,6 @@
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <stdlib.h>
-#include <alloc.h>
 #include <unistd.h>
 
 #include "graphic.h"
@@ -32,7 +31,8 @@
  * the splash screen with yaka face.
  */
 
-static void splash_screen(void) {
+static void splash_screen(void)
+{
     unsigned long t;
     struct image *img = load_image("/yaka.bmp");
     int blink = 0;
@@ -73,7 +73,8 @@ static void splash_screen(void) {
  * game loop.
  */
 
-static void game_loop(void) {
+static void game_loop(void)
+{
     unsigned long t;
     struct image *nuage = load_image("/nuage.bmp");
     struct image *sol = load_image("/sol.bmp");
@@ -275,7 +276,8 @@ static void game_loop(void) {
  * game entry point.
  */
 
-int main(void) {
+int main(void)
+{
 #if 0
     unsigned long t;
 

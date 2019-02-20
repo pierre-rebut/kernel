@@ -14,7 +14,8 @@
 #include "define.h"
 #include "functions.h"
 
-int my_getenv_line(char *var, char **env) {
+int my_getenv_line(char *var, char **env)
+{
     int i;
     size_t j;
     int k;
@@ -39,7 +40,8 @@ int my_getenv_line(char *var, char **env) {
     return (FAIL);
 }
 
-int modify_var(char *name, char *new_var, t_env *env) {
+int modify_var(char *name, char *new_var, t_env *env)
+{
     int line_nbr;
 
     line_nbr = my_getenv_line(name, env->env);
@@ -51,7 +53,8 @@ int modify_var(char *name, char *new_var, t_env *env) {
     return (SUCCESS);
 }
 
-int add_var(char *new_env_var, t_env *env) {
+int add_var(char *new_env_var, t_env *env)
+{
     char **new_env;
     int i;
 
@@ -67,7 +70,8 @@ int add_var(char *new_env_var, t_env *env) {
     return (SUCCESS);
 }
 
-int remove_var(char **new_env, int line_cpy, t_env *env) {
+int remove_var(char **new_env, int line_cpy, t_env *env)
+{
     int lines;
     int lines_2;
 

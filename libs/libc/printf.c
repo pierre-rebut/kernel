@@ -21,7 +21,8 @@
 #include <stdio.h>
 #include <string.h>
 
-static int skip_atoi(const char **s) {
+static int skip_atoi(const char **s)
+{
     int i = 0;
 
     while (isdigit(**s))
@@ -44,7 +45,8 @@ n = ((unsigned long) n) / (unsigned) base; \
 __res; })
 
 static char *number(char *str, long num, int base, int size, int precision,
-                    int type) {
+                    int type)
+{
     /* we are called with base 8, 10 or 16, only, thus don't need "G..."  */
     static const char digits[16] = "0123456789ABCDEF"; /* "GHIJKLMNOPQRSTUVWXYZ"; */
 
@@ -114,7 +116,8 @@ static char *number(char *str, long num, int base, int size, int precision,
     return str;
 }
 
-int vsprintf(char *buf, const char *fmt, va_list args) {
+int vsprintf(char *buf, const char *fmt, va_list args)
+{
     int len;
     unsigned long num;
     int i, base;
@@ -154,8 +157,7 @@ int vsprintf(char *buf, const char *fmt, va_list args) {
             case '0':
                 flags |= ZEROPAD;
                 goto repeat;
-            default:
-                ;
+            default:;
         }
 
         /* get field width */
@@ -285,7 +287,8 @@ int vsprintf(char *buf, const char *fmt, va_list args) {
     return str - buf;
 }
 
-int sprintf(char *buf, const char *fmt, ...) {
+int sprintf(char *buf, const char *fmt, ...)
+{
     va_list args;
     int i;
 
@@ -295,7 +298,8 @@ int sprintf(char *buf, const char *fmt, ...) {
     return i;
 }
 
-int snprintf(char *buf, u32 size, const char *format, ...) {
+int snprintf(char *buf, u32 size, const char *format, ...)
+{
     va_list args;
     int i;
     char buffer[1024];

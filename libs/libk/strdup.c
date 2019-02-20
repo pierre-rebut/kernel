@@ -1,8 +1,8 @@
 #include <string.h>
-#include <stdlib.h>
 #include <alloc.h>
 
-char *strdup(const char *s) {
+char *strdup(const char *s)
+{
     char *r = NULL;
     char *p = NULL;
 
@@ -18,7 +18,8 @@ char *strdup(const char *s) {
     return (r);
 }
 
-char *strcat(char *begin, char *end) {
+char *strcat(char *begin, char *end)
+{
     char *str;
     int i;
     int j;

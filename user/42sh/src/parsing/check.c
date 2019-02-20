@@ -8,15 +8,13 @@
 ** Last update Sun May 24 15:08:26 2015 despla_s
 */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <err.h>
 #include <alloc.h>
 
 #include "define.h"
 #include "functions.h"
 
-int check_redir(const char *str) {
+int check_redir(const char *str)
+{
     if (str[0] == '<' && str[1] == '<' && str[2] == '\0')
         return (3);
     else if (str[0] == '<' && str[1] == '\0')
@@ -29,7 +27,8 @@ int check_redir(const char *str) {
         return (FAIL);
 }
 
-int check_r_and_f(char *str) {
+int check_r_and_f(char *str)
+{
     int redir;
     int i;
     char *tmp;
@@ -55,7 +54,8 @@ int check_r_and_f(char *str) {
     return (redir);
 }
 
-int check_binary(char *binary) {
+int check_binary(char *binary)
+{
     char *tmp;
 
     tmp = strdup_to_char(binary, "><\0");

@@ -6,7 +6,8 @@
 #include <stdlib.h>
 #include <limits.h>
 
-int atoi(const char *string) {
+int atoi(const char *string)
+{
     int result = 0;
     unsigned int digit;
     int sign;
@@ -39,7 +40,8 @@ int atoi(const char *string) {
     return result;
 }
 
-long atol(const char *string) {
+long atol(const char *string)
+{
     long int result = 0;
     unsigned int digit;
     int sign;
@@ -89,7 +91,8 @@ static double powersOf10[] = {    /* Table giving binary powers of 10.  Entry */
         1.0e256
 };
 
-double atof(const char *string) {
+double atof(const char *string)
+{
     int sign, expSign = false;
     double fraction, dblExp, *d;
     register const char *p;
@@ -214,7 +217,8 @@ double atof(const char *string) {
     return fraction;
 }
 
-double strtod(char *str, char **ptr) {
+double strtod(char *str, char **ptr)
+{
     char *p;
     if (ptr == (char **) 0)
         return atof(str);
@@ -286,7 +290,8 @@ double strtod(char *str, char **ptr) {
     return 0.0;
 }
 
-long strtol(const char *nptr, char **endptr, register int base) {
+long strtol(const char *nptr, char **endptr, register int base)
+{
     register const char *s = nptr;
     register unsigned long acc;
     register int c;
@@ -327,7 +332,7 @@ long strtol(const char *nptr, char **endptr, register int base) {
             break;
         if (c >= base)
             break;
-        if (any < 0 || acc > cutoff || acc == cutoff && c > cutlim)
+        if (any < 0 || acc > cutoff || (acc == cutoff && c > cutlim))
             any = -1;
         else {
             any = 1;
@@ -345,7 +350,8 @@ long strtol(const char *nptr, char **endptr, register int base) {
     return (acc);
 }
 
-unsigned long strtoul(const char *nptr, char **endptr, register int base) {
+unsigned long strtoul(const char *nptr, char **endptr, register int base)
+{
     register const char *s = nptr;
     register unsigned long acc;
     register int c;
@@ -384,7 +390,7 @@ unsigned long strtoul(const char *nptr, char **endptr, register int base) {
             break;
         if (c >= base)
             break;
-        if (any < 0 || acc > cutoff || acc == cutoff && c > cutlim)
+        if (any < 0 || acc > cutoff || (acc == cutoff && c > cutlim))
             any = -1;
         else {
             any = 1;

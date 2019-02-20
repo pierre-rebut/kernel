@@ -8,9 +8,6 @@
 #include <string.h>
 #include <task.h>
 #include <stdlib.h>
-#include <sys/physical-memory.h>
-#include <sys/time.h>
-#include <io/pit.h>
 #include <include/kstdio.h>
 #include "procfilesystem.h"
 #include <io/device/proc.h>
@@ -22,15 +19,16 @@
 #define STATIC_PROC_DATA_NB 7
 static struct ProcPath staticProcData[] = {
         {PP_FOLDER, 0, "."},
-        {PP_INFO, 0, "mounts"},
-        {PP_INFO, 1, "meminfo"},
-        {PP_INFO, 2, "time"},
-        {PP_INFO, 3, "uptime"},
-        {PP_INFO, 4, "self"},
-        {PP_INFO, 5, "version"}
+        {PP_INFO,   0, "mounts"},
+        {PP_INFO,   1, "meminfo"},
+        {PP_INFO,   2, "time"},
+        {PP_INFO,   3, "uptime"},
+        {PP_INFO,   4, "self"},
+        {PP_INFO,   5, "version"}
 };
 
-static struct FsPath *procRoot(struct FsVolume *volume) {
+static struct FsPath *procRoot(struct FsVolume *volume)
+{
     struct FsPath *rootPath = kmalloc(sizeof(struct FsPath), 0, "procRoot");
 
     if (!rootPath)
@@ -43,7 +41,8 @@ static struct FsPath *procRoot(struct FsVolume *volume) {
     return rootPath;
 }
 
-static struct FsVolume *procMount(struct FsPath *data) {
+static struct FsVolume *procMount(struct FsPath *data)
+{
     LOG("[proc] mount:\n");
     (void) data;
 
@@ -56,12 +55,14 @@ static struct FsVolume *procMount(struct FsPath *data) {
     return procVolume;
 }
 
-static int procUmount(struct FsVolume *volume) {
+static int procUmount(struct FsVolume *volume)
+{
     kfree(volume);
     return 0;
 }
 
-static int procClose(struct FsPath *path) {
+static int procClose(struct FsPath *path)
+{
     struct ProcPath *tmp = path->privateData;
     if (tmp->type == PP_PROC)
         kfree(path->privateData);
@@ -69,7 +70,8 @@ static int procClose(struct FsPath *path) {
     return 0;
 }
 
-static int procStat(struct FsPath *path, struct stat *result) {
+static int procStat(struct FsPath *path, struct stat *result)
+{
     struct ProcPath *procPath = (struct ProcPath *) path->privateData;
     if (procPath->type == PP_FOLDER)
         return -1;
@@ -85,7 +87,8 @@ static int procStat(struct FsPath *path, struct stat *result) {
     return 0;
 }
 
-static struct FsPath *procLookup(struct FsPath *path, const char *name) {
+static struct FsPath *procLookup(struct FsPath *path, const char *name)
+{
     (void) path;
     struct ProcPath *procPath = NULL;
 
@@ -143,7 +146,8 @@ static struct FsPath *procLookup(struct FsPath *path, const char *name) {
     return file;
 }
 
-static int procReaddir(struct FsPath *path, void *block, u32 nblock) {
+static int procReaddir(struct FsPath *path, void *block, u32 nblock)
+{
     struct ProcPath *procPath = (struct ProcPath *) path->privateData;
 
     if (!procPath || procPath->type != PP_FOLDER)
@@ -181,13 +185,14 @@ static int procReaddir(struct FsPath *path, void *block, u32 nblock) {
 
             size += 1;
         }
-        pid ++;
+        pid++;
     }
 
     return size;
 }
 
-static struct Kobject *procOpenFile(struct FsPath *proc) {
+static struct Kobject *procOpenFile(struct FsPath *proc)
+{
     struct ProcPath *p = proc->privateData;
     struct Kobject *obj = koCreate(KO_UNDEFINED, NULL, 0);
     if (obj == NULL)
@@ -217,6 +222,7 @@ static struct Fs fs_procfs = {
         .openFile = &procOpenFile
 };
 
-void initProcFileSystem() {
+void initProcFileSystem()
+{
     fsRegister(&fs_procfs);
 }

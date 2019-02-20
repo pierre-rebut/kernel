@@ -5,7 +5,8 @@
 #include <string.h>
 #include <sys/allocator.h>
 
-char *strdup(const char *s) {
+char *strdup(const char *s)
+{
     if (!s)
         return NULL;
 
@@ -24,7 +25,8 @@ char *strdup(const char *s) {
     return (r);
 }
 
-char *strcat(char *begin, char *end) {
+char *strcat(char *begin, char *end)
+{
     char *str;
     int i;
     int j;

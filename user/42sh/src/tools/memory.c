@@ -15,7 +15,8 @@
 #include "define.h"
 #include "functions.h"
 
-int free_list(t_cmd *lst) {
+int free_list(t_cmd *lst)
+{
     t_cmd *tmp;
 
     while (lst != NULL) {
@@ -30,7 +31,8 @@ int free_list(t_cmd *lst) {
     return (0);
 }
 
-int free_tab(char **tab) {
+int free_tab(char **tab)
+{
     int i;
 
     if (tab == NULL)

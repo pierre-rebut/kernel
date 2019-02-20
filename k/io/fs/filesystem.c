@@ -15,7 +15,8 @@ struct FsVolume *fsRootVolume = NULL;
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
-struct FsPath *fsResolvePath(const char *path) {
+struct FsPath *fsResolvePath(const char *path)
+{
     if (path[0] == '/') {
         LOG("[FS] resolve path 1\n");
         return fsGetPathByName(currentTask->rootDir, path + 1);
@@ -25,7 +26,8 @@ struct FsPath *fsResolvePath(const char *path) {
     return fsGetPathByName(currentTask->currentDir, path);
 }
 
-struct FsMountVolume *fsGetMountedVolumeByNode(struct FsVolume *v, u32 inode) {
+struct FsMountVolume *fsGetMountedVolumeByNode(struct FsVolume *v, u32 inode)
+{
     struct FsMountVolume *tmpVolume = fsMountedVolumeList;
     while (tmpVolume != NULL) {
         if (tmpVolume->volumeId == v && tmpVolume->inodeId == inode)
@@ -35,12 +37,14 @@ struct FsMountVolume *fsGetMountedVolumeByNode(struct FsVolume *v, u32 inode) {
     return NULL;
 }
 
-void fsRegister(struct Fs *f) {
+void fsRegister(struct Fs *f)
+{
     f->next = fsList;
     fsList = f;
 }
 
-struct Fs *fsGetFileSystemByName(const char *name) {
+struct Fs *fsGetFileSystemByName(const char *name)
+{
     struct Fs *fs = fsList;
 
     while (fs != NULL) {
@@ -51,7 +55,8 @@ struct Fs *fsGetFileSystemByName(const char *name) {
     return NULL;
 }
 
-struct FsVolume *fsVolumeOpen(struct Fs *fs, struct FsPath *dev) {
+struct FsVolume *fsVolumeOpen(struct Fs *fs, struct FsPath *dev)
+{
     LOG("[FS] utils with fs fct\n");
     struct FsVolume *volume = fs->mount(dev);
     if (volume == NULL)
@@ -70,7 +75,8 @@ struct FsVolume *fsVolumeOpen(struct Fs *fs, struct FsPath *dev) {
     return volume;
 }
 
-struct Kobject *fsOpenFile(struct FsPath *path, int mode) {
+struct Kobject *fsOpenFile(struct FsPath *path, int mode)
+{
     if (!path || !path->volume->fs->openFile)
         return NULL;
 
@@ -86,7 +92,8 @@ struct Kobject *fsOpenFile(struct FsPath *path, int mode) {
     return obj;
 }
 
-struct FsMountVolume *fsMountVolumeOn(struct FsPath *mntPoint, struct Fs *fs, struct FsPath *devicePath) {
+struct FsMountVolume *fsMountVolumeOn(struct FsPath *mntPoint, struct Fs *fs, struct FsPath *devicePath)
+{
     if (mntPoint->inode == 0 || fsGetMountedVolumeByNode(mntPoint->volume, mntPoint->inode) != NULL)
         return NULL;
 
@@ -111,14 +118,16 @@ struct FsMountVolume *fsMountVolumeOn(struct FsPath *mntPoint, struct Fs *fs, st
     return mntVolume;
 }
 
-int fsVolumeClose(struct FsVolume *v) {
+int fsVolumeClose(struct FsVolume *v)
+{
     if (!v || !v->fs->umount || v->refcount > 1)
         return -EPERM;
 
     return v->fs->umount(v);
 }
 
-int fsUmountVolume(struct FsPath *mntPoint) {
+int fsUmountVolume(struct FsPath *mntPoint)
+{
     struct FsMountVolume *mntVolume = fsGetMountedVolumeByNode(mntPoint->volume, mntPoint->inode);
     if (mntVolume == NULL)
         return 0;
@@ -138,7 +147,8 @@ int fsUmountVolume(struct FsPath *mntPoint) {
     return 0;
 }
 
-struct FsPath *fsVolumeRoot(struct FsVolume *volume) {
+struct FsPath *fsVolumeRoot(struct FsVolume *volume)
+{
     if (!volume || !volume->fs->root)
         return NULL;
 
@@ -152,7 +162,8 @@ struct FsPath *fsVolumeRoot(struct FsVolume *volume) {
     return pathRoot;
 }
 
-int fsPathReaddir(struct FsPath *path, void *block, u32 nblock) {
+int fsPathReaddir(struct FsPath *path, void *block, u32 nblock)
+{
     if (!block || !path->volume->fs->readdir)
         return -EPERM;
 
@@ -160,7 +171,8 @@ int fsPathReaddir(struct FsPath *path, void *block, u32 nblock) {
     return path->volume->fs->readdir(path, block, nblock);
 }
 
-static struct FsPath *fsPathLookup(struct FsPath *path, const char *name) {
+static struct FsPath *fsPathLookup(struct FsPath *path, const char *name)
+{
     if (!path)
         return NULL;
 
@@ -188,7 +200,8 @@ static struct FsPath *fsPathLookup(struct FsPath *path, const char *name) {
     return newPath;
 }
 
-struct FsPath *fsGetPathByName(struct FsPath *d, const char *path) {
+struct FsPath *fsGetPathByName(struct FsPath *d, const char *path)
+{
     if (!d || !path)
         return NULL;
 
@@ -224,7 +237,8 @@ struct FsPath *fsGetPathByName(struct FsPath *d, const char *path) {
     return new2;
 }
 
-int fsPathDestroy(struct FsPath *path) {
+int fsPathDestroy(struct FsPath *path)
+{
     if (!path || !path->volume->fs->close)
         return -EPERM;
 
@@ -237,7 +251,8 @@ int fsPathDestroy(struct FsPath *path) {
     return 0;
 }
 
-int fsReadFile(struct FsPath *file, char *buffer, u32 length, u32 offset) {
+int fsReadFile(struct FsPath *file, char *buffer, u32 length, u32 offset)
+{
     int total = 0;
     u32 bs = file->volume->blockSize;
 
@@ -299,14 +314,16 @@ int fsReadFile(struct FsPath *file, char *buffer, u32 length, u32 offset) {
     return total;
 }
 
-struct FsPath *fsMkdir(const char *name) {
+struct FsPath *fsMkdir(const char *name)
+{
     if (!name)
         return NULL;
     //path->volume->fs->mkdir(path, name);
     return 0;
 }
 
-static char *fsMkLink(const char *name, struct FsPath **parent) {
+static char *fsMkLink(const char *name, struct FsPath **parent)
+{
     if (!name)
         return NULL;
 
@@ -336,7 +353,8 @@ static char *fsMkLink(const char *name, struct FsPath **parent) {
     return res;
 }
 
-struct FsPath *fsMkFile(const char *name, mode_t mode) {
+struct FsPath *fsMkFile(const char *name, mode_t mode)
+{
     struct FsPath *parent;
 
     char *filename = fsMkLink(name, &parent);
@@ -361,7 +379,8 @@ struct FsPath *fsMkFile(const char *name, mode_t mode) {
     return path;
 }
 
-struct FsPath *fsLink(const char *name, const char *linkTo) {
+struct FsPath *fsLink(const char *name, const char *linkTo)
+{
     if (linkTo == NULL)
         return NULL;
 
@@ -400,14 +419,16 @@ struct FsPath *fsLink(const char *name, const char *linkTo) {
     return NULL;
 }
 
-int fsRmdir(struct FsPath *path, const char *name) {
+int fsRmdir(struct FsPath *path, const char *name)
+{
     if (!path || !name || !path->volume->fs->rmdir)
         return -EPERM;
 
     return path->volume->fs->rmdir(path, name);
 }
 
-int fsWriteFile(struct FsPath *file, const char *buffer, u32 length, u32 offset) {
+int fsWriteFile(struct FsPath *file, const char *buffer, u32 length, u32 offset)
+{
     int total = 0;
     u32 bs = file->volume->blockSize;
 
@@ -478,7 +499,8 @@ int fsWriteFile(struct FsPath *file, const char *buffer, u32 length, u32 offset)
     return total;
 }
 
-int fsStat(struct FsPath *path, struct stat *result) {
+int fsStat(struct FsPath *path, struct stat *result)
+{
     if (result == NULL)
         return 0;
 
@@ -488,7 +510,8 @@ int fsStat(struct FsPath *path, struct stat *result) {
     return path->volume->fs->stat(path, result);
 }
 
-int fsResizeFile(struct FsPath *path, u32 size) {
+int fsResizeFile(struct FsPath *path, u32 size)
+{
     if (!path || !path->volume->fs->resizeFile)
         return -EPERM;
 

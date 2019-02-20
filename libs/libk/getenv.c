@@ -4,7 +4,8 @@
 
 #include <string.h>
 
-char *getenv(const char *name) {
+char *getenv(const char *name)
+{
     if (name == NULL)
         return NULL;
 
@@ -15,7 +16,7 @@ char *getenv(const char *name) {
         if (strncmp(name, *env, size) == 0)
             return (*env) + size + 1;
 
-        env ++;
+        env++;
     }
 
     return NULL;

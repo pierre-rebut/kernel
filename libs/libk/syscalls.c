@@ -5,7 +5,8 @@
 #include <err.h>
 #include "syscalls.h"
 
-int syscall0(int syscall_nb) {
+int syscall0(int syscall_nb)
+{
     int res;
     errno = 0;
 
@@ -20,7 +21,8 @@ int syscall0(int syscall_nb) {
     return res;
 }
 
-int syscall1(int syscall_nb, u32 ebx) {
+int syscall1(int syscall_nb, u32 ebx)
+{
     int res;
     errno = 0;
 
@@ -35,7 +37,8 @@ int syscall1(int syscall_nb, u32 ebx) {
     return res;
 }
 
-int syscall2(int syscall_nb, u32 ebx, u32 ecx) {
+int syscall2(int syscall_nb, u32 ebx, u32 ecx)
+{
     int res;
     errno = 0;
 
@@ -50,7 +53,8 @@ int syscall2(int syscall_nb, u32 ebx, u32 ecx) {
     return res;
 }
 
-int syscall3(int syscall_nb, u32 ebx, u32 ecx, u32 edx) {
+int syscall3(int syscall_nb, u32 ebx, u32 ecx, u32 edx)
+{
     int res;
     errno = 0;
 

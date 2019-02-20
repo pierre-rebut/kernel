@@ -75,7 +75,8 @@ static size_t padding_for_month[12];
 static size_t month_max_size = 0;
 
 void
-printscol(const DISPLAY *dp) {
+printscol(const DISPLAY *dp)
+{
     FTSENT *p;
 
     for (p = dp->list; p; p = p->fts_link) {
@@ -90,7 +91,8 @@ printscol(const DISPLAY *dp) {
  * print name in current style
  */
 int
-printname(const char *name) {
+printname(const char *name)
+{
     if (f_octal || f_octal_escape)
         return prn_octal(name);
     else if (f_nonprint)
@@ -100,7 +102,8 @@ printname(const char *name) {
 }
 
 static void
-compute_abbreviated_month_size(void) {
+compute_abbreviated_month_size(void)
+{
     int i;
     size_t width;
     size_t months_width[12];
@@ -121,7 +124,8 @@ compute_abbreviated_month_size(void) {
 }
 
 void
-printlong(const DISPLAY *dp) {
+printlong(const DISPLAY *dp)
+{
     struct stat *sp;
     FTSENT *p;
     NAMES *np;
@@ -180,7 +184,8 @@ printlong(const DISPLAY *dp) {
     }
 }
 
-void printstream(const DISPLAY *dp) {
+void printstream(const DISPLAY *dp)
+{
     FTSENT *p;
     int chcnt;
 
@@ -204,7 +209,8 @@ void printstream(const DISPLAY *dp) {
 }
 
 void
-printcol(const DISPLAY *dp) {
+printcol(const DISPLAY *dp)
+{
     static FTSENT **array;
     static int lastentries = -1;
     FTSENT *p;
@@ -298,7 +304,8 @@ printcol(const DISPLAY *dp) {
  * print [inode] [size] name
  * return # of characters printed, no trailing characters.
  */
-static int printaname(const FTSENT *p, u_long inodefield, u_long sizefield) {
+static int printaname(const FTSENT *p, u_long inodefield, u_long sizefield)
+{
     struct stat *sp;
     int chcnt;
 #ifdef COLORLS
@@ -327,7 +334,8 @@ static int printaname(const FTSENT *p, u_long inodefield, u_long sizefield) {
     return (chcnt);
 }
 
-static size_t ls_strftime(char *str, size_t len, const char *fmt, const struct tm *tm) {
+static size_t ls_strftime(char *str, size_t len, const char *fmt, const struct tm *tm)
+{
     const char *posb;
     char nfmt[BUFSIZ];
     const char *format = fmt;
@@ -351,7 +359,8 @@ static size_t ls_strftime(char *str, size_t len, const char *fmt, const struct t
     return (ret);
 }
 
-static void printtime(time_t ftime) {
+static void printtime(time_t ftime)
+{
     char longstring[80];
     static time_t now = 0;
     const char *format;
@@ -378,7 +387,8 @@ static void printtime(time_t ftime) {
     fprintf(stdout, "%s ", longstring);
 }
 
-static int printtype(u_int mode) {
+static int printtype(u_int mode)
+{
 
     if (f_slash) {
         if ((mode & S_IFMT) == S_IFDIR) {
@@ -599,7 +609,8 @@ colorquit(int sig)
 
 #endif /* COLORLS */
 
-static void printlink(const FTSENT *p) {
+static void printlink(const FTSENT *p)
+{
     // int lnklen;
     char name[MAXPATHLEN + 1];
     // char path[MAXPATHLEN + 1];
@@ -618,7 +629,8 @@ static void printlink(const FTSENT *p) {
     (void)printname(path);*/
 }
 
-static void printsize(size_t width, off_t bytes) {
+static void printsize(size_t width, off_t bytes)
+{
 
     if (f_humanval) {
         /*
@@ -641,7 +653,8 @@ static void printsize(size_t width, off_t bytes) {
  * Add a + after the standard rwxrwxrwx mode if the file has an
  * ACL. strmode() reserves space at the end of the string.
  */
-static void aclmode(char *buf, const FTSENT *p) {
+static void aclmode(char *buf, const FTSENT *p)
+{
     (void) buf;
     (void) p;
     /*char name[MAXPATHLEN + 1];

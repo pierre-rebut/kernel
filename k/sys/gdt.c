@@ -12,7 +12,8 @@ struct tss_entry tss = {
 
 struct gdt_entry gdt[6] = {};
 
-void addGdtEntry(u32 id, u32 base, u32 limit, u8 access, u8 gran) {
+void addGdtEntry(u32 id, u32 base, u32 limit, u8 access, u8 gran)
+{
     gdt[id].base_low = (u16) (base & 0xFFFF);
     gdt[id].base_mid = (u8) ((base >> 16) & 0xFF);
     gdt[id].base_high = (u8) ((base >> 24) & 0xFF);
@@ -22,7 +23,8 @@ void addGdtEntry(u32 id, u32 base, u32 limit, u8 access, u8 gran) {
     gdt[id].present = 1;
 }
 
-static void initGdt() {
+static void initGdt()
+{
     addGdtEntry(0, 0, 0, 0, 0); // NULL segment
     addGdtEntry(1, 0, 0xFFFFFFF, (0 << 5) | (1 << 4) | 0xA, 0xCF); // KERNEL code segment
     addGdtEntry(2, 0, 0xFFFFFFF, (0 << 5) | (1 << 4) | 0x3, 0xCF); // KERNEL data segment
@@ -30,7 +32,8 @@ static void initGdt() {
     addGdtEntry(4, 0, 0xFFFFFFF, (3 << 5) | (1 << 4) | 0x3, 0xCF); // USER data segment
     addGdtEntry(5, (u32) &tss, sizeof(tss), 0xE9, 0); // TSS
 
-    struct gdt_r {
+    struct gdt_r
+    {
         u16 limit;
         u32 base;
     }__packed;
@@ -46,41 +49,46 @@ static void initGdt() {
     : "memory");
 }
 
-static void initProtectedMode() {
+static void initProtectedMode()
+{
     asm volatile("movl %cr0, %eax\n"
-            "or %eax, 1\n"
-            "movl %eax, %cr0\n");
+                 "or %eax, 1\n"
+                 "movl %eax, %cr0\n");
 }
 
-static void setDataSegment() {
+static void setDataSegment()
+{
 
     // set ds, Fs, gs, ss
     asm volatile("movw %w0, %%ds\n"
-            "movw %w0, %%es\n"
-            "movw %w0, %%Fs\n"
-            "movw %w0, %%gs\n"
-            "movw %w0, %%ss\n"
+                 "movw %w0, %%es\n"
+                 "movw %w0, %%Fs\n"
+                 "movw %w0, %%gs\n"
+                 "movw %w0, %%ss\n"
     :
     : "a" (0x10));
 
     // set cs
     asm volatile("ljmp $0x08, $1f\n"
-            "1:");
+                 "1:");
 }
 
-static void initTaskSegment() {
+static void initTaskSegment()
+{
     asm volatile("movw $0x28, %ax\n"
-            "ltr %ax\n");
+                 "ltr %ax\n");
 }
 
-void initMemory() {
+void initMemory()
+{
     initGdt();
     initProtectedMode();
     setDataSegment();
     initTaskSegment();
 }
 
-void switchTSS(u32 esp0, u32 esp, u32 ss) {
+void switchTSS(u32 esp0, u32 esp, u32 ss)
+{
     tss.esp0 = esp0;
     tss.esp = esp;
     tss.ss = ss;

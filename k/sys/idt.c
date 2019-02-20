@@ -6,7 +6,8 @@
 
 struct idt_entry idt[256] = {0};
 
-static void addEntry(struct idt_entry *entry, void (*handle)(), u8 interruptType, u8 dpl) {
+static void addEntry(struct idt_entry *entry, void (*handle)(), u8 interruptType, u8 dpl)
+{
     entry->offset = (u16) (((u32) handle >> 0) & 0xFFFF);
     entry->offset2 = (u16) (((u32) handle >> 16) & 0xFFFF);
     entry->segmentSelector = 0x08;
@@ -16,8 +17,10 @@ static void addEntry(struct idt_entry *entry, void (*handle)(), u8 interruptType
     entry->dpl = dpl;
 }
 
-static void initIdt() {
-    struct idt_r {
+static void initIdt()
+{
+    struct idt_r
+    {
         u16 limit;
         u32 base;
     }__packed;
@@ -31,7 +34,8 @@ static void initIdt() {
     : "memory");
 }
 
-void initInterrupt() {
+void initInterrupt()
+{
 
 #define ISR(id, type, dpl) \
     void isr_handle##id(); \

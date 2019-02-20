@@ -10,13 +10,13 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <err.h>
 #include <unistd.h>
 
 #include "functions.h"
 #include "define.h"
 
-static int do_pid_zero(t_cmd *lst, t_env *env) {
+static int do_pid_zero(t_cmd *lst, t_env *env)
+{
     struct ExceveInfo execInfo = INIT_EXECINFO();
     execInfo.av = (const char **) lst->args;
     execInfo.env = (const char **) env->env;
@@ -46,7 +46,8 @@ static int do_pid_zero(t_cmd *lst, t_env *env) {
     return ret;
 }
 
-static int do_father(t_cmd *tmp) {
+static int do_father(t_cmd *tmp)
+{
     int ret = 0;
 
     while (tmp->prev != NULL) {
@@ -59,7 +60,8 @@ static int do_father(t_cmd *tmp) {
 }
 
 
-static int exec_do_first(t_cmd *lst, t_env *env, t_cmd *tmp) {
+static int exec_do_first(t_cmd *lst, t_env *env, t_cmd *tmp)
+{
     while (lst != NULL) {
         if (lst->prev != NULL)
             if (pipe(lst->pipefd) == -1)
@@ -73,6 +75,7 @@ static int exec_do_first(t_cmd *lst, t_env *env, t_cmd *tmp) {
     return (do_father(tmp));
 }
 
-int exec_lst(t_cmd *lst, t_env *env) {
+int exec_lst(t_cmd *lst, t_env *env)
+{
     return exec_do_first(lst, env, lst);
 }

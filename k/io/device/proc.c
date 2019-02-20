@@ -15,7 +15,8 @@
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
-static int procReadProcess(pid_t pid, void *buffer, u32 size, int offset) {
+static int procReadProcess(pid_t pid, void *buffer, u32 size, int offset)
+{
     struct Task *task = getTaskByPid(pid);
     if (!task)
         return -1;
@@ -24,14 +25,15 @@ static int procReadProcess(pid_t pid, void *buffer, u32 size, int offset) {
         return 0;
 
     return snprintf(buffer, size, "pid:%u\ncmdline:%s\nprivilege:%s\nevent:%d,%lu,%u\n",
-                   task->pid,
-                   (task->cmdline ? task->cmdline : "NONE"),
-                   (task->privilege == TaskPrivilegeKernel ? "KERNEL" : "USER"),
-                   task->event.type, task->event.timer, task->event.arg
+                    task->pid,
+                    (task->cmdline ? task->cmdline : "NONE"),
+                    (task->privilege == TaskPrivilegeKernel ? "KERNEL" : "USER"),
+                    task->event.type, task->event.timer, task->event.arg
     );
 }
 
-static int procReadInfo(int data, char *buffer, u32 size, int offset) {
+static int procReadInfo(int data, char *buffer, u32 size, int offset)
+{
     int read;
     if (offset != 0)
         return 0;
@@ -39,12 +41,12 @@ static int procReadInfo(int data, char *buffer, u32 size, int offset) {
     switch (data) {
         case 0:
             read = snprintf(buffer, size, "%s,%u,%u\n", fsRootVolume->fs->name, fsRootVolume->refcount,
-                           fsRootVolume->blockSize);
+                            fsRootVolume->blockSize);
             struct FsMountVolume *tmpMntVolume = fsMountedVolumeList;
             while (tmpMntVolume) {
                 struct FsVolume *tmpVolume = tmpMntVolume->mountedVolume;
                 read += snprintf(buffer + read, size, "%s,%u,%u\n",
-                                tmpVolume->fs->name, tmpVolume->refcount, tmpVolume->blockSize
+                                 tmpVolume->fs->name, tmpVolume->refcount, tmpVolume->blockSize
                 );
                 tmpMntVolume = tmpMntVolume->next;
             }
@@ -53,7 +55,7 @@ static int procReadInfo(int data, char *buffer, u32 size, int offset) {
             u32 total, used;
             kmallocGetInfo(&total, &used);
             read = snprintf(buffer, size, "[PHYSMEM]\nused:%u\ntotal:%u\n\n[KERNEL MEM]\nused:%u\npaged:%u\n",
-                           getTotalUsedPhysMemory(), getTotalPhysMemory(), total, used);
+                            getTotalUsedPhysMemory(), getTotalPhysMemory(), total, used);
             break;
         }
         case 2:
@@ -66,11 +68,11 @@ static int procReadInfo(int data, char *buffer, u32 size, int offset) {
             break;
         case 4:
             read = snprintf(buffer, size, "pid:%u\ngid:%u\ncmdline:%s\nprivilege:%s\nevent:%d,%lu,%u\n",
-                           currentTask->pid,
-                           (currentTask->parent ? currentTask->parent->pid : 0),
-                           (currentTask->cmdline ? currentTask->cmdline : "NONE"),
-                           (currentTask->privilege == TaskPrivilegeKernel ? "KERNEL" : "USER"),
-                           currentTask->event.type, currentTask->event.timer, currentTask->event.arg
+                            currentTask->pid,
+                            (currentTask->parent ? currentTask->parent->pid : 0),
+                            (currentTask->cmdline ? currentTask->cmdline : "NONE"),
+                            (currentTask->privilege == TaskPrivilegeKernel ? "KERNEL" : "USER"),
+                            currentTask->event.type, currentTask->event.timer, currentTask->event.arg
             );
             break;
         case 5:
@@ -82,7 +84,8 @@ static int procReadInfo(int data, char *buffer, u32 size, int offset) {
     return read;
 }
 
-int procRead(struct ProcPath *proc, void *buffer, int size, int offset) {
+int procRead(struct ProcPath *proc, void *buffer, int size, int offset)
+{
     LOG("[proc] readblock: %u\n", blocknum);
     if (!proc || offset != 0)
         return -1;

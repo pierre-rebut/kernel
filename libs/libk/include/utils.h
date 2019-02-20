@@ -15,6 +15,7 @@
 #define HN_IEC_PREFIXES         0x40
 
 int humanize_number(char *buf, size_t len, long long quotient, const char *suffix, int scale, int flags);
+
 char *fflagstostr(u_long flags);
 
 #endif //KERNEL_UTILS_H

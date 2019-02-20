@@ -4,7 +4,8 @@
 
 #include <string.h>
 
-int strncmp(const char *s1, const char *s2, u32 n) {
+int strncmp(const char *s1, const char *s2, u32 n)
+{
     for (u32 i = 0; i < n; ++i)
         if (s1[i] == '\0' || s1[i] != s2[i])
             return s1[i] - s2[i];
@@ -12,7 +13,8 @@ int strncmp(const char *s1, const char *s2, u32 n) {
     return 0;
 }
 
-char *strncpy(char *dst, char const *src, u32 n) {
+char *strncpy(char *dst, char const *src, u32 n)
+{
     if (n != 0) {
         register char *d = dst;
         register const char *s = src;
@@ -28,7 +30,8 @@ char *strncpy(char *dst, char const *src, u32 n) {
     return (dst);
 }
 
-u32 strnlen(const char *s, u32 maxlen) {
+u32 strnlen(const char *s, u32 maxlen)
+{
     register u32 i = 0;
     for (; i < maxlen; ++i)
         if (!s[i])
@@ -36,7 +39,8 @@ u32 strnlen(const char *s, u32 maxlen) {
     return i;
 }
 
-int strncontain(const char *s, char c, u32 n) {
+int strncontain(const char *s, char c, u32 n)
+{
     for (; *s != '\0' && n > 0; s++, n--) {
         if (*s == c)
             return 1;
@@ -44,7 +48,8 @@ int strncontain(const char *s, char c, u32 n) {
     return 0;
 }
 
-char *strncat(char *s1, const char *s2, size_t n) {
+char *strncat(char *s1, const char *s2, size_t n)
+{
     char *s = s1;
     /* Find the end of S1.  */
     s1 += strlen(s1);
@@ -54,7 +59,8 @@ char *strncat(char *s1, const char *s2, size_t n) {
     return s;
 }
 
-char *strrchr(const char *cp, int ch) {
+char *strrchr(const char *cp, int ch)
+{
     char *save;
     char c;
 
@@ -66,7 +72,8 @@ char *strrchr(const char *cp, int ch) {
     return save;
 }
 
-size_t strlcpy(char *dst, const char *src, size_t siz) {
+size_t strlcpy(char *dst, const char *src, size_t siz)
+{
     register char *d = dst;
     register const char *s = src;
     register size_t n = siz;

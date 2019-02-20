@@ -10,7 +10,8 @@
 
 #define BIT_6_TO_0    0x7F
 
-u8 cmosRead(u8 offset) {
+u8 cmosRead(u8 offset)
+{
     u8 tmp = inb(CMOS_ADDRESS) & (u8) (1 << 7);
     outb(CMOS_ADDRESS, (u8) (tmp | (offset & BIT_6_TO_0)));
     u8 retVal = inb(CMOS_DATA);

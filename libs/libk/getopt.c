@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <errno.h>
 #include <getopt.h>
 #include <string.h>
 #include <unistd.h>
@@ -53,7 +52,8 @@ static const char illoptstring[] = "unknown option -- %s";
 /*
  * Compute the greatest common divisor of a and b.
  */
-static int gcd(int a, int b) {
+static int gcd(int a, int b)
+{
     int c;
     c = a % b;
     while (c != 0) {
@@ -69,7 +69,8 @@ static int gcd(int a, int b) {
  * from nonopt_end to opt_end (keeping the same order of arguments
  * in each block).
  */
-static void permute_args(int panonopt_start, int panonopt_end, int opt_end, char *const *nargv) {
+static void permute_args(int panonopt_start, int panonopt_end, int opt_end, char *const *nargv)
+{
     int cstart, cyclelen, i, j, ncycle, nnonopts, nopts, pos;
     char *swap;
     /*
@@ -101,8 +102,9 @@ static void permute_args(int panonopt_start, int panonopt_end, int opt_end, char
  *	Parse long options in argc/argv argument vector.
  * Returns -1 if short_too is set and the option does not match long_options.
  */
-static int parse_long_options(char * const *nargv, const char *options,
-                              const struct option *long_options, int *idx, int short_too) {
+static int parse_long_options(char *const *nargv, const char *options,
+                              const struct option *long_options, int *idx, int short_too)
+{
     char *current_argv, *has_equal;
     size_t current_argv_len;
     int i, match;
@@ -215,7 +217,8 @@ static int parse_long_options(char * const *nargv, const char *options,
  *	Parse argc/argv argument vector.  Called by user level routines.
  */
 static int getopt_internal(int nargc, char *const *nargv, const char *options,
-                const struct option *long_options, int *idx, int flags) {
+                           const struct option *long_options, int *idx, int flags)
+{
     char *oli;                /* option letter list index */
     int optchar, short_too;
     static int posixly_correct = -1;
@@ -410,7 +413,8 @@ static int getopt_internal(int nargc, char *const *nargv, const char *options,
  *
  * [eventually this will replace the BSD getopt]
  */
-int getopt(int nargc, char *const *nargv, const char *options) {
+int getopt(int nargc, char *const *nargv, const char *options)
+{
     /*
      * We don't pass FLAG_PERMUTE to getopt_internal() since
      * the BSD getopt(3) (unlike GNU) has never done this.
@@ -429,7 +433,8 @@ int getopt(int nargc, char *const *nargv, const char *options) {
  *	Parse argc/argv argument vector.
  */
 int getopt_long(int nargc, char *const *nargv, const char *options,
-            const struct option *long_options, int *idx) {
+                const struct option *long_options, int *idx)
+{
     return (getopt_internal(nargc, nargv, options, long_options, idx,
                             FLAG_PERMUTE));
 }
@@ -439,7 +444,8 @@ int getopt_long(int nargc, char *const *nargv, const char *options,
  *	Parse argc/argv argument vector.
  */
 int getopt_long_only(int nargc, char *const *nargv, const char *options,
-                 const struct option *long_options, int *idx) {
+                     const struct option *long_options, int *idx)
+{
     return (getopt_internal(nargc, nargv, options, long_options, idx,
                             FLAG_PERMUTE | FLAG_LONGONLY));
 }

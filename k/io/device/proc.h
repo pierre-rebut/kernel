@@ -5,13 +5,15 @@
 #ifndef KERNEL_PROC_H
 #define KERNEL_PROC_H
 
-enum ProcPathType {
+enum ProcPathType
+{
     PP_INFO,
     PP_PROC,
     PP_FOLDER
 };
 
-struct ProcPath {
+struct ProcPath
+{
     enum ProcPathType type;
     int data;
     char *name;

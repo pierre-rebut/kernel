@@ -14,7 +14,8 @@
 #include <types.h>
 #include <dirent.h>
 
-typedef struct s_option {
+typedef struct s_option
+{
     int all;
     int dir;
     int ll;

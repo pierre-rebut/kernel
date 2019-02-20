@@ -9,7 +9,6 @@
 #include <string.h>
 #include <ascii.h>
 #include <errno-base.h>
-#include <include/kstdio.h>
 
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
@@ -17,7 +16,8 @@
 #define KEY_INVALID 127
 #define KEY_EXTRA   -32        /*sent before certain keys such as up, down, left, or right( */
 
-enum KeyMapSpecial {
+enum KeyMapSpecial
+{
     SPECIAL_SHIFT = 1,
     SPECIAL_ALT,
     SPECIAL_CTRL,
@@ -26,7 +26,8 @@ enum KeyMapSpecial {
     SPECIAL_WIN
 };
 
-struct keymap {
+struct keymap
+{
     char normal;
     char shifted;
     char ctrled;
@@ -47,11 +48,13 @@ static int activeConsoleId = -1;
 
 static struct Console *createConsole();
 
-void initConsole() {
+void initConsole()
+{
     consoleSwitchById(0);
 }
 
-static struct Console *createConsole() {
+static struct Console *createConsole()
+{
     struct Console *newConsole = kmalloc(sizeof(struct Console), 0, "newConsole");
     if (!newConsole)
         return NULL;
@@ -72,7 +75,8 @@ static struct Console *createConsole() {
     return newConsole;
 }
 
-int consoleSwitchById(int id) {
+int consoleSwitchById(int id)
+{
     if (id < 0 || id > 11)
         return -1;
 
@@ -95,11 +99,13 @@ int consoleSwitchById(int id) {
     return 0;
 }
 
-struct Console *consoleGetActiveConsole() {
+struct Console *consoleGetActiveConsole()
+{
     return consoleLists[activeConsoleId];
 }
 
-char consoleGetLastkey(struct Console *console) {
+char consoleGetLastkey(struct Console *console)
+{
     struct CirBuffer *val = &console->readBuffer;
 
     if (val->readPtr == val->writePtr)
@@ -112,7 +118,8 @@ char consoleGetLastkey(struct Console *console) {
     return val->buffer[val->writePtr];
 }
 
-static char keyboard_map(struct Console *cons, int code) {
+static char keyboard_map(struct Console *cons, int code)
+{
     int direction;
 
     if (code & 0x80) {
@@ -167,7 +174,8 @@ static char keyboard_map(struct Console *cons, int code) {
     }
 }
 
-void consoleKeyboardHandler(int code) {
+void consoleKeyboardHandler(int code)
+{
     static char mod = 0x00;
 
     LOG("keyboard: %d\n", code);
@@ -213,7 +221,8 @@ void consoleKeyboardHandler(int code) {
         taskResetEvent(cons->readingTask);
 }
 
-char consoleGetkey(struct Console *console) {
+char consoleGetkey(struct Console *console)
+{
     struct CirBuffer *val = &console->readBuffer;
 
     if (val->readPtr == val->writePtr)
@@ -224,7 +233,8 @@ char consoleGetkey(struct Console *console) {
     return tmp;
 }
 
-int consoleGetkey2(struct Console *console) {
+int consoleGetkey2(struct Console *console)
+{
     struct CirBuffer *val = &console->readBuffer;
 
     if (val->readPtr == val->writePtr)
@@ -235,7 +245,8 @@ int consoleGetkey2(struct Console *console) {
     return tmp;
 }
 
-static u32 consoleInternalRead(struct Console *console, char *str, u32 size) {
+static u32 consoleInternalRead(struct Console *console, char *str, u32 size)
+{
     u32 read = 0;
     char key;
 
@@ -248,7 +259,8 @@ static u32 consoleInternalRead(struct Console *console, char *str, u32 size) {
     return read;
 }
 
-static char isConsoleReadReady(struct Console *console) {
+static char isConsoleReadReady(struct Console *console)
+{
     struct CirBuffer *val = &console->readBuffer;
 
     int tmp = val->readPtr;
@@ -260,7 +272,8 @@ static char isConsoleReadReady(struct Console *console) {
     return 0;
 }
 
-s32 consoleReadKeyboard(void *entryData, void *buf, u32 size) {
+s32 consoleReadKeyboard(void *entryData, void *buf, u32 size)
+{
     struct Console *console = (struct Console *) entryData;
     s32 ret;
 
@@ -281,7 +294,8 @@ s32 consoleReadKeyboard(void *entryData, void *buf, u32 size) {
     return ret;
 }
 
-s32 consoleWriteStandard(void *entryData, const char *buf, u32 size) {
+s32 consoleWriteStandard(void *entryData, const char *buf, u32 size)
+{
     struct Console *cons = entryData;
     char writing = (cons->mode == ConsoleModeText && consoleLists[activeConsoleId] == cons);
 
@@ -294,11 +308,13 @@ s32 consoleWriteStandard(void *entryData, const char *buf, u32 size) {
     return size;
 }
 
-s32 consoleForceWrite(const char *buf, u32 size) {
+s32 consoleForceWrite(const char *buf, u32 size)
+{
     return consoleWriteStandard(consoleLists[activeConsoleId], buf, size);
 }
 
-int consoleSwitchVideoMode(struct Console *console, enum ConsoleMode mode) {
+int consoleSwitchVideoMode(struct Console *console, enum ConsoleMode mode)
+{
     if (console->mode == mode)
         return 0;
 
@@ -315,7 +331,8 @@ int consoleSwitchVideoMode(struct Console *console, enum ConsoleMode mode) {
     return 0;
 }
 
-int consoleSetVgaFrameBuffer(struct Console *console, const void *buffer) {
+int consoleSetVgaFrameBuffer(struct Console *console, const void *buffer)
+{
     if (console->mode != ConsoleModeVideo)
         return -EPERM;
 

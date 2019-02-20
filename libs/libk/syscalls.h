@@ -9,33 +9,36 @@
 #include <errno.h>
 
 int syscall0(int syscall_nb);
+
 int syscall1(int syscall_nb, u32 ebx);
+
 int syscall2(int syscall_nb, u32 ebx, u32 ecx);
+
 int syscall3(int syscall_nb, u32 ebx, u32 ecx, u32 edx);
 
 #define SYSCALL_EXIT            0
-#define SYSCALL_BRK 			1
-#define SYSCALL_SBRK			2
-#define SYSCALL_GETKEY			3
-#define SYSCALL_GETTICK			4
-#define SYSCALL_OPEN			5
-#define SYSCALL_READ			6
-#define SYSCALL_WRITE			7
-#define SYSCALL_SEEK			8
-#define SYSCALL_CLOSE			9
-#define SYSCALL_SETVIDEO		10
-#define SYSCALL_SWAP_FRONTBUFFER	11
-#define SYSCALL_PLAYSOUND		12
-#define SYSCALL_GETMOUSE		13 /* XXX: not implemented */
-#define SYSCALL_USLEEP		    14
-#define SYSCALL_WAITPID	    	15
-#define SYSCALL_KILL		    16
-#define SYSCALL_GETPID  		17
-#define SYSCALL_EXECVE  		18
-#define SYSCALL_STAT     		19
-#define SYSCALL_FSTAT     		20
+#define SYSCALL_BRK            1
+#define SYSCALL_SBRK            2
+#define SYSCALL_GETKEY            3
+#define SYSCALL_GETTICK            4
+#define SYSCALL_OPEN            5
+#define SYSCALL_READ            6
+#define SYSCALL_WRITE            7
+#define SYSCALL_SEEK            8
+#define SYSCALL_CLOSE            9
+#define SYSCALL_SETVIDEO        10
+#define SYSCALL_SWAP_FRONTBUFFER    11
+#define SYSCALL_PLAYSOUND        12
+#define SYSCALL_GETMOUSE        13 /* XXX: not implemented */
+#define SYSCALL_USLEEP            14
+#define SYSCALL_WAITPID            15
+#define SYSCALL_KILL            16
+#define SYSCALL_GETPID        17
+#define SYSCALL_EXECVE        18
+#define SYSCALL_STAT            19
+#define SYSCALL_FSTAT            20
 #define SYSCALL_CHDIR           21
-#define SYSCALL_GETKEYMODE		22
+#define SYSCALL_GETKEYMODE        22
 #define SYSCALL_OPENDIR         23
 #define SYSCALL_CLOSEDIR        24
 #define SYSCALL_READDIR         25

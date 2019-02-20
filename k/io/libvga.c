@@ -149,7 +149,8 @@ static unsigned int libvga_default_palette[256] = {
         0xff, 0xff00ff, 0xffff, 0xffffff
 };
 
-static void libvga_set_palette(unsigned int *new_palette, u32 size) {
+static void libvga_set_palette(unsigned int *new_palette, u32 size)
+{
     outb(VGA_DAC_WRITE_INDEX, 0);
     for (u32 i = 0; i < size; i++) {
         outb(VGA_DAC_DATA, ((new_palette[i] >> 16) >> 2) & 0xFF);
@@ -158,7 +159,8 @@ static void libvga_set_palette(unsigned int *new_palette, u32 size) {
     }
 }
 
-static void libvga_write_regs(unsigned char *regs) {
+static void libvga_write_regs(unsigned char *regs)
+{
     unsigned int i;
     unsigned int a;
 
@@ -210,7 +212,8 @@ static void libvga_write_regs(unsigned char *regs) {
     libvga_set_palette(libvga_default_palette, array_size(libvga_default_palette));
 }
 
-static char *libvga_get_framebuffer(void) {
+static char *libvga_get_framebuffer(void)
+{
     unsigned int mmap_select;
 
     outb(VGA_GC_INDEX, 6);
@@ -229,7 +232,8 @@ static char *libvga_get_framebuffer(void) {
     return (char *) 0;
 }
 
-static void libvga_switch_mode13h(void) {
+static void libvga_switch_mode13h(void)
+{
     libvga_write_regs(libvga_regs_320x200x256);
 
     // plane 2 is now map in the memory, save it
@@ -240,7 +244,8 @@ static void libvga_switch_mode13h(void) {
     }
 }
 
-static void libvga_switch_mode3h(void) {
+static void libvga_switch_mode3h(void)
+{
     // restore the VGA plane 2 to the text font
     char *vram = libvga_get_framebuffer();
     for (u32 i = 0; i < array_size(libvga_txt_mode_font); i++)
@@ -249,7 +254,8 @@ static void libvga_switch_mode3h(void) {
     libvga_write_regs(libvga_regs_80x25xtext);
 }
 
-int switchVgaMode(enum ConsoleMode mode) {
+int switchVgaMode(enum ConsoleMode mode)
+{
     if (mode == currentVideoMode)
         return 0;
 
@@ -268,8 +274,9 @@ int switchVgaMode(enum ConsoleMode mode) {
     return 0;
 }
 
-void setVgaFrameBuffer(const void *buffer) {
+void setVgaFrameBuffer(const void *buffer)
+{
     char *vram = libvga_get_framebuffer();
     for (u32 i = 0; i < VGA_VIDEO_WIDTH * VGA_VIDEO_HEIGHT; i++)
-        vram[i] = ((char*)buffer)[i];
+        vram[i] = ((char *) buffer)[i];
 }

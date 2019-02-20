@@ -3,7 +3,6 @@ static char const copyright[] =
         "@(#) Copyright (c) 1989, 1993\nThe Regents of the University of California.  All rights reserved.";
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <getopt.h>
 #include <err.h>
@@ -39,7 +38,8 @@ static void raw_cat(int);
  */
 #define    BUFSIZE_SMALL (MAXPHYS)
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     int ch;
 
     while ((ch = getopt(argc, argv, "benstv")) != -1)
@@ -74,11 +74,13 @@ int main(int argc, char *argv[]) {
     return rval;
 }
 
-static void usage(void) {
+static void usage(void)
+{
     err("usage: cat [-benstuv] [file ...]\n\n%s\n", copyright);
 }
 
-static void scanfiles(char *argv[], int cooked) {
+static void scanfiles(char *argv[], int cooked)
+{
     int fd, i;
     char *path;
 
@@ -113,7 +115,8 @@ static void scanfiles(char *argv[], int cooked) {
     }
 }
 
-static void cook_cat(FILE *fp) {
+static void cook_cat(FILE *fp)
+{
     int ch, gobble, line, prev;
 
     /* Reset EOF condition on stdin. */
@@ -177,7 +180,8 @@ static void cook_cat(FILE *fp) {
     }
 }
 
-static void raw_cat(int rfd) {
+static void raw_cat(int rfd)
+{
     char buf[4097];
     ssize_t nr, nw;
     int off;

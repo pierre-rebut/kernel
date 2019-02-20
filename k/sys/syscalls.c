@@ -9,7 +9,6 @@
 #include "io/libvga.h"
 #include "physical-memory.h"
 #include "time.h"
-#include "allocator.h"
 
 #include <kstdio.h>
 #include <io/pipe.h>
@@ -156,11 +155,13 @@ static syscall_t syscall[] = {
 
 static void syscall_handler(struct esp_context *ctx);
 
-void initSyscall() {
+void initSyscall()
+{
     interruptRegister(128, &syscall_handler);
 }
 
-static void syscall_handler(struct esp_context *ctx) {
+static void syscall_handler(struct esp_context *ctx)
+{
     if (ctx->eax >= NB_SYSCALL)
         return;
 
@@ -174,27 +175,32 @@ static void syscall_handler(struct esp_context *ctx) {
     ctx->eax = (u32) fct(ctx);
 }
 
-static int sys_notimplemented(struct esp_context *ctx) {
+static int sys_notimplemented(struct esp_context *ctx)
+{
     klog("[syscall] %u: not implemented\n", ctx->eax);
     return -EINTR;
 }
 
 /*** SYSCALL FCT ***/
 
-static int sys_exit(struct esp_context *ctx) {
+static int sys_exit(struct esp_context *ctx)
+{
     (void) ctx;
     return taskExit();
 }
 
-static int sys_brk(struct esp_context *ctx) {
+static int sys_brk(struct esp_context *ctx)
+{
     return taskHeapSet(ctx->ebx);
 }
 
-static int sys_sbrk(struct esp_context *ctx) {
+static int sys_sbrk(struct esp_context *ctx)
+{
     return taskHeapInc((s32) ctx->ebx);
 }
 
-static int sys_getkey(struct esp_context *ctx) {
+static int sys_getkey(struct esp_context *ctx)
+{
     (void) ctx;
 
     struct Kobject *kobject = taskGetKObjectByFd(0);
@@ -204,12 +210,14 @@ static int sys_getkey(struct esp_context *ctx) {
     return consoleGetkey2(kobject->data);
 }
 
-static int sys_gettick(struct esp_context *ctx) {
+static int sys_gettick(struct esp_context *ctx)
+{
     (void) ctx;
     return (int) gettick();
 }
 
-static int sys_open(struct esp_context *ctx) {
+static int sys_open(struct esp_context *ctx)
+{
     int fd = taskGetAvailableFd(currentTask);
     if (fd < 0)
         return fd;
@@ -225,13 +233,15 @@ static int sys_open(struct esp_context *ctx) {
     }
 
     struct Kobject *obj = fsOpenFile(path, ctx->ecx);
+    fsPathDestroy(path);
+
     if (obj == NULL) {
         return -EACCES;
     }
 
     if (obj->type == KO_FS_FILE) {
         if (ctx->ecx & O_APPEND)
-            obj->offset = ((struct FsPath*)(obj->data))->size;
+            obj->offset = ((struct FsPath *) (obj->data))->size;
         else if (ctx->ecx & O_TRUNC) {
             fsResizeFile(obj->data, 0);
         }
@@ -242,7 +252,8 @@ static int sys_open(struct esp_context *ctx) {
     return fd;
 }
 
-static int sys_read(struct esp_context *ctx) {
+static int sys_read(struct esp_context *ctx)
+{
     struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
     if (!obj)
         return -EBADF;
@@ -250,7 +261,8 @@ static int sys_read(struct esp_context *ctx) {
     return koRead(obj, (void *) ctx->ecx, ctx->edx);
 }
 
-static int sys_write(struct esp_context *ctx) {
+static int sys_write(struct esp_context *ctx)
+{
     struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
     if (!obj)
         return -EBADF;
@@ -258,7 +270,8 @@ static int sys_write(struct esp_context *ctx) {
     return koWrite(obj, (void *) ctx->ecx, ctx->edx);
 }
 
-static int sys_seek(struct esp_context *ctx) {
+static int sys_seek(struct esp_context *ctx)
+{
     struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
     if (!obj)
         return -EBADF;
@@ -266,7 +279,8 @@ static int sys_seek(struct esp_context *ctx) {
     return koSeek(obj, (off_t) ctx->ecx, (int) ctx->edx);
 }
 
-static int sys_close(struct esp_context *ctx) {
+static int sys_close(struct esp_context *ctx)
+{
     struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
     if (!obj)
         return -EBADF;
@@ -275,49 +289,59 @@ static int sys_close(struct esp_context *ctx) {
     return koDestroy(obj);
 }
 
-static int sys_setvideo(struct esp_context *ctx) {
+static int sys_setvideo(struct esp_context *ctx)
+{
     return consoleSwitchVideoMode(currentTask->console, (enum ConsoleMode) ctx->ebx);
 }
 
-static int sys_setVgaFrameBuffer(struct esp_context *ctx) {
+static int sys_setVgaFrameBuffer(struct esp_context *ctx)
+{
     return consoleSetVgaFrameBuffer(currentTask->console, (const void *) ctx->ebx);
 }
 
-static int sys_getMouse(struct esp_context *ctx) {
+static int sys_getMouse(struct esp_context *ctx)
+{
     (void) ctx;
     return 0;
 }
 
-static int sys_playsound(struct esp_context *ctx) {
+static int sys_playsound(struct esp_context *ctx)
+{
     (void) ctx;
     return 0;
 }
 
-static int sys_getkeymode(struct esp_context *ctx) {
+static int sys_getkeymode(struct esp_context *ctx)
+{
     (void) ctx;
     return 0;
 }
 
-static int sys_usleep(struct esp_context *ctx) {
+static int sys_usleep(struct esp_context *ctx)
+{
     taskWaitEvent(TaskEventTimer, ctx->ebx);
     return 0;
 }
 
-static int sys_waitPid(struct esp_context *ctx) {
+static int sys_waitPid(struct esp_context *ctx)
+{
     taskWaitEvent(TaskEventWaitPid, ctx->ebx);
     return 0;
 }
 
-static int sys_kill(struct esp_context *ctx) {
+static int sys_kill(struct esp_context *ctx)
+{
     return taskKillByPid((pid_t) ctx->ebx);
 }
 
-static int sys_getPid(struct esp_context *ctx) {
+static int sys_getPid(struct esp_context *ctx)
+{
     (void) ctx;
     return taskGetpid();
 }
 
-static int sys_execve(struct esp_context *ctx) {
+static int sys_execve(struct esp_context *ctx)
+{
     if (ctx->ebx == 0)
         return -EINVAL;
 
@@ -325,7 +349,8 @@ static int sys_execve(struct esp_context *ctx) {
     return createProcess((const struct ExceveInfo *) ctx->ebx);
 }
 
-static int sys_stat(struct esp_context *ctx) {
+static int sys_stat(struct esp_context *ctx)
+{
     struct FsPath *path = fsResolvePath((char *) ctx->ebx);
     if (!path)
         return -ENOENT;
@@ -336,7 +361,8 @@ static int sys_stat(struct esp_context *ctx) {
     return tmp;
 }
 
-static int sys_fstat(struct esp_context *ctx) {
+static int sys_fstat(struct esp_context *ctx)
+{
     struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
     if (!obj)
         return -EBADF;
@@ -344,13 +370,15 @@ static int sys_fstat(struct esp_context *ctx) {
     return fsStat(obj->data, (void *) ctx->ecx);
 }
 
-static int sys_chdir(struct esp_context *ctx) {
+static int sys_chdir(struct esp_context *ctx)
+{
     LOG("change dir: %s\n", (char *) ctx->ebx);
     return taskChangeDirectory((void *) ctx->ebx);
 }
 
-static int sys_opendir(struct esp_context *ctx) {
-    klog("opendir: %s\n", (const char *)ctx->ebx);
+static int sys_opendir(struct esp_context *ctx)
+{
+    klog("opendir: %s\n", (const char *) ctx->ebx);
     int fd = taskGetAvailableFd(currentTask);
     if (fd < 0)
         return fd;
@@ -359,12 +387,15 @@ static int sys_opendir(struct esp_context *ctx) {
     if (!path)
         return -ENOENT;
 
+    path->refcount += 1;
     taskSetKObjectByFd(fd, koCreate(KO_FS_FOLDER, path, 0));
     LOG("opendir: %s (%d) refcount: %u\n", (char *) ctx->ebx, fd, path->refcount);
+    fsPathDestroy(path);
     return fd;
 }
 
-static int sys_readdir(struct esp_context *ctx) {
+static int sys_readdir(struct esp_context *ctx)
+{
     LOG("readdir: %d (%d)\n", ctx->ebx, ctx->edx);
     struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
     if (!obj)
@@ -373,7 +404,8 @@ static int sys_readdir(struct esp_context *ctx) {
     return fsPathReaddir(obj->data, (void *) ctx->ecx, ctx->edx);
 }
 
-static int sys_closedir(struct esp_context *ctx) {
+static int sys_closedir(struct esp_context *ctx)
+{
     struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
     if (!obj)
         return -EBADF;
@@ -383,7 +415,8 @@ static int sys_closedir(struct esp_context *ctx) {
     return koDestroy(obj);
 }
 
-static int sys_mount(struct esp_context *ctx) {
+static int sys_mount(struct esp_context *ctx)
+{
     klog("mount %s on %s (%s)\n", (char *) ctx->ecx, (char *) ctx->edx, (char *) ctx->ebx);
     klog("mount: get fs by name\n");
     struct Fs *fs = fsGetFileSystemByName((const char *) ctx->ebx);
@@ -414,7 +447,8 @@ static int sys_mount(struct esp_context *ctx) {
     return 0;
 }
 
-static int sys_umount(struct esp_context *ctx) {
+static int sys_umount(struct esp_context *ctx)
+{
     LOG("umount: %s\n", (char *) ctx->ebx);
 
     struct FsPath *path = fsResolvePath((char *) ctx->ebx);
@@ -429,7 +463,8 @@ static int sys_umount(struct esp_context *ctx) {
     return tmp;
 }
 
-static int sys_pipe(struct esp_context *ctx) {
+static int sys_pipe(struct esp_context *ctx)
+{
     LOG("pipe\n");
 
     int pipe1 = taskGetAvailableFd(currentTask);
@@ -461,7 +496,8 @@ static int sys_pipe(struct esp_context *ctx) {
     return 0;
 }
 
-static int sys_dup2(struct esp_context *ctx) {
+static int sys_dup2(struct esp_context *ctx)
+{
     LOG("dup2: %u -> %u\n", ctx->ebx, ctx->ecx);
 
     if (ctx->ebx >= MAX_NB_FILE || ctx->ecx >= MAX_NB_FILE)
@@ -479,7 +515,8 @@ static int sys_dup2(struct esp_context *ctx) {
     return 0;
 }
 
-static int sys_getcwd(struct esp_context *ctx) {
+static int sys_getcwd(struct esp_context *ctx)
+{
     LOG("getcwd: %u\n", ctx->ecx);
     char *tmp = (char *) ctx->ebx;
     strcpy(tmp, "/tmp");
@@ -487,7 +524,8 @@ static int sys_getcwd(struct esp_context *ctx) {
     return 0;
 }
 
-static int sys_sysconf(struct esp_context *ctx) {
+static int sys_sysconf(struct esp_context *ctx)
+{
     LOG("sysconf: %u\n", ctx->ebx);
     switch (ctx->ebx) {
         case _SC_PHYS_PAGES:
@@ -499,21 +537,24 @@ static int sys_sysconf(struct esp_context *ctx) {
     };
 }
 
-static int sys_sync(struct esp_context *ctx) {
+static int sys_sync(struct esp_context *ctx)
+{
     (void) ctx;
     LOG("sync\n");
     fsCacheSync();
     return 0;
 }
 
-static int sys_mkdir(struct esp_context *ctx) {
+static int sys_mkdir(struct esp_context *ctx)
+{
     LOG("mkdir: %s\n", (char *) ctx->ebx);
 
     void *tmp = fsMkdir((const char *) ctx->ebx);
     return (tmp ? 0 : -EPERM);
 }
 
-static int sys_mkfile(struct esp_context *ctx) {
+static int sys_mkfile(struct esp_context *ctx)
+{
     LOG("mkfile: %s\n", (char *) ctx->ebx);
 
     void *tmp = fsResolvePath((const char *) ctx->ebx);
@@ -527,7 +568,8 @@ static int sys_mkfile(struct esp_context *ctx) {
     return (tmp ? 0 : -EIO);
 }
 
-static int sys_fchdir(struct esp_context *ctx) {
+static int sys_fchdir(struct esp_context *ctx)
+{
     klog("fchdir: %d\n", ctx->ebx);
     struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
     if (!obj || obj->type != KO_FS_FOLDER)
@@ -541,7 +583,8 @@ static int sys_fchdir(struct esp_context *ctx) {
     return 0;
 }
 
-static int sys_link(struct esp_context *ctx) {
+static int sys_link(struct esp_context *ctx)
+{
     LOG("link: %s -> %s\n", (char *) ctx->ebx, (char *) ctx->ecx);
 
     void *tmp = fsResolvePath((const char *) ctx->ecx);
@@ -555,7 +598,8 @@ static int sys_link(struct esp_context *ctx) {
     return (tmp ? 0 : -EIO);
 }
 
-static int sys_symlink(struct esp_context *ctx) {
+static int sys_symlink(struct esp_context *ctx)
+{
     (void) ctx; // todo
 
     LOG("symlink: %s -> %s\n", (char *) ctx->ebx, (char *) ctx->ecx);
@@ -563,14 +607,16 @@ static int sys_symlink(struct esp_context *ctx) {
     return -EPERM;
 }
 
-static int sys_unlink(struct esp_context *ctx) {
+static int sys_unlink(struct esp_context *ctx)
+{
     (void) ctx; // todo
     LOG("unlink: %s\n", (char *) ctx->ebx);
 
     return -EPERM;
 }
 
-static int sys_isatty(struct esp_context *ctx) {
+static int sys_isatty(struct esp_context *ctx)
+{
     struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
     if (!obj)
         return -EBADF;
@@ -578,8 +624,9 @@ static int sys_isatty(struct esp_context *ctx) {
     return (obj->type == KO_CONS_STD || obj->type == KO_CONS_ERROR);
 }
 
-static int sys_time(struct esp_context *ctx) {
-    time_t *tlc = (time_t*)ctx->ebx;
+static int sys_time(struct esp_context *ctx)
+{
+    time_t *tlc = (time_t *) ctx->ebx;
     if (tlc == NULL)
         return -EINVAL;
 

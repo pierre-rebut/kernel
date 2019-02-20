@@ -35,7 +35,8 @@ void *memmove(
         void *dst0,
         const void *src0,
         register u32 length
-) {
+)
+{
     register char *dst = dst0;
     register const char *src = src0;
     register u32 t;

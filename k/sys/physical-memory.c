@@ -3,7 +3,6 @@
 //
 
 #include <string.h>
-#include <kstdio.h>
 #include <include/multiboot.h>
 
 #include "physical-memory.h"
@@ -17,7 +16,8 @@ static u32 *physicalMemTable = NULL;
 static u32 physicalMemSize;
 static struct Mutex mtx = mutexInit();
 
-static u32 getMemorySize(memory_map_t *memEntry, memory_map_t *memEnd) {
+static u32 getMemorySize(memory_map_t *memEntry, memory_map_t *memEnd)
+{
     u32 memSize = 0;
 
     while (memEntry < memEnd) {
@@ -34,7 +34,8 @@ static u32 getMemorySize(memory_map_t *memEntry, memory_map_t *memEnd) {
     return memSize;
 }
 
-static void memorySetRegion(u32 addrBegin, u32 addrEnd, u8 isReserved) {
+static void memorySetRegion(u32 addrBegin, u32 addrEnd, u8 isReserved)
+{
     u32 start = alignUp(addrBegin, PAGESIZE) / PAGESIZE;
     u32 end = alignDown(addrEnd, PAGESIZE) / PAGESIZE;
 
@@ -47,8 +48,9 @@ static void memorySetRegion(u32 addrBegin, u32 addrEnd, u8 isReserved) {
     }
 }
 
-u32 initPhysicalMemory(const multiboot_info_t *info) {
-    memory_map_t *memEntry = (memory_map_t*)info->mmap_addr;
+u32 initPhysicalMemory(const multiboot_info_t *info)
+{
+    memory_map_t *memEntry = (memory_map_t *) info->mmap_addr;
     memory_map_t *memEnd = ((void *) memEntry + info->mmap_length);
 
     LOG("[PHYMEM] get memory size\n");
@@ -73,7 +75,8 @@ u32 initPhysicalMemory(const multiboot_info_t *info) {
     return memSize;
 }
 
-u32 allocPhysicalMemory() {
+u32 allocPhysicalMemory()
+{
     mutexLock(&mtx);
     for (u32 i = 0; i < physicalMemSize; i++) {
         if (physicalMemTable[i] == 0xFFFFFFFF)
@@ -92,7 +95,8 @@ u32 allocPhysicalMemory() {
     return 0;
 }
 
-void freePhysicalMemory(u32 allocAddr) {
+void freePhysicalMemory(u32 allocAddr)
+{
     u32 i = allocAddr / PAGESIZE;
     LOG("[PHYMEM] free physical memory: %X\n", i);
     mutexLock(&mtx);
@@ -100,11 +104,13 @@ void freePhysicalMemory(u32 allocAddr) {
     mutexUnlock(&mtx);
 }
 
-u32 getTotalPhysMemory() {
+u32 getTotalPhysMemory()
+{
     return physicalMemSize * PAGESIZE * 32;
 }
 
-u32 getTotalUsedPhysMemory() {
+u32 getTotalUsedPhysMemory()
+{
     u32 total = 0;
     mutexLock(&mtx);
     for (u32 i = 0; i < physicalMemSize; i++) {
@@ -122,6 +128,7 @@ u32 getTotalUsedPhysMemory() {
     return total;
 }
 
-u32 physmemGetTotalPages() {
+u32 physmemGetTotalPages()
+{
     return physicalMemSize * 32;
 }

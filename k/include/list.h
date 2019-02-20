@@ -7,25 +7,31 @@
 
 #include <stdarg.h>
 
-struct ListElem {
+struct ListElem
+{
     void *data;
     struct ListElem *next;
     struct ListElem *prev;
 };
 
-struct List {
+struct List
+{
     struct ListElem *begin;
     struct ListElem *cur;
 };
 
 #define CREATE_LIST() {0, 0}
+
 void listReset(struct List *lst);
+
 void listAddElem(struct List *lst, void *data);
+
 void listDeleteElem(struct List *lst, void *data);
 
 void *listGetElem(struct List *lst, int (*fct)(void *, va_list ap), ...);
 
 void *listGetNextElem(struct List *lst);
+
 u32 listCountElem(struct List *lst);
 
 void *listGetElemByIndex(struct List *lst, u32 index);

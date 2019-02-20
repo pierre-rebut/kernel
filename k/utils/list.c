@@ -5,7 +5,8 @@
 #include <sys/allocator.h>
 #include <list.h>
 
-static struct ListElem *createElem(void *data, struct ListElem *n, struct ListElem *p) {
+static struct ListElem *createElem(void *data, struct ListElem *n, struct ListElem *p)
+{
     struct ListElem *elem = kmalloc(sizeof(struct ListElem), 0, "addListElem");
     if (!elem)
         return NULL;
@@ -16,16 +17,18 @@ static struct ListElem *createElem(void *data, struct ListElem *n, struct ListEl
     return elem;
 }
 
-void listReset(struct List *lst) {
+void listReset(struct List *lst)
+{
     lst->begin = NULL;
     lst->cur = NULL;
 }
 
-void listAddElem(struct List *lst, void *data) {
+void listAddElem(struct List *lst, void *data)
+{
     if (lst->begin == NULL) {
         lst->begin = createElem(data, NULL, NULL);
         lst->cur = lst->begin;
-        return ;
+        return;
     }
 
     struct ListElem *new = createElem(data, lst->begin, NULL);
@@ -33,7 +36,8 @@ void listAddElem(struct List *lst, void *data) {
     lst->begin = new;
 }
 
-void listDeleteElem(struct List *lst, void *data) {
+void listDeleteElem(struct List *lst, void *data)
+{
     struct ListElem *tmp = lst->begin;
     while (tmp != NULL) {
         if (tmp->data == data) {
@@ -58,7 +62,8 @@ void listDeleteElem(struct List *lst, void *data) {
     }
 }
 
-u32 listCountElem(struct List *lst) {
+u32 listCountElem(struct List *lst)
+{
     u32 i = 0;
     struct ListElem *tmp = lst->begin;
 
@@ -69,7 +74,8 @@ u32 listCountElem(struct List *lst) {
     return i;
 }
 
-void *listGetElem(struct List *lst, int (*fct)(void *, va_list), ...) {
+void *listGetElem(struct List *lst, int (*fct)(void *, va_list), ...)
+{
     if (!lst)
         return NULL;
 
@@ -96,7 +102,8 @@ void *listGetElem(struct List *lst, int (*fct)(void *, va_list), ...) {
     return NULL;
 }
 
-void *listGetNextElem(struct List *lst) {
+void *listGetNextElem(struct List *lst)
+{
     if (!lst || lst->begin == NULL)
         return NULL;
 
@@ -108,7 +115,8 @@ void *listGetNextElem(struct List *lst) {
     return lst->cur->data;
 }
 
-void *listGetElemByIndex(struct List *lst, u32 index) {
+void *listGetElemByIndex(struct List *lst, u32 index)
+{
     if (!lst)
         return NULL;
 

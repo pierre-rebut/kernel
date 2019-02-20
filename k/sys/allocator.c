@@ -8,7 +8,8 @@
 #include <kstdio.h>
 #include <string.h>
 
-typedef struct {
+typedef struct
+{
     u32 size;
     u32 number;
     char reserved;
@@ -30,7 +31,8 @@ static struct Mutex mutex = mutexInit();
 static void *tmpMemAlloc(size_t size, u32 alignment);
 
 
-int initAllocator(void) {
+int initAllocator(void)
+{
     regions = tmpMemAlloc(0, 0);
 
     regionCount = 0;
@@ -38,7 +40,8 @@ int initAllocator(void) {
     return 0;
 }
 
-static char allocHeapGrow(size_t size, u8 *heapEnd) {
+static char allocHeapGrow(size_t size, u8 *heapEnd)
+{
     if ((regionCount > 0) && regions[regionCount - 1].reserved && (regionCount >= regionMaxCount))
         return (0);
 
@@ -63,7 +66,8 @@ static char allocHeapGrow(size_t size, u8 *heapEnd) {
     return (1);
 }
 
-static void *tmpMemAlloc(size_t size, u32 alignment) {
+static void *tmpMemAlloc(size_t size, u32 alignment)
+{
     static void *nextPlacement = (void *) PLACEMENT_BEGIN;
 
     void *currPlacement = (void *) alignUp((u32) nextPlacement, alignment);
@@ -77,7 +81,8 @@ static void *tmpMemAlloc(size_t size, u32 alignment) {
     return (currPlacement);
 }
 
-void *kmalloc(size_t size, u32 alignment, const char *comment) {
+void *kmalloc(size_t size, u32 alignment, const char *comment)
+{
     static u32 consecutiveNumber = 0;
 
     size_t within = 0xFFFFFFFF;
@@ -192,7 +197,8 @@ void *kmalloc(size_t size, u32 alignment, const char *comment) {
 }
 
 
-void kfree(void *addr) {
+void kfree(void *addr)
+{
 
     if (addr == 0)
         return;
@@ -234,7 +240,8 @@ void kfree(void *addr) {
     klog("[kfree] Broken free: %Xh\n", addr);
 }
 
-void kmallocGetInfo(u32 *total, u32 *used) {
+void kmallocGetInfo(u32 *total, u32 *used)
+{
     *total = 0;
     *used = 0;
 

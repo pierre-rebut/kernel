@@ -12,13 +12,15 @@
 #include <sys/paging.h>
 #include <sys/allocator.h>
 #include <sys/physical-memory.h>
+#include <errno-base.h>
 
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
 #define KFS_MEM_POS 0x1400000
 
-static char checkBlockChecksum(struct kfs_block *block) {
+static char checkBlockChecksum(struct kfs_block *block)
+{
     u32 cksum = block->cksum;
     block->cksum = 0;
     u32 tmp = kfs_checksum(block, sizeof(struct kfs_block));
@@ -27,7 +29,8 @@ static char checkBlockChecksum(struct kfs_block *block) {
     return tmp == cksum;
 }
 
-static struct kfs_inode *getFileINode(const char *pathname) {
+static struct kfs_inode *getFileINode(const char *pathname)
+{
     struct kfs_superblock *kfs = (struct kfs_superblock *) KFS_MEM_POS;
     struct kfs_inode *node = (struct kfs_inode *) ((void *) kfs + (kfs->inode_idx * KFS_BLK_SZ));
 
@@ -47,7 +50,8 @@ static struct kfs_inode *getFileINode(const char *pathname) {
     return node;
 }
 
-static struct FsPath *kfsRoot(struct FsVolume *volume) {
+static struct FsPath *kfsRoot(struct FsVolume *volume)
+{
     struct FsPath *rootPath = kmalloc(sizeof(struct FsPath), 0, "kfsRoot");
     if (!rootPath)
         return NULL;
@@ -65,7 +69,8 @@ static struct FsPath *kfsRoot(struct FsVolume *volume) {
     return rootPath;
 }
 
-static struct FsVolume *kfsMount(struct FsPath *file) {
+static struct FsVolume *kfsMount(struct FsPath *file)
+{
     LOG("KFS mount: %s - %u - %p\n", (const char *) data, currentTask->pid, currentTask->pageDirectory);
 
     void *pd = NULL;
@@ -132,28 +137,29 @@ static struct FsVolume *kfsMount(struct FsPath *file) {
     kfsVolume->blockSize = KFS_BLK_DATA_SZ;
     kfsVolume->privateData = pd;
     kfree(tmpData);
-    fsPathDestroy(file);
     return kfsVolume;
 
     kfsMountFailure:
-    fsPathDestroy(file);
     kfree(tmpData);
     pagingDestroyPageDirectory(pd);
     return NULL;
 }
 
-static int kfsUmount(struct FsVolume *volume) {
+static int kfsUmount(struct FsVolume *volume)
+{
     pagingDestroyPageDirectory(volume->privateData);
     kfree(volume);
     return 0;
 }
 
-static int kfsClose(struct FsPath *path) {
+static int kfsClose(struct FsPath *path)
+{
     kfree(path);
     return 0;
 }
 
-static int kfsStat(struct FsPath *path, struct stat *result) {
+static int kfsStat(struct FsPath *path, struct stat *result)
+{
     struct kfs_inode *inode = path->privateData;
 
     cli();
@@ -172,7 +178,8 @@ static int kfsStat(struct FsPath *path, struct stat *result) {
     return 0;
 }
 
-static struct FsPath *kfsLookup(struct FsPath *path, const char *name) {
+static struct FsPath *kfsLookup(struct FsPath *path, const char *name)
+{
     LOG("[KFS] lookup fct\n");
     struct kfs_inode *node;
     u32 filesize = 0;
@@ -210,9 +217,14 @@ static struct FsPath *kfsLookup(struct FsPath *path, const char *name) {
     return file;
 }
 
-static int kfsReaddir(struct FsPath *path, void *block, u32 nblock) {
+static int kfsReaddir(struct FsPath *path, void *block, u32 nblock)
+{
     struct kfs_superblock *kfs = (struct kfs_superblock *) KFS_MEM_POS;
     LOG("[KFS] readdir: %u\n", nblock);
+
+    void *tmpBlock = kmalloc(DIRENT_BUFFER_SIZE, 0, "tmpKfsReadir");
+    if (tmpBlock == NULL)
+        return -ENOMEM;
 
     cli();
     pagingSwitchPageDirectory(path->volume->privateData);
@@ -239,7 +251,9 @@ static int kfsReaddir(struct FsPath *path, void *block, u32 nblock) {
         tmpDirent.d_type = FT_FILE;
         tmpDirent.d_namlen = strlen(dir->filename);
 
-        memcpy(block, &tmpDirent, sizeof(struct dirent));
+        klog("bite en bois de chaine: %d\n", i);
+        memcpy(tmpBlock, &tmpDirent, sizeof(struct dirent));
+        klog("bite en marbre\n");
         block += sizeof(struct dirent);
         size += 1;
 
@@ -249,10 +263,13 @@ static int kfsReaddir(struct FsPath *path, void *block, u32 nblock) {
     pagingSwitchPageDirectory(currentTask->pageDirectory);
     sti();
 
+    memcpy(block, tmpBlock, size * sizeof(struct dirent));
+    kfree(tmpBlock);
     return size;
 }
 
-static int kfsReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
+static int kfsReadBlock(struct FsPath *path, char *buffer, u32 blocknum)
+{
     struct kfs_inode *node = (struct kfs_inode *) path->privateData;
     struct kfs_superblock *kfs = (struct kfs_superblock *) KFS_MEM_POS;
 
@@ -274,7 +291,8 @@ static int kfsReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
 
         blockIndex = iblock->blks;
         blocknum = (blocknum - KFS_DIRECT_BLK) % KFS_INDIRECT_BLK;
-        LOG("[KFS] iblockIndex: %u (max %d) %d / blocknum = %u\n", iblockIndex, node->i_blk_cnt, iblock->blk_cnt, blocknum);
+        LOG("[KFS] iblockIndex: %u (max %d) %d / blocknum = %u\n", iblockIndex, node->i_blk_cnt, iblock->blk_cnt,
+            blocknum);
     } else {
         if (blocknum >= node->d_blk_cnt)
             goto failure;
@@ -300,7 +318,9 @@ static int kfsReadBlock(struct FsPath *path, char *buffer, u32 blocknum) {
     return -1;
 }
 
-static struct Kobject *kfsOpenFile(struct FsPath *path) {
+static struct Kobject *kfsOpenFile(struct FsPath *path)
+{
+    path->refcount += 1;
     return koCreate((path->type == FS_FILE ? KO_FS_FILE : KO_FS_FOLDER), path, 0);
 }
 
@@ -317,6 +337,7 @@ static struct Fs fs_kfs = {
         .close = &kfsClose
 };
 
-void initKFileSystem() {
+void initKFileSystem()
+{
     fsRegister(&fs_kfs);
 }

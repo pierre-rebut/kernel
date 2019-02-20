@@ -8,24 +8,24 @@
 ** Last update Tue May 19 17:45:26 2015 Pierre REBUT
 */
 
-#ifndef		STRUCT_H_
-# define	STRUCT_H_
+#ifndef        STRUCT_H_
+# define    STRUCT_H_
 
-typedef	struct	s_env
+typedef struct s_env
 {
-  int		len;
-  char		**env;
-}		t_env;
+    int len;
+    char **env;
+} t_env;
 
-typedef	struct	s_cmd
+typedef struct s_cmd
 {
-  char		*prg;
-  char		**args;
-  char		*redir_in;
-  char		*redir_out;
-  int		pipefd[2];
-  struct s_cmd	*next;
-  struct s_cmd	*prev;
-}		t_cmd;
+    char *prg;
+    char **args;
+    char *redir_in;
+    char *redir_out;
+    int pipefd[2];
+    struct s_cmd *next;
+    struct s_cmd *prev;
+} t_cmd;
 
-#endif		/* STRUCT_H_ */
+#endif        /* STRUCT_H_ */

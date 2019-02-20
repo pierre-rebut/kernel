@@ -4,7 +4,6 @@
 
 #include <sys/allocator.h>
 #include <task.h>
-#include <include/kstdio.h>
 #include "pipe.h"
 
 #define PIPE_SIZE 1024
@@ -12,7 +11,8 @@
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
-struct Pipe *pipeCreate() {
+struct Pipe *pipeCreate()
+{
     struct Pipe *pipe = kmalloc(sizeof(struct Pipe), 0, "newPipe");
     if (pipe == NULL)
         return NULL;
@@ -31,12 +31,14 @@ struct Pipe *pipeCreate() {
     return pipe;
 }
 
-struct Pipe *pipeAddref(struct Pipe *pipe) {
+struct Pipe *pipeAddref(struct Pipe *pipe)
+{
     pipe->refcount += 1;
     return pipe;
 }
 
-int pipeRead(struct Pipe *pipe, char *buffer, u32 size) {
+int pipeRead(struct Pipe *pipe, char *buffer, u32 size)
+{
     if (!pipe || !buffer || pipe->refcount <= 1)
         return -1;
 
@@ -52,7 +54,7 @@ int pipeRead(struct Pipe *pipe, char *buffer, u32 size) {
     }
 
     u32 read = 0;
-    while(read < size && pipe->read_pos != pipe->write_pos) {
+    while (read < size && pipe->read_pos != pipe->write_pos) {
         buffer[read] = pipe->buffer[pipe->read_pos];
         pipe->read_pos = (pipe->read_pos + 1) % PIPE_SIZE;
         read++;
@@ -68,7 +70,8 @@ int pipeRead(struct Pipe *pipe, char *buffer, u32 size) {
     return (int) read;
 }
 
-int pipeWrite(struct Pipe *pipe, const char *buffer, u32 size) {
+int pipeWrite(struct Pipe *pipe, const char *buffer, u32 size)
+{
     if (!pipe || !buffer)
         return -1;
 
@@ -100,7 +103,8 @@ int pipeWrite(struct Pipe *pipe, const char *buffer, u32 size) {
     return size;
 }
 
-void pipeDelete(struct Pipe *pipe) {
+void pipeDelete(struct Pipe *pipe)
+{
     if (pipe == NULL)
         return;
 

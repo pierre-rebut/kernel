@@ -14,7 +14,8 @@
 
 #include "functions.h"
 
-int check_pipe(t_cmd *lst) {
+int check_pipe(t_cmd *lst)
+{
     t_cmd *tmp;
     int i;
 
@@ -31,7 +32,8 @@ int check_pipe(t_cmd *lst) {
     return (0);
 }
 
-int check_nb(const char *str) {
+int check_nb(const char *str)
+{
     int i;
 
     i = 0;
@@ -47,7 +49,8 @@ int check_nb(const char *str) {
     return (0);
 }
 
-int my_putfd(char *str, int fd) {
+int my_putfd(char *str, int fd)
+{
     int len;
 
     len = strlen(str);

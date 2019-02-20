@@ -7,9 +7,10 @@
 
 #define ATA_BLOCKSIZE 512
 
-struct ata_count {
-	int blocks_written[4];
-	int blocks_read[4];
+struct ata_count
+{
+    int blocks_written[4];
+    int blocks_read[4];
 };
 
 void ataInit();

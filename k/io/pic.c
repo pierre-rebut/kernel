@@ -16,7 +16,8 @@
 #define PIC_MASTER_B 0x21
 #define PIC_SLAVE_B 0xA1
 
-void initPic() {
+void initPic()
+{
     outb(PIC_MASTER_A, 0x11);
     outb(PIC_SLAVE_A, 0x11);
 
@@ -34,7 +35,8 @@ void initPic() {
     outb(PIC_SLAVE_B, PIC_MASK_ALL);
 }
 
-void allowIrq(int irq) {
+void allowIrq(int irq)
+{
 
     if (irq < 8) {
         u8 tmp = inb(PIC_MASTER_B);
@@ -49,12 +51,14 @@ void allowIrq(int irq) {
     LOG("PIC - Allow irq %d\n", irq);
 }
 
-void pic_eoi_master(int irq) {
-    (void)irq;
+void pic_eoi_master(int irq)
+{
+    (void) irq;
     outb(PIC_MASTER_A, 0x20);
 }
 
-void pic_eoi_slave(int irq) {
-    (void)irq;
+void pic_eoi_slave(int irq)
+{
+    (void) irq;
     outb(PIC_SLAVE_A, 0x20);
 }

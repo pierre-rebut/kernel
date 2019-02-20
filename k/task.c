@@ -27,7 +27,8 @@ struct Task kernelTask = {0};
 
 static struct Task *tasksTable[TASK_MAX_PID] = {0};
 
-void initTasking() {
+void initTasking()
+{
     kernelTask.type = T_PROCESS;
     kernelTask.pid = 0;
     tasksTable[0] = &kernelTask;
@@ -61,7 +62,8 @@ void initTasking() {
     taskSwitching = 1;
 }
 
-static u32 getNextPid() {
+static u32 getNextPid()
+{
     static u32 last = 1;
 
     u32 i;
@@ -82,7 +84,8 @@ static u32 getNextPid() {
     return 0;
 }
 
-struct Task *createTask(struct TaskCreator *info) {
+struct Task *createTask(struct TaskCreator *info)
+{
     struct Task *task = kmalloc(sizeof(struct Task), 0, "task");
     u32 *stack = kmalloc(KERNEL_STACK_SIZE, 0, "stack");
     if (!task || !stack)
@@ -149,7 +152,8 @@ struct Task *createTask(struct TaskCreator *info) {
     return task;
 }
 
-static const char **copyArrayIntoUserland(struct PageDirectory *pd, u32 position, u32 ac, const char **av) {
+static const char **copyArrayIntoUserland(struct PageDirectory *pd, u32 position, u32 ac, const char **av)
+{
     char **nnArgv = 0;
     char *nArgv[ac];
 
@@ -247,7 +251,8 @@ int forkProcess() {
     return -1;
 }*/
 
-pid_t createProcess(const struct ExceveInfo *info) {
+pid_t createProcess(const struct ExceveInfo *info)
+{
     LOG("[TASK] openfile\n");
     struct FsPath *file = fsResolvePath(info->cmdline);
     if (!file) {
@@ -368,7 +373,8 @@ pid_t createProcess(const struct ExceveInfo *info) {
     return task->pid;
 }
 
-pid_t createThread(u32 entryPrg) {
+pid_t createThread(u32 entryPrg)
+{
     LOG("[TASK] add task thread (entry: %X)\n", entryPrg);
 
     struct Task *procTask = currentTask;
@@ -401,7 +407,8 @@ pid_t createThread(u32 entryPrg) {
     return task->pid;
 }
 
-int taskKill(struct Task *task) {
+int taskKill(struct Task *task)
+{
     if (task == NULL)
         return -ESRCH;
 
@@ -470,11 +477,13 @@ int taskKill(struct Task *task) {
     return 0;
 }
 
-pid_t taskGetpid() {
+pid_t taskGetpid()
+{
     return currentTask->pid;
 }
 
-pid_t taskKillByPid(pid_t pid) {
+pid_t taskKillByPid(pid_t pid)
+{
     struct Task *task = getTaskByPid(pid);
     if (task == NULL)
         return -ESRCH;
@@ -483,11 +492,13 @@ pid_t taskKillByPid(pid_t pid) {
     return pid;
 }
 
-int taskExit() {
+int taskExit()
+{
     return taskKill(currentTask);
 }
 
-void taskWaitEvent(enum TaskEventType event, u32 arg) {
+void taskWaitEvent(enum TaskEventType event, u32 arg)
+{
     currentTask->event.type = event;
     currentTask->event.timer = gettick();
     currentTask->event.arg = arg;
@@ -497,7 +508,8 @@ void taskWaitEvent(enum TaskEventType event, u32 arg) {
     schedulerForceSwitchTask();
 }
 
-void taskResetEvent(struct Task *task) {
+void taskResetEvent(struct Task *task)
+{
     if (task == NULL || task->event.type == TaskEventNone)
         return;
 
@@ -506,11 +518,13 @@ void taskResetEvent(struct Task *task) {
     schedulerAddActiveTask(task);
 }
 
-void taskSaveState(u32 esp) {
+void taskSaveState(u32 esp)
+{
     currentTask->esp = esp;
 }
 
-u32 taskSwitch(struct Task *newTask) {
+u32 taskSwitch(struct Task *newTask)
+{
     taskSwitching = 0;
     currentTask = newTask;
 
@@ -522,7 +536,8 @@ u32 taskSwitch(struct Task *newTask) {
     return newTask->esp;
 }
 
-u32 taskHeapInc(s32 inc) {
+u32 taskHeapInc(s32 inc)
+{
     if (currentTask->pid == 0)
         return 0;
 
@@ -555,7 +570,8 @@ u32 taskHeapInc(s32 inc) {
     return heap->start + brk;
 }
 
-int taskHeapSet(u32 addr) {
+int taskHeapSet(u32 addr)
+{
     if (currentTask->pid == 0 || addr % PAGESIZE != 0)
         return -EFAULT;
 
@@ -567,14 +583,16 @@ int taskHeapSet(u32 addr) {
 }
 
 
-struct Task *getTaskByPid(pid_t pid) {
+struct Task *getTaskByPid(pid_t pid)
+{
     if (pid > TASK_MAX_PID || pid < 0)
         return NULL;
 
     return tasksTable[pid];
 }
 
-int taskChangeDirectory(const char *directory) {
+int taskChangeDirectory(const char *directory)
+{
     struct FsPath *newPath = fsResolvePath(directory);
     if (!newPath)
         return -ENOENT;
@@ -584,7 +602,8 @@ int taskChangeDirectory(const char *directory) {
     return 0;
 }
 
-int taskGetAvailableFd(struct Task *task) {
+int taskGetAvailableFd(struct Task *task)
+{
     struct Kobject **tmp = task->objectList;
     if (task->type == T_THREAD)
         tmp = task->parent->objectList;
@@ -600,7 +619,8 @@ int taskGetAvailableFd(struct Task *task) {
     return id;
 }
 
-struct Kobject *taskGetKObjectByFd(int fd) {
+struct Kobject *taskGetKObjectByFd(int fd)
+{
     if (fd >= MAX_NB_FILE || fd < 0)
         return NULL;
 
@@ -609,7 +629,8 @@ struct Kobject *taskGetKObjectByFd(int fd) {
     return currentTask->objectList[fd];
 }
 
-int taskSetKObjectByFd(int fd, struct Kobject *obj) {
+int taskSetKObjectByFd(int fd, struct Kobject *obj)
+{
     if (fd >= MAX_NB_FILE || fd < 0)
         return -EBADF;
 

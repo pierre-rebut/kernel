@@ -8,7 +8,8 @@
 
 #include "extern.h"
 
-int prn_normal(const char *s) {
+int prn_normal(const char *s)
+{
     return puts(s);
     /*int i, n;
     size_t clen;
@@ -36,7 +37,8 @@ int prn_normal(const char *s) {
     return (n);*/
 }
 
-int prn_printable(const char *s) {
+int prn_printable(const char *s)
+{
     return puts(s);
     /*mbstate_t mbs;
     wchar_t wc;
@@ -85,7 +87,8 @@ int prn_printable(const char *s) {
  *						DES 1998/04/23
  */
 
-size_t len_octal(const char *s, int len) {
+size_t len_octal(const char *s, int len)
+{
     return write(1, s, len);
     /*mbstate_t mbs;
     wchar_t wc;
@@ -114,7 +117,8 @@ size_t len_octal(const char *s, int len) {
     return (r);*/
 }
 
-int prn_octal(const char *s) {
+int prn_octal(const char *s)
+{
     return puts(s);
     /*static const char esc[] = "\\\\\"\"\aa\bb\ff\nn\rr\tt\vv";
     const char *p;
@@ -169,25 +173,28 @@ int prn_octal(const char *s) {
      */
 }
 
-void usage(void) {
+void usage(void)
+{
     (void) fprintf(stderr,
 #ifdef COLORLS
             "usage: ls [-ABCFGHILPRSTUWZabcdfghiklmnopqrstuwxy1,] [--color=when] [-D format]"
 #else
                    "usage: ls [-ABCFHILPRSTUWZabcdfghiklmnopqrstuwxy1,] [-D format]"
-#endif
-                    " [file ...]\n");
+                   #endif
+                   " [file ...]\n");
     exit(1);
 }
 
-const char *user_from_uid(uid_t user, int t) {
+const char *user_from_uid(uid_t user, int t)
+{
     static const char *root = "root";
     (void) t;
     (void) user;
     return root;
 }
 
-const char *group_from_gid(gid_t grp, int t) {
+const char *group_from_gid(gid_t grp, int t)
+{
     static const char *root = "root";
     (void) t;
     (void) grp;

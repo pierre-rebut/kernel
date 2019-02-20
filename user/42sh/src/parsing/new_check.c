@@ -8,11 +8,11 @@
 ** Last update Sun May 24 18:58:27 2015 Vincent Ganivet
 */
 
-#include <err.h>
 #include    "define.h"
 #include    "functions.h"
 
-int next_elem(char *str) {
+int next_elem(char *str)
+{
     int i;
 
     i = 0;
@@ -21,7 +21,8 @@ int next_elem(char *str) {
     return (find_char(str + i + 1, " ><\0") + i + 1);
 }
 
-int order_redir(int redir, int sec_redir) {
+int order_redir(int redir, int sec_redir)
+{
     if (redir == sec_redir || (redir == 3 && sec_redir == 2) ||
         (redir == 2 && sec_redir == 3))
         return (FAIL);
@@ -30,7 +31,8 @@ int order_redir(int redir, int sec_redir) {
     return (SUCCESS);
 }
 
-int count_redir(const char *str) {
+int count_redir(const char *str)
+{
     int i;
     int nb;
 
@@ -48,7 +50,8 @@ int count_redir(const char *str) {
     return (nb);
 }
 
-int binar_first(char *expr, int redir, int pipe) {
+int binar_first(char *expr, int redir, int pipe)
+{
     int sec_red;
 
     if (check_binary(expr) == FAIL) {
@@ -78,7 +81,8 @@ int binar_first(char *expr, int redir, int pipe) {
     return (ERROR_REDIR);
 }
 
-int check_expr(char *expr, int redir, int pipe) {
+int check_expr(char *expr, int redir, int pipe)
+{
     int sec_red;
 
     if ((sec_red = check_r_and_f(expr)) == FAIL) {
@@ -95,11 +99,9 @@ int check_expr(char *expr, int redir, int pipe) {
     }
     if (expr[find_char(expr + next_elem(expr), "><") + next_elem(expr)] == '\0') {
         return (redir);
-    }
-    else if ((redir = check_r_and_f(expr + find_char(expr + next_elem(expr), "><\0") + next_elem(expr))) == FAIL) {
+    } else if ((redir = check_r_and_f(expr + find_char(expr + next_elem(expr), "><\0") + next_elem(expr))) == FAIL) {
         return (FAIL);
-    }
-    else if ((redir = order_redir(redir, sec_red)) == FAIL) {
+    } else if ((redir = order_redir(redir, sec_red)) == FAIL) {
         return (FAIL);
     }
     if (pipe != 1) {

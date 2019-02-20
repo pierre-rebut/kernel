@@ -35,20 +35,21 @@
 /*
  * some characteristics about the display.
  */
-#define GRAPHIC_WIDTH	320
-#define GRAPHIC_HEIGHT	200
-#define FB_SIZE		(GRAPHIC_WIDTH * GRAPHIC_HEIGHT)
-#define PALETTE_SIZE	256
+#define GRAPHIC_WIDTH    320
+#define GRAPHIC_HEIGHT    200
+#define FB_SIZE        (GRAPHIC_WIDTH * GRAPHIC_HEIGHT)
+#define PALETTE_SIZE    256
 
 /*
  * image  structure. used  load_image, clear_image  and  draw_image to
  * manipulate images.
  */
 
-struct image {
-	unsigned int width;
-	unsigned int height;
-	unsigned char **data;
+struct image
+{
+    unsigned int width;
+    unsigned int height;
+    unsigned char **data;
 };
 
 /*
@@ -56,12 +57,13 @@ struct image {
  *
  */
 
-struct anim {
-	int nr_img;
-	int current_img;
-	unsigned long delay;
-	unsigned long jiffies;
-	struct image **imgs;
+struct anim
+{
+    int nr_img;
+    int current_img;
+    unsigned long delay;
+    unsigned long jiffies;
+    struct image **imgs;
 };
 
 
@@ -73,16 +75,17 @@ typedef unsigned int color_t;
 /*
  * some colors.
  */
-enum colors {
-	BLACK = 0,
-	WHITE = 255,
-	RED = 249,
-	GREEN = 250,
-	YELLOW = 251,
-	BLUE = 252,
-	PURPLE = 253,
-	AQUA = 254,
-	ORANGE = 23
+enum colors
+{
+    BLACK = 0,
+    WHITE = 255,
+    RED = 249,
+    GREEN = 250,
+    YELLOW = 251,
+    BLUE = 252,
+    PURPLE = 253,
+    AQUA = 254,
+    ORANGE = 23
 };
 
 /*
@@ -120,20 +123,20 @@ void draw_pixel(unsigned int x, unsigned int y, color_t color);
  * draw a line.
  */
 void draw_line(unsigned int x1, unsigned int y1,
-	       unsigned int x2, unsigned int y2, color_t color);
+               unsigned int x2, unsigned int y2, color_t color);
 
 /*
  * draw an empty rectangle.
  */
 void draw_rect(unsigned int x1, unsigned int y1,
-	       unsigned int x2, unsigned int y2, color_t color);
+               unsigned int x2, unsigned int y2, color_t color);
 
 /*
  * draw a solid rectangle.
  */
 void draw_fillrect(unsigned int x1, unsigned int y1,
-		   unsigned int x2, unsigned int y2,
-		   color_t color, color_t interior);
+                   unsigned int x2, unsigned int y2,
+                   color_t color, color_t interior);
 
 /*
  * load a Windows BITMAP (BMP) from file.
@@ -151,7 +154,7 @@ void clear_image(struct image *image);
  * display a loaded image with transparency.
  */
 void draw_image_alpha(struct image *image,
-		      unsigned int x, unsigned int y, unsigned int alpha);
+                      unsigned int x, unsigned int y, unsigned int alpha);
 
 /*
  * display a loaded image.
@@ -162,7 +165,7 @@ void draw_image(struct image *image, unsigned int x, unsigned int y);
  * draw some text.
  */
 void draw_text(const char *s,
-	       unsigned int x, unsigned int y, color_t fg, color_t bg);
+               unsigned int x, unsigned int y, color_t fg, color_t bg);
 
 /*
  * load an animation.
@@ -180,11 +183,11 @@ struct anim *load_anim(char *paths, int delay);
  * jiffies is the reference ticks counter which should
  * be incremented at every timer tick.
  */
-void draw_anim(struct anim * anim, int x, int y, unsigned long jiffies);
+void draw_anim(struct anim *anim, int x, int y, unsigned long jiffies);
 
 /*
  * video blue screen.
  */
 extern void (*blue_screen)(const char *message);
 
-#endif				/* !GRAPHIC_H_ */
+#endif                /* !GRAPHIC_H_ */

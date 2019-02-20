@@ -6,8 +6,11 @@
 #define KERNEL_EPITA_PIC_H
 
 void initPic();
+
 void allowIrq(int irq);
+
 void pic_eoi_master(int irq);
+
 void pic_eoi_slave(int irq);
 
 #endif //KERNEL_EPITA_PIC_H

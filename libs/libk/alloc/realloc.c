@@ -14,7 +14,8 @@
 
 #include "malloc.h"
 
-static void *allocnext(t_header *ptr, size_t size, t_header *tmpptr) {
+static void *allocnext(t_header *ptr, size_t size, t_header *tmpptr)
+{
     size_t tmp;
     t_header *new;
 
@@ -38,7 +39,8 @@ static void *allocnext(t_header *ptr, size_t size, t_header *tmpptr) {
     return ((void *) ptr + sizeof(t_header));
 }
 
-static void *reduce_size(t_header *ptr, size_t size) {
+static void *reduce_size(t_header *ptr, size_t size)
+{
     t_header *new;
     t_header *link;
     size_t oldsize;
@@ -56,7 +58,8 @@ static void *reduce_size(t_header *ptr, size_t size) {
     return ((void *) ptr + sizeof(t_header));
 }
 
-static void *allocnextnull(t_header *ptr, size_t size) {
+static void *allocnextnull(t_header *ptr, size_t size)
+{
     size_t sizeloop;
 
     sizeloop = 0;
@@ -72,7 +75,8 @@ static void *allocnextnull(t_header *ptr, size_t size) {
     return ((void *) ptr + sizeof(t_header));
 }
 
-static void *check_all(t_header *ptr, size_t size) {
+static void *check_all(t_header *ptr, size_t size)
+{
     void *tmp;
 
     if (ptr->size == size)
@@ -94,7 +98,8 @@ static void *check_all(t_header *ptr, size_t size) {
     }
 }
 
-void *realloc(void *ptr, size_t size) {
+void *realloc(void *ptr, size_t size)
+{
     void *new;
     t_header *pos;
 

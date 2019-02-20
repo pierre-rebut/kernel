@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <stdarg.h>
 #include <filestream.h>
 
 
@@ -21,19 +20,23 @@ static char sbrackset[] = " \t-\r]"; // Use range-style list
 static char cbrackset[] = "]";
 
 
-static int hextodec(int ch) {
+static int hextodec(int ch)
+{
     return isdigit(ch) ? ch : (ch & ~('a' - 'A')) - 'A' + 10 + '0';
 }
 
-static int inc(FILE *stream) {
+static int inc(FILE *stream)
+{
     return getc(stream);
 }
 
-static void uninc(int ch, FILE *stream) {
+static void uninc(int ch, FILE *stream)
+{
     if (ch != EOF) ungetc(ch, stream);
 }
 
-static int skipws(int *counter, FILE *stream) {
+static int skipws(int *counter, FILE *stream)
+{
     int ch;
 
     while (1) {
@@ -43,7 +46,8 @@ static int skipws(int *counter, FILE *stream) {
     }
 }
 
-int _input(FILE *stream, const char *format, va_list arglist) {
+int _input(FILE *stream, const char *format, va_list arglist)
+{
     char table[RANGESETSIZE];           // Which chars allowed for %[], %s
     char fltbuf[CVTBUFSIZE + 1];        // ASCII buffer for floats
     unsigned long number = 0;               // Temp hold-value
@@ -163,7 +167,7 @@ int _input(FILE *stream, const char *format, va_list arglist) {
             }
 
             if (!widthset || width) {
-                switch(comchr) {
+                switch (comchr) {
                     case 'c':
                         if (!widthset) {
                             ++widthset;
@@ -179,7 +183,7 @@ int _input(FILE *stream, const char *format, va_list arglist) {
                         goto scanit2;
 
                     case LEFT_BRACKET:
-                        scanptr = (char *)(++format);
+                        scanptr = (char *) (++format);
 
                         if (*scanptr == '^') {
                             ++scanptr;
@@ -199,9 +203,9 @@ int _input(FILE *stream, const char *format, va_list arglist) {
                         while (*scanptr != ']') {
                             rngch = *scanptr++;
 
-                            if (rngch != '-'|| !prevchar || *scanptr == ']') {
+                            if (rngch != '-' || !prevchar || *scanptr == ']') {
                                 table[(prevchar = rngch) >> 3] |= 1 << (rngch & 7);
-                            } else  {
+                            } else {
                                 // Handle a-z type set
                                 rngch = *scanptr++; // Get end of range
 
@@ -361,17 +365,16 @@ int _input(FILE *stream, const char *format, va_list arglist) {
                                     } else {
                                         ch = GETCH();
                                     }
-                                }
-                                else {
+                                } else {
                                     UNGETCH(ch);
                                 }
                             }
 
-                            if (negative) num64 = (unsigned long long ) (-(long long) num64);
+                            if (negative) num64 = (unsigned long long) (-(long long) num64);
                         } else {
                             while (!done_flag) {
                                 if (comchr == 'x' || comchr == 'p') {
-                                    if (isxdigit(ch))  {
+                                    if (isxdigit(ch)) {
                                         number = (number << 4);
                                         ch = hextodec(ch);
                                     } else {
@@ -439,7 +442,7 @@ int _input(FILE *stream, const char *format, va_list arglist) {
                     case 'f':
                     case 'g':
                         // Scan a float
-                        scanptr = (char *)fltbuf;
+                        scanptr = (char *) fltbuf;
 
                         if (ch == '-') {
                             *scanptr++ = '-';
@@ -455,7 +458,7 @@ int _input(FILE *stream, const char *format, va_list arglist) {
                         // Now get integral part
                         while (isdigit(ch) && width--) {
                             ++started;
-                            *scanptr++ = (char)ch;
+                            *scanptr++ = (char) ch;
                             ch = GETCH();
                         }
 
@@ -489,7 +492,7 @@ int _input(FILE *stream, const char *format, va_list arglist) {
 
                             while (isdigit(ch) && width--) {
                                 ++started;
-                                *scanptr++ = (char)ch;
+                                *scanptr++ = (char) ch;
                                 ch = GETCH();
                             }
                         }
@@ -547,7 +550,7 @@ int _input(FILE *stream, const char *format, va_list arglist) {
             }
         }
 
-        if ((ch == EOF) && ((*format != '%') || (*(format + 1) != 'n')))  break;
+        if ((ch == EOF) && ((*format != '%') || (*(format + 1) != 'n'))) break;
     }
 
     error_return:

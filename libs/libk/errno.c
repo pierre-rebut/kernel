@@ -41,7 +41,8 @@ static const char *errnoStr[] = {
 
 int errno = 0;
 
-const char *strerror(int e) {
+const char *strerror(int e)
+{
     e -= 1;
 
     if (e >= NB_ERRNO)

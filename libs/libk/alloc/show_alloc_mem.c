@@ -13,7 +13,8 @@
 
 #include "malloc.h"
 
-void show_alloc_mem() {
+void show_alloc_mem()
+{
     t_header *tmp;
 
     tmp = g_begin;
@@ -26,7 +27,8 @@ void show_alloc_mem() {
     }
 }
 
-int getpagesize() {
+int getpagesize()
+{
     static int pageSize = -1;
 
     if (pageSize == -1) {

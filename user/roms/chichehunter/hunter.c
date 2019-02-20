@@ -29,7 +29,8 @@
  * the splash screen with sexy chiche's face.
  */
 
-static int splash_screen(void) {
+static int splash_screen(void)
+{
     unsigned long t;
     struct image *imgchiche = load_image("chiche_big.bmp");
     struct image *imgchef = load_image("chef_big.bmp");
@@ -106,7 +107,8 @@ static int splash_screen(void) {
  * game loop.
  */
 
-static void game_loop(struct image *img) {
+static void game_loop(struct image *img)
+{
     unsigned long t;
     int px, py;
     int k;
@@ -298,7 +300,8 @@ static void game_loop(struct image *img) {
  * game entry point.
  */
 
-int main(int ac, char **av) {
+int main(int ac, char **av)
+{
     printf("ac = %d - av = %s\n", ac, av[0]);
     switch_graphic();
 

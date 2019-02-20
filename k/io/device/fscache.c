@@ -12,7 +12,8 @@
 
 struct FsCache *fsCacheList = NULL;
 
-static struct FsCache *findOrCreateFsCache(struct Device *device) {
+static struct FsCache *findOrCreateFsCache(struct Device *device)
+{
     struct FsCache *tmpCache = fsCacheList;
 
     while (tmpCache != NULL) {
@@ -41,7 +42,8 @@ static struct FsCache *findOrCreateFsCache(struct Device *device) {
     return tmpCache;
 }
 
-static struct FsCache *findFsCache(struct Device *device) {
+static struct FsCache *findFsCache(struct Device *device)
+{
     struct FsCache *tmpCache = fsCacheList;
 
     while (tmpCache != NULL) {
@@ -54,7 +56,8 @@ static struct FsCache *findFsCache(struct Device *device) {
     return NULL;
 }
 
-static struct FsCacheBlock *findFsCacheBlock(struct FsCache *fsCache, int offset) {
+static struct FsCacheBlock *findFsCacheBlock(struct FsCache *fsCache, int offset)
+{
     struct FsCacheBlock *tmpBlock = fsCache->dataBlock;
 
     while (tmpBlock != NULL) {
@@ -87,7 +90,8 @@ static struct FsCacheBlock *findFsCacheBlock(struct FsCache *fsCache, int offset
     return NULL;
 }
 
-static struct FsCacheBlock *createFsCacheBlock(struct FsCache *fsCache, void *data, int nblocks, int offset) {
+static struct FsCacheBlock *createFsCacheBlock(struct FsCache *fsCache, void *data, int nblocks, int offset)
+{
     LOG("[fsCache] create new block cache: %d\n", offset);
 
     struct FsCacheBlock *tmpBlock = kmalloc(sizeof(struct FsCacheBlock), 0, "newTmpBlock");
@@ -126,7 +130,8 @@ static struct FsCacheBlock *createFsCacheBlock(struct FsCache *fsCache, void *da
     return tmpBlock;
 }
 
-int fsCacheRead(struct Device *device, void *buffer, int nblocks, int offset) {
+int fsCacheRead(struct Device *device, void *buffer, int nblocks, int offset)
+{
     struct FsCache *fsCache = findOrCreateFsCache(device);
     if (fsCache == NULL)
         return -1;
@@ -153,7 +158,8 @@ int fsCacheRead(struct Device *device, void *buffer, int nblocks, int offset) {
     return nblocks;
 }
 
-int fsCacheWrite(struct Device *device, const void *buffer, int nblocks, int offset) {
+int fsCacheWrite(struct Device *device, const void *buffer, int nblocks, int offset)
+{
     struct FsCache *fsCache = findOrCreateFsCache(device);
     if (fsCache == NULL)
         return -1;
@@ -177,7 +183,8 @@ int fsCacheWrite(struct Device *device, const void *buffer, int nblocks, int off
     return nblocks;
 }
 
-int fsCacheFlush(struct Device *device) {
+int fsCacheFlush(struct Device *device)
+{
     struct FsCache *fsCache = findFsCache(device);
     if (fsCache == NULL)
         return 0;
@@ -206,7 +213,8 @@ int fsCacheFlush(struct Device *device) {
     return 0;
 }
 
-static void fsCacheSyncDevice(struct FsCache *fsCache) {
+static void fsCacheSyncDevice(struct FsCache *fsCache)
+{
     struct FsCacheBlock *tmpBlock = fsCache->dataBlock;
 
     while (tmpBlock != NULL) {
@@ -220,7 +228,8 @@ static void fsCacheSyncDevice(struct FsCache *fsCache) {
     }
 }
 
-void fsCacheSync() {
+void fsCacheSync()
+{
     struct FsCache *tmpCache = fsCacheList;
 
     while (tmpCache != NULL) {

@@ -4,7 +4,8 @@
 
 #include <string.h>
 
-int memcmp(const void *s1, const void *s2, u32 n) {
+int memcmp(const void *s1, const void *s2, u32 n)
+{
     const char *d1 = s1;
     const char *d2 = s2;
 
@@ -15,7 +16,8 @@ int memcmp(const void *s1, const void *s2, u32 n) {
     return 0;
 }
 
-void *memcpy(void *dest, const void *src, u32 n) {
+void *memcpy(void *dest, const void *src, u32 n)
+{
     const char *s = src;
     char *d = dest;
 

@@ -29,7 +29,8 @@
  * the splash screen with sexy chiche's face.
  */
 
-static void splash_screen(void) {
+static void splash_screen(void)
+{
     unsigned long t;
     struct image *img = load_image("/chiche.bmp");
     int blink = 0;
@@ -70,7 +71,8 @@ static void splash_screen(void) {
  * game loop.
  */
 
-static void game_loop(void) {
+static void game_loop(void)
+{
     unsigned long t;
     struct image *ball = load_image("/ball.bmp");
     int player1;
@@ -218,7 +220,8 @@ static void game_loop(void) {
  * game entry point.
  */
 
-int main(void) {
+int main(void)
+{
 #if 0
     unsigned long t;
 

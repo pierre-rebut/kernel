@@ -16,7 +16,8 @@
 #include "define.h"
 #include "functions.h"
 
-int parser(char *cmd) {
+int parser(char *cmd)
+{
     int ret;
     char *tmp;
 
@@ -32,7 +33,8 @@ int parser(char *cmd) {
         return (SUCCESS);
 }
 
-int check_ex(char *str, int *exit_val) {
+int check_ex(char *str, int *exit_val)
+{
     if (check_nb(str) == 0)
         *exit_val = atoi(str);
     else {
@@ -42,7 +44,8 @@ int check_ex(char *str, int *exit_val) {
     return (0);
 }
 
-int exec_line(char *cmd, t_env *env, int *exit_val) {
+int exec_line(char *cmd, t_env *env, int *exit_val)
+{
     int ret;
     char **tab;
     t_cmd *lst;
@@ -67,7 +70,8 @@ int exec_line(char *cmd, t_env *env, int *exit_val) {
     return (ret);
 }
 
-int check_tab(char **tab, int i, int value) {
+int check_tab(char **tab, int i, int value)
+{
     if (tab[i + 1] != NULL) {
         if (strcmp(tab[i + 1], ";") == 0) {
             return (1);

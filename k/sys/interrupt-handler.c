@@ -4,9 +4,6 @@
 
 #include "io/pic.h"
 #include "sys/idt.h"
-#include "io/keyboard.h"
-#include "io/pit.h"
-#include "sys/syscall.h"
 #include "task.h"
 #include "allocator.h"
 
@@ -17,7 +14,8 @@
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
-struct InterruptList {
+struct InterruptList
+{
     u32 id;
 
     void (*fct)(struct esp_context *);
@@ -51,7 +49,8 @@ static char *exceptionList[] = {
         "Virtualization Exception"
 };
 
-static void quitTask(void) {
+static void quitTask(void)
+{
     if (currentTask == NULL)
         return;
 
@@ -65,7 +64,8 @@ static void quitTask(void) {
     taskExit();
 }
 
-static void isr_exception_handler(struct esp_context *r) {
+static void isr_exception_handler(struct esp_context *r)
+{
     if (r->int_no > 20)
         klog("[INT] %s\n", exceptionList[15]);
     else
@@ -73,7 +73,7 @@ static void isr_exception_handler(struct esp_context *r) {
 
     klog("[INT] err code: %u eip: %X\n", r->err_code, r->eip);
     klog("[INT] edi: %X esi: %X ebp: %X eax: %X ebx: %X ecx: %X edx: %X\n", r->edi, r->esi, r->ebp, r->eax,
-                  r->ebx, r->ecx, r->edx);
+         r->ebx, r->ecx, r->edx);
     klog("[INT] cs: %x  ds: %x  es: %x  Fs: %x  gs: %x  ss: %x\n", r->cs, r->ds, r->es, r->fs, r->gs, r->ss);
     klog("[INT] eflags: %X  useresp: %X\n", r->eflags, r->useresp);
 
@@ -81,7 +81,8 @@ static void isr_exception_handler(struct esp_context *r) {
     quitTask();
 }
 
-int interruptRegister(u32 int_no, void (*fct)(struct esp_context *)) {
+int interruptRegister(u32 int_no, void (*fct)(struct esp_context *))
+{
     struct InterruptList *newElem = kmalloc(sizeof(struct InterruptList), 0, "InterruptList");
     if (newElem == NULL)
         return -1;
@@ -93,7 +94,8 @@ int interruptRegister(u32 int_no, void (*fct)(struct esp_context *)) {
     return 0;
 }
 
-static void executeInterruptFromLis(struct esp_context *ctx) {
+static void executeInterruptFromLis(struct esp_context *ctx)
+{
     struct InterruptList *elem = intList;
     while (elem != NULL) {
         if (elem->id == ctx->int_no) {
@@ -105,7 +107,8 @@ static void executeInterruptFromLis(struct esp_context *ctx) {
     klog("Interrupt not found: %u\n", ctx->int_no);
 }
 
-u32 interrupt_handler(u32 esp) {
+u32 interrupt_handler(u32 esp)
+{
     struct esp_context *ctx = (struct esp_context *) esp;
     LOG("[INT] handle interrupt %d\n", ctx->int_no);
 

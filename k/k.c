@@ -3,7 +3,6 @@
 #include <multiboot.h>
 #include <io/device/ata.h>
 #include <sys/syscall.h>
-#include <include/multiboot.h>
 #include <io/fs/procfilesystem.h>
 #include <io/fs/devfilesystem.h>
 #include <io/device/device.h>
@@ -11,7 +10,6 @@
 
 #include "io/serial.h"
 #include "sys/gdt.h"
-#include "sys/idt.h"
 #include "io/pic.h"
 #include "io/keyboard.h"
 #include "io/pit.h"
@@ -20,14 +18,14 @@
 #include "sys/allocator.h"
 #include "sys/physical-memory.h"
 #include "sys/paging.h"
-#include "sheduler.h"
 #include "sys/console.h"
 #include "tty.h"
 
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
-static int k_init(const multiboot_info_t *info) {
+static int k_init(const multiboot_info_t *info)
+{
     initSerial(38400);
     LOG("Init Serial\n");
 
@@ -92,7 +90,8 @@ static int k_init(const multiboot_info_t *info) {
     return 0;
 }
 
-int k_volume() {
+int k_volume()
+{
     struct Fs *extfs = fsGetFileSystemByName("ext2fs");
     struct Device *dev = deviceGetByName("sda");
 
@@ -122,7 +121,8 @@ int k_volume() {
     return 0;
 }
 
-void k_main(unsigned long magic, multiboot_info_t *info) {
+void k_main(unsigned long magic, multiboot_info_t *info)
+{
     taskSwitching = 0;
 
     if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
@@ -138,7 +138,7 @@ void k_main(unsigned long magic, multiboot_info_t *info) {
     LOG("\n### Trying init binary [%s] ###\n\n", (char *) info->cmdline);
 
     const char *av[] = {
-            (char*)info->cmdline,
+            (char *) info->cmdline,
             NULL
     };
 

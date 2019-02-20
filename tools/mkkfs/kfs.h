@@ -23,51 +23,57 @@
 
 #define __packed __attribute__((__packed__))
 
-struct kfs_block {
-	u32 idx;
-	u32 usage;
-	u32 cksum;
-	u8 data[KFS_BLK_DATA_SZ];
+struct kfs_block
+{
+    u32 idx;
+    u32 usage;
+    u32 cksum;
+    u8 data[KFS_BLK_DATA_SZ];
 } __packed;
 
-struct kfs_iblock {
-	u32 idx;
-	u32 blk_cnt;
-	u32 blks[KFS_INDIRECT_BLK_CNT];
-	u32 cksum;
+struct kfs_iblock
+{
+    u32 idx;
+    u32 blk_cnt;
+    u32 blks[KFS_INDIRECT_BLK_CNT];
+    u32 cksum;
 } __packed;
 
-struct kfs_inode {
-	u32 inumber;
-	char filename[KFS_FNAME_SZ];
-	u32 file_sz;
-	u32 idx;
-	u32 blk_cnt;
-	u32 next_inode;
-	u32 d_blk_cnt;
-	u32 i_blk_cnt;
-	u32 d_blks[KFS_DIRECT_BLK];
-	u32 i_blks[KFS_INDIRECT_BLK];
-	u32 cksum;
+struct kfs_inode
+{
+    u32 inumber;
+    char filename[KFS_FNAME_SZ];
+    u32 file_sz;
+    u32 idx;
+    u32 blk_cnt;
+    u32 next_inode;
+    u32 d_blk_cnt;
+    u32 i_blk_cnt;
+    u32 d_blks[KFS_DIRECT_BLK];
+    u32 i_blks[KFS_INDIRECT_BLK];
+    u32 cksum;
 } __packed;
 
-struct kfs_blk {
-	union {
-		struct kfs_block blk;
-		struct kfs_iblock iblk;
-		struct kfs_inode ino;
-		u8 whole_blk[KFS_BLK_SZ];
-	};
+struct kfs_blk
+{
+    union
+    {
+        struct kfs_block blk;
+        struct kfs_iblock iblk;
+        struct kfs_inode ino;
+        u8 whole_blk[KFS_BLK_SZ];
+    };
 };
 
-struct kfs_superblock {
-	u32 magic;
-	char name[KFS_NAME_SZ];
-	s32 ctime;
-	u32 blk_cnt;
-	u32 inode_cnt;
-	u32 inode_idx;
-	u32 cksum;
+struct kfs_superblock
+{
+    u32 magic;
+    char name[KFS_NAME_SZ];
+    s32 ctime;
+    u32 blk_cnt;
+    u32 inode_cnt;
+    u32 inode_idx;
+    u32 cksum;
 } __packed;
 
 #define ADLER32_MOD 65521
@@ -77,16 +83,16 @@ struct kfs_superblock {
  */
 static inline unsigned int kfs_checksum(const void *data, u32 size)
 {
-	unsigned int a = 1;
-	unsigned int b = 0;
-	u32 i = 0;
-	const u8 *buf = data;
+    unsigned int a = 1;
+    unsigned int b = 0;
+    u32 i = 0;
+    const u8 *buf = data;
 
-	while (i < size) {
-		a = (a + buf[i++]) % ADLER32_MOD;
-		b = (a + b) % ADLER32_MOD;
-	}
-	return (b << 16) | a;
+    while (i < size) {
+        a = (a + buf[i++]) % ADLER32_MOD;
+        b = (a + b) % ADLER32_MOD;
+    }
+    return (b << 16) | a;
 }
 
 #endif

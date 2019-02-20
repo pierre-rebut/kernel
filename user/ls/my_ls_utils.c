@@ -10,15 +10,13 @@
 
 #include <string.h>
 #include <unistd.h>
-#include <stdlib.h>
 #include <alloc.h>
-
-#include "kstd.h"
 
 
 #include "include/my_ls.h"
 
-int len_tab(char **tab) {
+int len_tab(char **tab)
+{
     int i;
 
     i = 0;
@@ -27,7 +25,8 @@ int len_tab(char **tab) {
     return (i);
 }
 
-int my_swap(char **tab, int i, int *bool) {
+int my_swap(char **tab, int i, int *bool)
+{
     char *tmp;
 
     tmp = tab[i + 1];
@@ -37,7 +36,8 @@ int my_swap(char **tab, int i, int *bool) {
     return (0);
 }
 
-char **do_ls_allon(t_option *opt, DIR *dirp, int nb_file) {
+char **do_ls_allon(t_option *opt, DIR *dirp, int nb_file)
+{
     char **tab;
     struct dirent *entry;
     int i;
@@ -60,7 +60,8 @@ char **do_ls_allon(t_option *opt, DIR *dirp, int nb_file) {
     return (tab);
 }
 
-int get_total_ll(t_option *opt, char **tab, char *dir) {
+int get_total_ll(t_option *opt, char **tab, char *dir)
+{
     struct stat sb;
     int i;
     char *direc;

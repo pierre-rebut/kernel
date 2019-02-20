@@ -9,7 +9,8 @@
 
 #include <types.h>
 
-typedef struct {
+typedef struct
+{
     int fd;
     int flags;
 
@@ -21,23 +22,37 @@ typedef struct {
 } FILE;
 
 FILE *fdopen(int fd);
+
 FILE *fopen(const char *pathname, int flags, mode_t mode);
+
 FILE *fopenBuf(char *buffer, u32 size);
+
 int fclose(FILE *stream);
+
 int getc(FILE *stream);
+
 int getchar();
+
 int ungetc(int c, FILE *stream);
+
 int ferror(FILE *stream);
+
 int feof(FILE *stream);
+
 void clearerr(FILE *stream);
+
 int fflush(FILE *stream);
 
 size_t fread(char *buf, size_t size, size_t nmemb, FILE *stream);
+
 size_t fwrite(const char *buf, size_t size, size_t nmemb, FILE *stream);
+
 int fprintf(FILE *stream, const char *fmt, ...);
+
 int fputchar(FILE *stream, char c);
 
 char *getline(FILE *stream);
+
 char *getdelim(FILE *stream, char delim);
 
 extern FILE *stdin;

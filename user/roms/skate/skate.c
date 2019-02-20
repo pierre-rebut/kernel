@@ -28,7 +28,8 @@ unsigned long jiffies = 0;
 char *trick[10];
 int hhh[10];
 
-struct {
+struct
+{
     enum e_gfx trick;
     char *name;
     int points;
@@ -41,7 +42,8 @@ struct {
         {TRICK_NONE, NULL,      0,  0}
 };
 
-static void draw_trick(void) {
+static void draw_trick(void)
+{
     int i;
     int j;
 
@@ -74,7 +76,8 @@ static void draw_trick(void) {
     }
 }
 
-static void splash_screen(void) {
+static void splash_screen(void)
+{
     unsigned long t;
     int blink = 0;
     struct image *logo = load_image("logo.bmp");
@@ -98,7 +101,8 @@ static void splash_screen(void) {
     }
 }
 
-void speed(void) {
+void speed(void)
+{
     int x = 10;
     int y = 120;
 
@@ -116,7 +120,8 @@ void speed(void) {
         draw_fillrect(x, y - 60, x + 7, y - 50, BLACK, AQUA);
 }
 
-void draw_score(void) {
+void draw_score(void)
+{
     char buf[12] = {0};
 
     draw_trick();
@@ -143,7 +148,8 @@ void draw_score(void) {
  * the splash screen with sexy chiche's face.
  */
 
-static void game_loop(void) {
+static void game_loop(void)
+{
     while (1) {
         unsigned long t = gettick();
         if (!skater.trick_delay)
@@ -191,7 +197,8 @@ static void game_loop(void) {
  * game entry point.
  */
 
-int main(void) {
+int main(void)
+{
     int i;
 
     gfx_init();

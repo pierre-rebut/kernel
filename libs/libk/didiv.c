@@ -11,10 +11,11 @@ typedef union
     {
         unsigned int high;
         unsigned int low;
-    }s;
+    } s;
 } udwords;
 
-unsigned long long __udivmoddi4(unsigned long long a, unsigned long long b, unsigned long long *rem) {
+unsigned long long __udivmoddi4(unsigned long long a, unsigned long long b, unsigned long long *rem)
+{
     const unsigned n_uword_bits = sizeof(unsigned int) * CHAR_BIT;
     const unsigned n_udword_bits = sizeof(unsigned long long) * CHAR_BIT;
     udwords n;
@@ -25,10 +26,8 @@ unsigned long long __udivmoddi4(unsigned long long a, unsigned long long b, unsi
     udwords r;
     unsigned sr;
     /* special cases, X is unknown, K != 0 */
-    if (n.s.high == 0)
-    {
-        if (d.s.high == 0)
-        {
+    if (n.s.high == 0) {
+        if (d.s.high == 0) {
             /* 0 X
              * ---
              * 0 X
@@ -46,10 +45,8 @@ unsigned long long __udivmoddi4(unsigned long long a, unsigned long long b, unsi
         return 0;
     }
     /* n.s.high != 0 */
-    if (d.s.low == 0)
-    {
-        if (d.s.high == 0)
-        {
+    if (d.s.low == 0) {
+        if (d.s.high == 0) {
             /* K X
              * ---
              * 0 0
@@ -59,14 +56,12 @@ unsigned long long __udivmoddi4(unsigned long long a, unsigned long long b, unsi
             return n.s.high / d.s.low;
         }
         /* d.s.high != 0 */
-        if (n.s.low == 0)
-        {
+        if (n.s.low == 0) {
             /* K 0
              * ---
              * K 0
              */
-            if (rem)
-            {
+            if (rem) {
                 r.s.high = n.s.high % d.s.high;
                 r.s.low = 0;
                 *rem = r.all;
@@ -79,8 +74,7 @@ unsigned long long __udivmoddi4(unsigned long long a, unsigned long long b, unsi
          */
         if ((d.s.high & (d.s.high - 1)) == 0)     /* if d is a power of 2 */
         {
-            if (rem)
-            {
+            if (rem) {
                 r.s.low = n.s.low;
                 r.s.high = n.s.high & (d.s.high - 1);
                 *rem = r.all;
@@ -93,8 +87,7 @@ unsigned long long __udivmoddi4(unsigned long long a, unsigned long long b, unsi
          */
         sr = __builtin_clz(d.s.high) - __builtin_clz(n.s.high);
         /* 0 <= sr <= n_uword_bits - 2 or sr large */
-        if (sr > n_uword_bits - 2)
-        {
+        if (sr > n_uword_bits - 2) {
             if (rem)
                 *rem = n.all;
             return 0;
@@ -107,11 +100,9 @@ unsigned long long __udivmoddi4(unsigned long long a, unsigned long long b, unsi
         /* r.all = n.all >> sr; */
         r.s.high = n.s.high >> sr;
         r.s.low = (n.s.high << (n_uword_bits - sr)) | (n.s.low >> sr);
-    }
-    else  /* d.s.low != 0 */
+    } else  /* d.s.low != 0 */
     {
-        if (d.s.high == 0)
-        {
+        if (d.s.high == 0) {
             /* K X
              * ---
              * 0 K
@@ -136,21 +127,18 @@ unsigned long long __udivmoddi4(unsigned long long a, unsigned long long b, unsi
              * q.all = n.all << (n_udword_bits - sr);
              * r.all = n.all >> sr;
              */
-            if (sr == n_uword_bits)
-            {
+            if (sr == n_uword_bits) {
                 q.s.low = 0;
                 q.s.high = n.s.low;
                 r.s.high = 0;
                 r.s.low = n.s.high;
-            }
-            else if (sr < n_uword_bits)  // 2 <= sr <= n_uword_bits - 1
+            } else if (sr < n_uword_bits)  // 2 <= sr <= n_uword_bits - 1
             {
                 q.s.low = 0;
                 q.s.high = n.s.low << (n_uword_bits - sr);
                 r.s.high = n.s.high >> sr;
                 r.s.low = (n.s.high << (n_uword_bits - sr)) | (n.s.low >> sr);
-            }
-            else              // n_uword_bits + 1 <= sr <= n_udword_bits - 1
+            } else              // n_uword_bits + 1 <= sr <= n_udword_bits - 1
             {
                 q.s.low = n.s.low << (n_udword_bits - sr);
                 q.s.high = (n.s.high << (n_udword_bits - sr)) |
@@ -158,17 +146,14 @@ unsigned long long __udivmoddi4(unsigned long long a, unsigned long long b, unsi
                 r.s.high = 0;
                 r.s.low = n.s.high >> (sr - n_uword_bits);
             }
-        }
-        else
-        {
+        } else {
             /* K X
              * ---
              * K K
              */
             sr = __builtin_clz(d.s.high) - __builtin_clz(n.s.high);
             /* 0 <= sr <= n_uword_bits - 1 or sr large */
-            if (sr > n_uword_bits - 1)
-            {
+            if (sr > n_uword_bits - 1) {
                 if (rem)
                     *rem = n.all;
                 return 0;
@@ -177,14 +162,11 @@ unsigned long long __udivmoddi4(unsigned long long a, unsigned long long b, unsi
             /* 1 <= sr <= n_uword_bits */
             /*  q.all = n.all << (n_udword_bits - sr); */
             q.s.low = 0;
-            if (sr == n_uword_bits)
-            {
+            if (sr == n_uword_bits) {
                 q.s.high = n.s.low;
                 r.s.high = 0;
                 r.s.low = n.s.high;
-            }
-            else
-            {
+            } else {
                 q.s.high = n.s.low << (n_uword_bits - sr);
                 r.s.high = n.s.high >> sr;
                 r.s.low = (n.s.high << (n_uword_bits - sr)) | (n.s.low >> sr);
@@ -198,13 +180,12 @@ unsigned long long __udivmoddi4(unsigned long long a, unsigned long long b, unsi
      * 1 <= sr <= n_udword_bits - 1
      */
     unsigned int carry = 0;
-    for (; sr > 0; --sr)
-    {
+    for (; sr > 0; --sr) {
         /* r:q = ((r:q)  << 1) | carry */
-        r.s.high = (r.s.high << 1) | (r.s.low  >> (n_uword_bits - 1));
-        r.s.low  = (r.s.low  << 1) | (q.s.high >> (n_uword_bits - 1));
-        q.s.high = (q.s.high << 1) | (q.s.low  >> (n_uword_bits - 1));
-        q.s.low  = (q.s.low  << 1) | carry;
+        r.s.high = (r.s.high << 1) | (r.s.low >> (n_uword_bits - 1));
+        r.s.low = (r.s.low << 1) | (q.s.high >> (n_uword_bits - 1));
+        q.s.high = (q.s.high << 1) | (q.s.low >> (n_uword_bits - 1));
+        q.s.low = (q.s.low << 1) | carry;
         /* carry = 0;
          * if (r.all >= d.all)
          * {
@@ -212,7 +193,7 @@ unsigned long long __udivmoddi4(unsigned long long a, unsigned long long b, unsi
          *      carry = 1;
          * }
          */
-        const long long s = (long long)(d.all - r.all - 1) >> (n_udword_bits - 1);
+        const long long s = (long long) (d.all - r.all - 1) >> (n_udword_bits - 1);
         carry = s & 1;
         r.all -= d.all & s;
     }
@@ -222,7 +203,8 @@ unsigned long long __udivmoddi4(unsigned long long a, unsigned long long b, unsi
     return q.all;
 }
 
-long long __divdi3(long long a, long long b) {
+long long __divdi3(long long a, long long b)
+{
     const int bits_in_dword_m1 = (int) (sizeof(long long) * CHAR_BIT) - 1;
     long long s_a = a >> bits_in_dword_m1;           /* s_a = a < 0 ? -1 : 0 */
     long long s_b = b >> bits_in_dword_m1;           /* s_b = b < 0 ? -1 : 0 */
@@ -232,13 +214,15 @@ long long __divdi3(long long a, long long b) {
     return (__udivmoddi4(a, b, (unsigned long long *) 0) ^ s_a) - s_a;  /* negate if s_a == -1 */
 }
 
-long long __divmoddi4(long long a, long long b, long long *rem) {
+long long __divmoddi4(long long a, long long b, long long *rem)
+{
     long long d = __divdi3(a, b);
     *rem = a - (d * b);
     return d;
 }
 
-long long __moddi3(long long a, long long b) {
+long long __moddi3(long long a, long long b)
+{
     const int bits_in_dword_m1 = (int) (sizeof(long long) * CHAR_BIT) - 1;
     long long s = b >> bits_in_dword_m1;  /* s = b < 0 ? -1 : 0 */
     b = (b ^ s) - s;                   /* negate if s == -1 */

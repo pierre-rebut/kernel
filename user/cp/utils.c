@@ -6,7 +6,6 @@
 #include <err.h>
 #include <stdio.h>
 #include <filestream.h>
-#include <stdlib.h>
 #include <string.h>
 #include <alloc.h>
 #include "extern.h"
@@ -28,7 +27,8 @@
  */
 #define BUFSIZE_SMALL (maxphys)
 
-int copy_file(const FTSENT *entp, int dne) {
+int copy_file(const FTSENT *entp, int dne)
+{
     static char *buf = NULL;
     static size_t bufsize;
     struct stat *fs;
@@ -217,7 +217,8 @@ int copy_file(const FTSENT *entp, int dne) {
     return (rval);
 }
 
-int copy_link(const FTSENT *p, int exists) {
+int copy_link(const FTSENT *p, int exists)
+{
     // int len;
     char llink[MAXPATHLEN];
 
@@ -242,7 +243,8 @@ int copy_link(const FTSENT *p, int exists) {
     return (pflag ? setfile(p->fts_statp, -1) : 0);
 }
 
-int copy_fifo(struct stat *from_stat, int exists) {
+int copy_fifo(struct stat *from_stat, int exists)
+{
 
     if (exists && nflag) {
         if (vflag)
@@ -260,7 +262,8 @@ int copy_fifo(struct stat *from_stat, int exists) {
     return (pflag ? setfile(from_stat, -1) : 0);
 }
 
-int copy_special(struct stat *from_stat, int exists) {
+int copy_special(struct stat *from_stat, int exists)
+{
 
     if (exists && nflag) {
         if (vflag)
@@ -278,7 +281,8 @@ int copy_special(struct stat *from_stat, int exists) {
     return (pflag ? setfile(from_stat, -1) : 0);
 }
 
-int setfile(struct stat *fs, int fd) {
+int setfile(struct stat *fs, int fd)
+{
     //static struct timespec tspec[2];
     struct stat ts;
     int rval, gotstat, islink, fdval;
@@ -337,7 +341,8 @@ int setfile(struct stat *fs, int fd) {
     return (rval);
 }
 
-int preserve_fd_acls(int source_fd, int dest_fd) {
+int preserve_fd_acls(int source_fd, int dest_fd)
+{
     /*acl_t acl;
     acl_type_t acl_type;
     int acl_supported = 0, ret, trivial;
@@ -387,7 +392,8 @@ int preserve_fd_acls(int source_fd, int dest_fd) {
     return (0);
 }
 
-int preserve_dir_acls(struct stat *fs, char *source_dir, char *dest_dir) {
+int preserve_dir_acls(struct stat *fs, char *source_dir, char *dest_dir)
+{
     (void) fs;
     (void) source_dir;
     (void) dest_dir;
@@ -476,13 +482,14 @@ int preserve_dir_acls(struct stat *fs, char *source_dir, char *dest_dir) {
     return (0);
 }
 
-void usage(void) {
+void usage(void)
+{
 
     (void) fprintf(stderr, "%s\n%s\n",
                    "usage: cp [-R [-H | -L | -P]] [-f | -i | -n] [-alpsvx] "
-                           "source_file target_file",
+                   "source_file target_file",
                    "       cp [-R [-H | -L | -P]] [-f | -i | -n] [-alpsvx] "
-                           "source_file ... "
-                           "target_directory");
+                   "source_file ... "
+                   "target_directory");
     exit(1);
 }

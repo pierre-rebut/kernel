@@ -3,7 +3,8 @@
 
 #include "types.h"
 
-struct melody {
+struct melody
+{
     unsigned long freq;
     unsigned long duration;
 };
@@ -13,7 +14,8 @@ struct melody {
 */
 
 /* console */
-enum e_cons_codes {
+enum e_cons_codes
+{
     CONS_ESCAPE = 255,
     CONS_CLEAR = 1,
     CONS_COLOR = 2,
@@ -31,11 +33,12 @@ enum e_cons_codes {
     CONS_LIGHT = (1 << 3)
 };
 
-#define CONS_FRONT(Color)	(Color)
-#define CONS_BACK(Color)	(Color << 4)
+#define CONS_FRONT(Color)    (Color)
+#define CONS_BACK(Color)    (Color << 4)
 
 /* keyboard */
-enum e_kbd_codes {
+enum e_kbd_codes
+{
     KEY_ESC = 1,
     KEY_F1 = 59,
     KEY_F2 = 60,
@@ -78,37 +81,40 @@ enum e_kbd_codes {
     KEY_SUPPR = 83,
 };
 
-enum e_k_mode {
+enum e_k_mode
+{
     KEY_PRESSED,
     KEY_RELEASED,
 };
 
 /* mouse */
-enum e_mouse_codes {
+enum e_mouse_codes
+{
     BUTTON_LEFT = 1,
     BUTTON_RIGHT = 2
 };
 
-enum SysConfigInfo {
+enum SysConfigInfo
+{
     _SC_PHYS_PAGES,
     _SC_PAGESIZE
 };
 
 /* misc */
-#define O_ACCMODE	   0003
-#define O_RDONLY	     00
-#define O_WRONLY	     01
-#define O_RDWR		     02
+#define O_ACCMODE       0003
+#define O_RDONLY         00
+#define O_WRONLY         01
+#define O_RDWR             02
 #define O_CREAT        0100
-#define O_EXCL		   0200
-#define O_TRUNC	      01000
-#define O_APPEND	  02000
+#define O_EXCL           0200
+#define O_TRUNC          01000
+#define O_APPEND      02000
 
-#define SEEK_SET	0
-#define SEEK_CUR	1
-#define SEEK_END	2
-#define VIDEO_GRAPHIC	0
-#define VIDEO_TEXT	1
+#define SEEK_SET    0
+#define SEEK_CUR    1
+#define SEEK_END    2
+#define VIDEO_GRAPHIC    0
+#define VIDEO_TEXT    1
 
 #define MAXPATHLEN 255
 

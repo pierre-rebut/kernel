@@ -10,9 +10,11 @@
 #include <multiboot.h>
 
 void initMemory();
+
 void switchTSS(u32 esp0, u32 esp, u32 ss);
 
-struct gdt_entry {
+struct gdt_entry
+{
     u16 limit_low;
     u16 base_low;
     u8 base_mid;
@@ -22,7 +24,8 @@ struct gdt_entry {
     u8 base_high;
 } __attribute__((packed));
 
-struct tss_entry {
+struct tss_entry
+{
     u32 prev_tss;
     u32 esp0;
     u32 ss0;

@@ -7,7 +7,8 @@
 
 #include <types.h>
 
-typedef struct {
+typedef struct
+{
     int fd;
 
     u32 size;
@@ -19,7 +20,9 @@ typedef struct {
 } DIR;
 
 DIR *opendir(const char *name);
+
 int closedir(DIR *dir);
-struct dirent* readdir(DIR *dir);
+
+struct dirent *readdir(DIR *dir);
 
 #endif //KERNEL_DIRENT_H

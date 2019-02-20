@@ -16,7 +16,8 @@
 
 #include "include/my_ls.h"
 
-int do_file(t_option *opt, char *file) {
+int do_file(t_option *opt, char *file)
+{
     char *direc;
     int fd;
 
@@ -32,7 +33,8 @@ int do_file(t_option *opt, char *file) {
     return (1);
 }
 
-char *my_directory(char *address, char *name) {
+char *my_directory(char *address, char *name)
+{
     int i;
     int o;
     char *direc;
@@ -53,7 +55,8 @@ char *my_directory(char *address, char *name) {
     return (direc);
 }
 
-int format_ll2(char *file, char *name) {
+int format_ll2(char *file, char *name)
+{
     struct stat sb;
 
     if (stat(file, &sb) == -1)
@@ -64,7 +67,8 @@ int format_ll2(char *file, char *name) {
     return (1);
 }
 
-int format_ll(char *entry, char *dir) {
+int format_ll(char *entry, char *dir)
+{
     char *direc;
 
     direc = my_directory(dir, entry);

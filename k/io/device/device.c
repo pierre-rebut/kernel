@@ -15,12 +15,14 @@
 static struct DeviceDriver *driverList = NULL;
 static struct List deviceList = CREATE_LIST();
 
-void deviceDriverRegister(struct DeviceDriver *driver) {
+void deviceDriverRegister(struct DeviceDriver *driver)
+{
     driver->next = driverList;
     driverList = driver;
 }
 
-struct DeviceDriver *deviceGetDeviceDriverByIndex(u32 index) {
+struct DeviceDriver *deviceGetDeviceDriverByIndex(u32 index)
+{
     struct DeviceDriver *tmpDriver = driverList;
     u32 i = 0;
 
@@ -34,7 +36,8 @@ struct DeviceDriver *deviceGetDeviceDriverByIndex(u32 index) {
     return NULL;
 }
 
-struct DeviceDriver *deviceGetDeviceDriverByName(const char *name) {
+struct DeviceDriver *deviceGetDeviceDriverByName(const char *name)
+{
     struct DeviceDriver *tmpDriver = driverList;
 
     while (tmpDriver != NULL) {
@@ -46,7 +49,8 @@ struct DeviceDriver *deviceGetDeviceDriverByName(const char *name) {
     return NULL;
 }
 
-struct Device *deviceCreate(const char *name, struct DeviceDriver *driver, int unit, u32 nblocks, int blockSize) {
+struct Device *deviceCreate(const char *name, struct DeviceDriver *driver, int unit, u32 nblocks, int blockSize)
+{
     LOG("Device blocksize = %d - %u\n", blockSize, nblocks);
 
     struct Device *device = kmalloc(sizeof(struct Device), 0, "newDevice");
@@ -68,38 +72,45 @@ struct Device *deviceCreate(const char *name, struct DeviceDriver *driver, int u
     return device;
 }
 
-static int deviceGetFromList(void *data, va_list ap) {
+static int deviceGetFromList(void *data, va_list ap)
+{
     struct Device *device = data;
     const char *name = va_arg(ap, const char *);
 
     return strcmp(device->name, name) == 0 ? 1 : 0;
 }
 
-struct Device *deviceGetByName(const char *name) {
+struct Device *deviceGetByName(const char *name)
+{
     return listGetElem(&deviceList, &deviceGetFromList, name);
 }
 
-void deviceDestroy(struct Device *device) {
-    kfree(device->name);
-    kfree(device);
-    listDeleteElem(&deviceList, device);
+void deviceDestroy(struct Device *device)
+{
+    (void) device;
+    // kfree(device->name);
+    // kfree(device);
+    // listDeleteElem(&deviceList, device);
 }
 
-int deviceRead(struct Device *device, void *buffer, int size, int offset) {
+int deviceRead(struct Device *device, void *buffer, int size, int offset)
+{
     if (device == NULL || device->driver->read == NULL)
         return -1;
 
     return device->driver->read(device->unit, buffer, size * device->multiplier, offset * device->multiplier);
 }
 
-int deviceWrite(struct Device *device, const void *buffer, int size, int offset) {
+int deviceWrite(struct Device *device, const void *buffer, int size, int offset)
+{
     if (device == NULL || device->driver->write == NULL)
         return -1;
 
     return device->driver->write(device->unit, buffer, size * device->multiplier, offset * device->multiplier);
 }
 
-void deviceReset(struct Device *device) {
+void deviceReset(struct Device *device)
+{
     if (device == NULL || device->driver->reset == NULL)
         return;
 

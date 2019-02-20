@@ -11,7 +11,8 @@
 #include <stdlib.h>
 #include <alloc.h>
 
-int len_tab(const char *str, char param) {
+int len_tab(const char *str, char param)
+{
     int num;
     int i;
 
@@ -25,7 +26,8 @@ int len_tab(const char *str, char param) {
     return (num);
 }
 
-int len_word(const char *str, int i, char param) {
+int len_word(const char *str, int i, char param)
+{
     int len;
 
     len = 1;
@@ -36,7 +38,8 @@ int len_word(const char *str, int i, char param) {
     return (len);
 }
 
-char **my_wordtab(char *str, char param, int i, int y) {
+char **my_wordtab(char *str, char param, int i, int y)
+{
     int x;
     char **tab;
 

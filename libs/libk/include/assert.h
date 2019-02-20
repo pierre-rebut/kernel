@@ -27,19 +27,19 @@
 #include <stdio.h>
 
 #ifndef NDEBUG
-#define assert(exp)							\
-     do									\
-     {									\
-       if (!(exp))							\
-       {								\
-         printf("%s, %d: assertion '%s' failed\n",			\
-		__BASE_FILE__, __LINE__, exp);				\
-         printf("System halted.\n");					\
-         while (1)							\
-	   continue;							\
-       }								\
-     }									\
+#define assert(exp)                            \
+     do                                    \
+     {                                    \
+       if (!(exp))                            \
+       {                                \
+         printf("%s, %d: assertion '%s' failed\n",            \
+        __BASE_FILE__, __LINE__, exp);                \
+         printf("System halted.\n");                    \
+         while (1)                            \
+       continue;                            \
+       }                                \
+     }                                    \
      while (0)
 #endif
 
-#endif				/* !ASSERT_H */
+#endif                /* !ASSERT_H */

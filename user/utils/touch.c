@@ -5,7 +5,8 @@
 #include <stdio.h>
 #include <unistd.h>
 
-int main(int ac, char **av) {
+int main(int ac, char **av)
+{
     if (ac == 1) {
         printf("%s: file(s) missing\n", av[0]);
         return -1;

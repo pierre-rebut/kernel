@@ -38,7 +38,8 @@ extern int f_type;        /* add type character for non-regular files */
 extern int f_color;		/* add type in color for non-regular files */
 #endif
 
-typedef struct {
+typedef struct
+{
     FTSENT *list;
     u_long btotal;
     int entries;
@@ -53,7 +54,8 @@ typedef struct {
     u32 s_user;
 } DISPLAY;
 
-typedef struct {
+typedef struct
+{
     char *user;
     char *group;
     char *flags;

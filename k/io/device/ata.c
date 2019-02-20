@@ -75,19 +75,22 @@ static struct ata_count counters = {0};
 
 static struct Mutex ata_mutex;
 
-static void ataInterruptHandler(struct esp_context *ctx) {
+static void ataInterruptHandler(struct esp_context *ctx)
+{
     (void) ctx;
     klog("[ATA] interrupt\n");
 }
 
-static void ataReset(int id) {
+static void ataReset(int id)
+{
     outb(ata_base[id] + ATA_CONTROL, ATA_CONTROL_RESET);
     taskWaitEvent(TaskEventTimer, 1);
     outb(ata_base[id] + ATA_CONTROL, 0);
     taskWaitEvent(TaskEventTimer, 1);
 }
 
-static int ataWait(int id, int mask, int state) {
+static int ataWait(int id, int mask, int state)
+{
     clock_t start, elapsed;
 
     LOG("[ata] wait\n");
@@ -127,7 +130,8 @@ static int ataWait(int id, int mask, int state) {
     return 1;
 }
 
-static void ataReadPio(int id, void *buffer, int size) {
+static void ataReadPio(int id, void *buffer, int size)
+{
     u16 *wbuffer = (u16 *) buffer;
     while (size > 0) {
         *wbuffer = inw(ata_base[id] + ATA_DATA);
@@ -136,7 +140,8 @@ static void ataReadPio(int id, void *buffer, int size) {
     }
 }
 
-static void ataWritePio(int id, const void *buffer, int size) {
+static void ataWritePio(int id, const void *buffer, int size)
+{
     u16 *wbuffer = (u16 *) buffer;
     while (size > 0) {
         outw(ata_base[id] + ATA_DATA, *wbuffer);
@@ -146,7 +151,8 @@ static void ataWritePio(int id, const void *buffer, int size) {
 }
 
 
-static int ataBegin(int id, int command, int nblocks, int offset) {
+static int ataBegin(int id, int command, int nblocks, int offset)
+{
     int base = ata_base[id];
     int sector, clow, chigh, flags;
 
@@ -182,7 +188,8 @@ static int ataBegin(int id, int command, int nblocks, int offset) {
     return 1;
 }
 
-static int ataReadBlockUnlocked(int id, void *buffer, int nblocks, int offset) {
+static int ataReadBlockUnlocked(int id, void *buffer, int nblocks, int offset)
+{
     LOG("ata read unlocked\n");
 
     if (!ataBegin(id, ATA_COMMAND_READ, nblocks, offset))
@@ -206,7 +213,8 @@ static int ataReadBlockUnlocked(int id, void *buffer, int nblocks, int offset) {
     return nblocks;
 }
 
-static int ataReadBlock(int id, void *buffer, int nblocks, int offset) {
+static int ataReadBlock(int id, void *buffer, int nblocks, int offset)
+{
     int result;
     mutexLock(&ata_mutex);
     LOG("[ata] read: %u\n", nblocks);
@@ -217,7 +225,8 @@ static int ataReadBlock(int id, void *buffer, int nblocks, int offset) {
     return result;
 }
 
-static int ataWriteUnlocked(int id, const void *buffer, int nblocks, int offset) {
+static int ataWriteUnlocked(int id, const void *buffer, int nblocks, int offset)
+{
     LOG("ata write unlocked\n");
 
     int i;
@@ -251,7 +260,8 @@ static int ataWriteUnlocked(int id, const void *buffer, int nblocks, int offset)
     return nblocks;
 }
 
-int ataWriteBlock(int id, const void *buffer, int nblocks, int offset) {
+int ataWriteBlock(int id, const void *buffer, int nblocks, int offset)
+{
     int result;
     mutexLock(&ata_mutex);
     LOG("[ata] write: %u\n", nblocks);
@@ -262,7 +272,8 @@ int ataWriteBlock(int id, const void *buffer, int nblocks, int offset) {
     return result;
 }
 
-static int ataIdentify(int id, int command, void *buffer) {
+static int ataIdentify(int id, int command, void *buffer)
+{
     int result = 0;
     identify_in_progress = 1;
     if (ataBegin(id, command, 0, 0)) {
@@ -276,7 +287,8 @@ static int ataIdentify(int id, int command, void *buffer) {
 }
 
 
-static int ataProbe(int id, unsigned int *nblocks, int *blocksize, char *name) {
+static int ataProbe(int id, unsigned int *nblocks, int *blocksize, char *name)
+{
     u16 buffer[256];
     char *cbuffer = (char *) buffer;
 
@@ -320,7 +332,8 @@ static struct DeviceDriver ataDriver = {
         .probe = &ataProbe
 };
 
-void ataInit() {
+void ataInit()
+{
     for (int i = 0; i < 4; i++) {
         counters.blocks_read[i] = 0;
         counters.blocks_written[i] = 0;

@@ -7,9 +7,10 @@
 #define VGA_VIDEO_HEIGHT 24
 #define VGA_MEMORY 0xB8000
 
-static u16 *terminalBuffer = (void*) VGA_MEMORY;
+static u16 *terminalBuffer = (void *) VGA_MEMORY;
 
-struct TerminalBuffer *createTerminal() {
+struct TerminalBuffer *createTerminal()
+{
     struct TerminalBuffer *tty = kmalloc(sizeof(struct TerminalBuffer), 0, "tty");
     if (tty == NULL)
         return NULL;
@@ -21,7 +22,8 @@ struct TerminalBuffer *createTerminal() {
     return tty;
 }
 
-void updateTerminal(struct TerminalBuffer *tty) {
+void updateTerminal(struct TerminalBuffer *tty)
+{
     for (u32 y = 0; y < VGA_VIDEO_HEIGHT; y++)
         for (u32 x = 0; x < VGA_VIDEO_WIDTH; x++)
             terminalBuffer[y * VGA_VIDEO_WIDTH + x] = tty->terminalData[y * VGA_VIDEO_WIDTH + x];
@@ -29,11 +31,13 @@ void updateTerminal(struct TerminalBuffer *tty) {
     terminalUpdateCursor(tty);
 }
 
-static inline u16 vgaEntry(char uc, u8 color) {
+static inline u16 vgaEntry(char uc, u8 color)
+{
     return (u16) uc | (u16) color << 8;
 }
 
-static void scroll(struct TerminalBuffer *tty, char writing) {
+static void scroll(struct TerminalBuffer *tty, char writing)
+{
     u16 *buf = tty->terminalData;
 
     for (u32 y = 1; y < VGA_VIDEO_HEIGHT; y++) {
@@ -55,7 +59,8 @@ static void scroll(struct TerminalBuffer *tty, char writing) {
     }
 }
 
-static void newline(struct TerminalBuffer *tty, char writing) {
+static void newline(struct TerminalBuffer *tty, char writing)
+{
     tty->terminalCol = 0;
     if (tty->terminalRow + 1 == VGA_VIDEO_HEIGHT)
         scroll(tty, writing);
@@ -63,15 +68,17 @@ static void newline(struct TerminalBuffer *tty, char writing) {
         tty->terminalRow++;
 }
 
-void terminalUpdateCursor(struct TerminalBuffer *tty){
-    u16 offset = (tty->terminalRow * (u16)VGA_VIDEO_WIDTH) + tty->terminalCol;
+void terminalUpdateCursor(struct TerminalBuffer *tty)
+{
+    u16 offset = (tty->terminalRow * (u16) VGA_VIDEO_WIDTH) + tty->terminalCol;
     outb(0x3D4, 14);
-    outb(0x3D5, (u8)(offset >> 8));
+    outb(0x3D5, (u8) (offset >> 8));
     outb(0x3D4, 15);
-    outb(0x3D5, (u8)offset);
+    outb(0x3D5, (u8) offset);
 }
 
-void clearTerminal(struct TerminalBuffer *tty) {
+void clearTerminal(struct TerminalBuffer *tty)
+{
     for (u32 i = 0; i < VGA_VIDEO_HEIGHT * VGA_VIDEO_WIDTH; i++) {
         terminalBuffer[i] = tty->terminalData[i] = vgaEntry(' ', tty->terminalColor);
     }
@@ -81,11 +88,13 @@ void clearTerminal(struct TerminalBuffer *tty) {
     terminalUpdateCursor(tty);
 }
 
-void setTerminalColor(struct TerminalBuffer *tty, enum e_cons_codes fg, enum e_cons_codes bg) {
+void setTerminalColor(struct TerminalBuffer *tty, enum e_cons_codes fg, enum e_cons_codes bg)
+{
     tty->terminalColor = fg | bg << 4;
 }
 
-void terminalPutchar(struct TerminalBuffer *tty, char writing, char c) {
+void terminalPutchar(struct TerminalBuffer *tty, char writing, char c)
+{
     switch (c) {
         case ASCII_LF:
             newline(tty, writing);
@@ -100,7 +109,7 @@ void terminalPutchar(struct TerminalBuffer *tty, char writing, char c) {
             break;
 
         default: {
-            const u16 index = tty->terminalRow * (u16)VGA_VIDEO_WIDTH + tty->terminalCol;
+            const u16 index = tty->terminalRow * (u16) VGA_VIDEO_WIDTH + tty->terminalCol;
             tty->terminalData[index] = vgaEntry(c, tty->terminalColor);
             tty->terminalCol++;
 
@@ -113,7 +122,8 @@ void terminalPutchar(struct TerminalBuffer *tty, char writing, char c) {
         newline(tty, writing);
 }
 
-void terminalRemoveLastChar(struct TerminalBuffer *tty, char writing) {
+void terminalRemoveLastChar(struct TerminalBuffer *tty, char writing)
+{
     if (tty->terminalCol == 0) {
         tty->terminalCol = VGA_VIDEO_WIDTH;
 
@@ -123,7 +133,7 @@ void terminalRemoveLastChar(struct TerminalBuffer *tty, char writing) {
     }
 
     tty->terminalCol -= 1;
-    u16 index = tty->terminalRow * (u16)VGA_VIDEO_WIDTH + tty->terminalCol;
+    u16 index = tty->terminalRow * (u16) VGA_VIDEO_WIDTH + tty->terminalCol;
     tty->terminalData[index] = vgaEntry(' ', tty->terminalColor);
 
     if (writing) {

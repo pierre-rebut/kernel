@@ -16,7 +16,8 @@
 #include "define.h"
 #include "functions.h"
 
-int parse_tab(char **tab, const int *i, t_env *env, int *exit_val) {
+int parse_tab(char **tab, const int *i, t_env *env, int *exit_val)
+{
     int ret;
 
     ret = 0;
@@ -30,7 +31,8 @@ int parse_tab(char **tab, const int *i, t_env *env, int *exit_val) {
     return (ret);
 }
 
-int parse_cmd(char *cmd, t_env *env, int ret, int *exit_val) {
+int parse_cmd(char *cmd, t_env *env, int ret, int *exit_val)
+{
     int i;
     char **tab;
 
@@ -51,6 +53,7 @@ int parse_cmd(char *cmd, t_env *env, int ret, int *exit_val) {
     free(cmd);
     return (0);
 }
+
 /*
 void get_sigint(int sig) {
     if (sig == SIGINT) {
@@ -69,7 +72,8 @@ int get_signal(void) {
     return (SUCCESS);
 }*/
 
-int main(int ac, char **av, char **env) {
+int main(int ac, char **av, char **env)
+{
     int exit_val;
     t_env tenv;
     char *cmd;

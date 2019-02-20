@@ -16,7 +16,8 @@
 
 #include <stddef.h>
 
-typedef struct __attribute__((packed))    s_header {
+typedef struct __attribute__((packed))    s_header
+{
     int magic_nb;
     size_t size;
     struct s_header *next;

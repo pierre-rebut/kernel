@@ -15,7 +15,8 @@
 #include "struct.h"
 #include "functions.h"
 
-int my_select_list(t_cmd *elem, char *cmd, int i) {
+int my_select_list(t_cmd *elem, char *cmd, int i)
+{
     if (elem->prg == NULL) {
         elem->args = malloc(sizeof(char *) * 3);
         if (elem->args == NULL)
@@ -38,7 +39,8 @@ int my_select_list(t_cmd *elem, char *cmd, int i) {
     return (0);
 }
 
-int get_redir(t_cmd *lst, char *cmd, int op) {
+int get_redir(t_cmd *lst, char *cmd, int op)
+{
     if (op == 5) {
         if ((lst->redir_in = strcat("<", cmd)) == NULL)
             return (-1);
@@ -52,7 +54,8 @@ int get_redir(t_cmd *lst, char *cmd, int op) {
     return (0);
 }
 
-t_cmd *my_put_in_list(t_cmd *lst, char *cmd, int op) {
+t_cmd *my_put_in_list(t_cmd *lst, char *cmd, int op)
+{
     t_cmd *elem;
 
     if (op == -1) {
@@ -73,7 +76,8 @@ t_cmd *my_put_in_list(t_cmd *lst, char *cmd, int op) {
     return (lst);
 }
 
-t_cmd *do_check_param(t_cmd *lst, char **cmd, int *i) {
+t_cmd *do_check_param(t_cmd *lst, char **cmd, int *i)
+{
     if (strcmp(cmd[*i], ">>") == 0) {
         if ((lst = my_put_in_list(lst, cmd[++(*i)], 6)) == NULL)
             return (NULL);
@@ -90,7 +94,8 @@ t_cmd *do_check_param(t_cmd *lst, char **cmd, int *i) {
     return (lst);
 }
 
-t_cmd *create_list(char **cmd) {
+t_cmd *create_list(char **cmd)
+{
     int i;
     t_cmd *lst;
 

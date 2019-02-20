@@ -5,15 +5,18 @@
 #ifndef KERNEL_EPITA_CPU_H
 #define KERNEL_EPITA_CPU_H
 
-static inline void cli() {
+static inline void cli()
+{
     asm volatile("cli\n\t");
 }
 
-static inline void sti() {
+static inline void sti()
+{
     asm volatile("sti\n\t");
 }
 
-static inline void hlt() {
+static inline void hlt()
+{
     asm volatile("hlt\n\t");
 }
 

@@ -5,15 +5,12 @@
 #include <errno.h>
 #include <err.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <kstd.h>
 #include <unistd.h>
 #include <string.h>
 #include <dirent.h>
 #include <fts.h>
 #include <alloc.h>
-
-#include "fts.h"
 
 static FTSENT *fts_alloc(FTS *, char *, int);
 
@@ -46,7 +43,8 @@ static u_short fts_stat(FTS *, FTSENT *, int);
 #define    BNAMES        2        /* fts_children, names only */
 #define    BREAD        3        /* fts_read */
 
-FTS *fts_open(char *const *argv, int options, int (*compar)(const FTSENT **, const FTSENT **)) {
+FTS *fts_open(char *const *argv, int options, int (*compar)(const FTSENT **, const FTSENT **))
+{
     register FTS *sp;
     register FTSENT *p, *root;
     register int nitems;
@@ -153,7 +151,8 @@ FTS *fts_open(char *const *argv, int options, int (*compar)(const FTSENT **, con
     return (NULL);
 }
 
-static void fts_load(FTS *sp, register FTSENT *p) {
+static void fts_load(FTS *sp, register FTSENT *p)
+{
     register int len;
     register char *cp;
 
@@ -175,7 +174,8 @@ static void fts_load(FTS *sp, register FTSENT *p) {
     sp->fts_dev = p->fts_dev;
 }
 
-int fts_close(FTS *sp) {
+int fts_close(FTS *sp)
+{
     register FTSENT *freep, *p;
     int saved_errno = 0;
 
@@ -227,7 +227,8 @@ int fts_close(FTS *sp) {
     (p->fts_level == FTS_ROOTLEVEL && p->fts_pathlen == 1 &&    \
         p->fts_path[0] == '/' ? 0 : p->fts_pathlen)
 
-FTSENT *fts_read(register FTS *sp) {
+FTSENT *fts_read(register FTS *sp)
+{
     register FTSENT *p, *tmp;
     register int instr;
     register char *t;
@@ -274,7 +275,7 @@ FTSENT *fts_read(register FTS *sp) {
     if (p->fts_info == FTS_D) {
         /* If skipped or crossed mount point, do post-order visit. */
         if (instr == FTS_SKIP ||
-                (ISSET(FTS_XDEV) && p->fts_dev != sp->fts_dev)) {
+            (ISSET(FTS_XDEV) && p->fts_dev != sp->fts_dev)) {
             if (p->fts_flags & FTS_SYMFOLLOW)
                 (void) close(p->fts_symfd);
             if (sp->fts_child) {
@@ -421,7 +422,8 @@ FTSENT *fts_read(register FTS *sp) {
  * reasons.
  */
 /* ARGSUSED */
-int fts_set(FTS *sp, FTSENT *p, int instr) {
+int fts_set(FTS *sp, FTSENT *p, int instr)
+{
     (void) sp;
 
     if (instr && instr != FTS_AGAIN && instr != FTS_FOLLOW &&
@@ -433,7 +435,8 @@ int fts_set(FTS *sp, FTSENT *p, int instr) {
     return (0);
 }
 
-FTSENT *fts_children(register FTS *sp, int instr) {
+FTSENT *fts_children(register FTS *sp, int instr)
+{
     register FTSENT *p;
     int fd;
 
@@ -511,7 +514,8 @@ FTSENT *fts_children(register FTS *sp, int instr) {
  * directories and for any files after the subdirectories in the directory have
  * been found, cutting the stat calls by about 2/3.
  */
-static FTSENT *fts_build(register FTS *sp, int type) {
+static FTSENT *fts_build(register FTS *sp, int type)
+{
     register struct dirent *dp;
     register FTSENT *p, *head;
     register int nitems;
@@ -724,7 +728,8 @@ static FTSENT *fts_build(register FTS *sp, int type) {
     return (head);
 }
 
-static u_short fts_stat(FTS *sp, register FTSENT *p, int follow) {
+static u_short fts_stat(FTS *sp, register FTSENT *p, int follow)
+{
     register FTSENT *t;
     register u32 dev;
     register u32 ino;
@@ -804,7 +809,8 @@ static u_short fts_stat(FTS *sp, register FTSENT *p, int follow) {
     return (FTS_DEFAULT);
 }
 
-static FTSENT *fts_sort(FTS *sp, FTSENT *head, register int nitems) {
+static FTSENT *fts_sort(FTS *sp, FTSENT *head, register int nitems)
+{
     register FTSENT **ap, *p;
 
     /*
@@ -816,7 +822,7 @@ static FTSENT *fts_sort(FTS *sp, FTSENT *head, register int nitems) {
      */
     if (nitems > sp->fts_nitems) {
         sp->fts_nitems = nitems + 40;
-        sp->fts_array = realloc(sp->fts_array, (size_t)(sp->fts_nitems * sizeof(FTSENT * )));
+        sp->fts_array = realloc(sp->fts_array, (size_t) (sp->fts_nitems * sizeof(FTSENT *)));
         if (sp->fts_array == NULL) {
             sp->fts_nitems = 0;
             return (head);
@@ -824,14 +830,15 @@ static FTSENT *fts_sort(FTS *sp, FTSENT *head, register int nitems) {
     }
     for (ap = sp->fts_array, p = head; p; p = p->fts_link)
         *ap++ = p;
-    qsort((void *) sp->fts_array, nitems, sizeof(FTSENT * ), sp->fts_compar);
+    qsort((void *) sp->fts_array, nitems, sizeof(FTSENT *), sp->fts_compar);
     for (head = *(ap = sp->fts_array); --nitems; ++ap)
         ap[0]->fts_link = ap[1];
     ap[0]->fts_link = NULL;
     return (head);
 }
 
-static FTSENT *fts_alloc(FTS *sp, char *name, register int namelen) {
+static FTSENT *fts_alloc(FTS *sp, char *name, register int namelen)
+{
     register FTSENT *p;
     size_t len;
 
@@ -864,7 +871,8 @@ static FTSENT *fts_alloc(FTS *sp, char *name, register int namelen) {
     return (p);
 }
 
-static void fts_lfree(register FTSENT *head) {
+static void fts_lfree(register FTSENT *head)
+{
     register FTSENT *p;
 
     /* Free a linked list of structures. */
@@ -880,11 +888,10 @@ static void fts_lfree(register FTSENT *head) {
  * though the kernel won't resolve them.  Add the size (not just what's needed)
  * plus 256 bytes so don't realloc the path 2 bytes at a time.
  */
-static int fts_palloc(FTS *sp, size_t more) {
+static int fts_palloc(FTS *sp, size_t more)
+{
     sp->fts_pathlen += more + 256;
-    warn("bite de realloc: %d\n", sp->fts_pathlen);
     sp->fts_path = realloc(sp->fts_path, (size_t) sp->fts_pathlen);
-    warn("bite de end\n");
     return (sp->fts_path == NULL);
 }
 
@@ -892,7 +899,8 @@ static int fts_palloc(FTS *sp, size_t more) {
  * When the path is realloc'd, have to fix all of the pointers in structures
  * already returned.
  */
-static void fts_padjust(FTS *sp, void *addr) {
+static void fts_padjust(FTS *sp, void *addr)
+{
     FTSENT *p;
 
 #define    ADJUST(p) {                            \
@@ -910,7 +918,8 @@ static void fts_padjust(FTS *sp, void *addr) {
     }
 }
 
-static size_t fts_maxarglen(char *const *argv) {
+static size_t fts_maxarglen(char *const *argv)
+{
     size_t len, max;
 
     for (max = 0; *argv; ++argv)

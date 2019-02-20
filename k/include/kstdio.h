@@ -28,7 +28,9 @@
 #include <stdio.h>
 
 int kputs(const char *s);
+
 int kprintf(const char *format, ...);
+
 int klog(const char *fmt, ...);
 
-#endif				/* !STDLIB_H_ */
+#endif                /* !STDLIB_H_ */

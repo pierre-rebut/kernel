@@ -9,11 +9,11 @@
 #include <io/device/proc.h>
 #include <errno-base.h>
 #include <include/kstdio.h>
-#include "kobject.h"
 #include "allocator.h"
 #include "console.h"
 
-struct Kobject *koCreate(enum KObjectType type, void *data, int mode) {
+struct Kobject *koCreate(enum KObjectType type, void *data, int mode)
+{
     struct Kobject *obj = kmalloc(sizeof(struct Kobject), 0, "newKobject");
     if (!obj)
         return NULL;
@@ -26,9 +26,8 @@ struct Kobject *koCreate(enum KObjectType type, void *data, int mode) {
     return obj;
 }
 
-s32 koRead(struct Kobject *obj, void *buffer, u32 size) {
-    klog("bite de read: %p\n", obj);
-
+s32 koRead(struct Kobject *obj, void *buffer, u32 size)
+{
     int mode = obj->mode & 3;
     if (mode != O_RDONLY && mode != O_RDWR)
         return -EPERM;
@@ -60,7 +59,8 @@ s32 koRead(struct Kobject *obj, void *buffer, u32 size) {
     return actual;
 }
 
-s32 koWrite(struct Kobject *obj, void *buffer, u32 size) {
+s32 koWrite(struct Kobject *obj, void *buffer, u32 size)
+{
     int mode = obj->mode & 3;
     if (mode != O_WRONLY && mode != O_RDWR)
         return -EPERM;
@@ -90,7 +90,8 @@ s32 koWrite(struct Kobject *obj, void *buffer, u32 size) {
     return actual;
 }
 
-struct Kobject *koDupplicate(struct Kobject *obj) {
+struct Kobject *koDupplicate(struct Kobject *obj)
+{
     if (obj == NULL)
         return NULL;
 
@@ -98,8 +99,8 @@ struct Kobject *koDupplicate(struct Kobject *obj) {
     return obj;
 }
 
-int koDestroy(struct Kobject *obj) {
-    klog("bite de destroy: %p\n", obj);
+int koDestroy(struct Kobject *obj)
+{
     obj->refcount -= 1;
 
     if (obj->refcount == 0) {
@@ -119,11 +120,12 @@ int koDestroy(struct Kobject *obj) {
     return 0;
 }
 
-off_t koSeek(struct Kobject *obj, off_t offset, int whence) {
+off_t koSeek(struct Kobject *obj, off_t offset, int whence)
+{
     if (obj->type != KO_FS_FILE)
         return -ESPIPE;
 
-    u32 fileSize = ((struct FsPath*)obj->data)->size;
+    u32 fileSize = ((struct FsPath *) obj->data)->size;
     if (fileSize == 0)
         return 0;
 

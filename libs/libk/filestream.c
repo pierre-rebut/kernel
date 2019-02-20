@@ -4,7 +4,6 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <err.h>
 #include <unistd.h>
 #include <alloc.h>
 #include "filestream.h"
@@ -16,7 +15,8 @@ FILE *stdin;
 FILE *stdout;
 FILE *stderr;
 
-FILE *fdopen(int fd) {
+FILE *fdopen(int fd)
+{
     FILE *stream = malloc(sizeof(FILE));
     void *buf = malloc(FILE_BUFFER_SIZE);
     if (stream == NULL || buf == NULL) {
@@ -34,7 +34,8 @@ FILE *fdopen(int fd) {
     return stream;
 }
 
-FILE *fopen(const char *pathname, int flags, mode_t mode) {
+FILE *fopen(const char *pathname, int flags, mode_t mode)
+{
     int fd = open(pathname, flags, mode);
     if (fd == -1)
         return NULL;
@@ -42,7 +43,8 @@ FILE *fopen(const char *pathname, int flags, mode_t mode) {
     return fdopen(fd);
 }
 
-FILE *fopenBuf(char *buffer, u32 size) {
+FILE *fopenBuf(char *buffer, u32 size)
+{
     if (buffer == NULL || size == 0)
         return NULL;
 
@@ -59,7 +61,8 @@ FILE *fopenBuf(char *buffer, u32 size) {
     return stream;
 }
 
-int fclose(FILE *stream) {
+int fclose(FILE *stream)
+{
     if (stream == NULL)
         return -1;
 
@@ -69,7 +72,8 @@ int fclose(FILE *stream) {
     return 0;
 }
 
-static int fileInternalRead(FILE *stream) {
+static int fileInternalRead(FILE *stream)
+{
     char tmpBuf[FILE_BUFFER_SIZE];
 
     if (stream->fd == -1)
@@ -94,7 +98,8 @@ static int fileInternalRead(FILE *stream) {
     return size;
 }
 
-int getc(FILE *stream) {
+int getc(FILE *stream)
+{
     if (stream == NULL || stream->flags == STREAM_ERROR)
         return -1;
 
@@ -111,11 +116,13 @@ int getc(FILE *stream) {
     return tmp;
 }
 
-int getchar() {
+int getchar()
+{
     return getc(stdin);
 }
 
-int ungetc(int c, FILE *stream) {
+int ungetc(int c, FILE *stream)
+{
     if (stream == NULL || stream->flags == STREAM_ERROR)
         return -1;
 
@@ -136,19 +143,23 @@ int ungetc(int c, FILE *stream) {
     return 0;
 }
 
-int ferror(FILE *stream) {
+int ferror(FILE *stream)
+{
     return (stream->flags == STREAM_ERROR);
 }
 
-int feof(FILE *stream) {
+int feof(FILE *stream)
+{
     return (stream->flags == STREAM_EOF);
 }
 
-void clearerr(FILE *stream) {
+void clearerr(FILE *stream)
+{
     stream->flags = 0;
 }
 
-size_t fread(char *buf, size_t size, size_t nmemb, FILE *stream) {
+size_t fread(char *buf, size_t size, size_t nmemb, FILE *stream)
+{
     if (stream == NULL || stream->flags != 0)
         return 0;
 
@@ -169,20 +180,21 @@ size_t fread(char *buf, size_t size, size_t nmemb, FILE *stream) {
     return readed;
 }
 
-static int fileInternalWrite(FILE *stream) {
+static int fileInternalWrite(FILE *stream)
+{
     if (stream->fd == -1)
         return EOF;
 
     char tmpBuf[FILE_BUFFER_SIZE];
     u32 i = 0;
 
-   while (i < FILE_BUFFER_SIZE) {
-       if (stream->posr == stream->posw )
-           break;
+    while (i < FILE_BUFFER_SIZE) {
+        if (stream->posr == stream->posw)
+            break;
 
         tmpBuf[i] = stream->buf[stream->posr];
         stream->posr = (stream->posr + 1) % stream->cnt;
-       i++;
+        i++;
     }
 
     // warn("file internal write: %d\n", i);
@@ -201,7 +213,8 @@ static int fileInternalWrite(FILE *stream) {
     return size;
 }
 
-size_t fwrite(const char *buf, size_t size, size_t nmemb, FILE *stream) {
+size_t fwrite(const char *buf, size_t size, size_t nmemb, FILE *stream)
+{
     if (stream == NULL || stream->flags != 0)
         return 0;
 
@@ -222,7 +235,8 @@ size_t fwrite(const char *buf, size_t size, size_t nmemb, FILE *stream) {
     return writed;
 }
 
-int fprintf(FILE *stream, const char *fmt, ...) {
+int fprintf(FILE *stream, const char *fmt, ...)
+{
     if (stream == NULL || stream->flags != 0)
         return -1;
 
@@ -240,7 +254,8 @@ int fprintf(FILE *stream, const char *fmt, ...) {
     return printed;
 }
 
-int fputchar(FILE *stream, char c) {
+int fputchar(FILE *stream, char c)
+{
     if (stream == NULL || stream->flags != 0)
         return -1;
 
@@ -254,14 +269,16 @@ int fputchar(FILE *stream, char c) {
     return 1;
 }
 
-int fflush(FILE *stream) {
+int fflush(FILE *stream)
+{
     if (stream == NULL || stream->flags != 0)
         return -1;
 
     return fileInternalWrite(stream);
 }
 
-static char *my_cat_len(FILE *stream, char *stock, int i) {
+static char *my_cat_len(FILE *stream, char *stock, int i)
+{
     char *tmp;
     int compt;
     int x;
@@ -286,7 +303,8 @@ static char *my_cat_len(FILE *stream, char *stock, int i) {
     return (tmp);
 }
 
-char *getdelim(FILE *stream, char delim) {
+char *getdelim(FILE *stream, char delim)
+{
     if (stream == NULL || stream->flags != 0)
         return NULL;
 
@@ -308,6 +326,7 @@ char *getdelim(FILE *stream, char delim) {
     }
 }
 
-char *getline(FILE *stream) {
+char *getline(FILE *stream)
+{
     return getdelim(stream, '\n');
 }

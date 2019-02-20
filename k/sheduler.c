@@ -6,10 +6,7 @@
 #include <include/cpu.h>
 #include <sys/paging.h>
 #include <io/pit.h>
-#include <io/keyboard.h>
-#include <include/list.h>
 #include "sheduler.h"
-#include "sys/console.h"
 
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
@@ -18,34 +15,40 @@ static struct List activeTaskLists = CREATE_LIST();
 static struct List activeTaskListsLowPriority = CREATE_LIST();
 static struct List taskListsWaiting = CREATE_LIST();
 
-void schedulerAddActiveTask(struct Task *task) {
+void schedulerAddActiveTask(struct Task *task)
+{
     if (task->privilege == TaskPrivilegeKernel)
         listAddElem(&activeTaskLists, task);
     else
         listAddElem(&activeTaskListsLowPriority, task);
 }
 
-void schedulerRemoveActiveTask(struct Task *task) {
+void schedulerRemoveActiveTask(struct Task *task)
+{
     if (task->privilege == TaskPrivilegeKernel)
         listDeleteElem(&activeTaskLists, task);
     else
         listDeleteElem(&activeTaskListsLowPriority, task);
 }
 
-void schedulerAddWaitingTask(struct Task *task) {
+void schedulerAddWaitingTask(struct Task *task)
+{
     listAddElem(&taskListsWaiting, task);
 }
 
-void schedulerRemoveWaitingTask(struct Task *task) {
+void schedulerRemoveWaitingTask(struct Task *task)
+{
     listDeleteElem(&taskListsWaiting, task);
 }
 
-void schedulerDoNothing() {
+void schedulerDoNothing()
+{
     while (1)
         hlt();
 }
 
-static void checkTaskEvent() {
+static void checkTaskEvent()
+{
     for (struct ListElem *tmp = taskListsWaiting.begin; tmp != NULL; tmp = tmp->next) {
         struct Task *task = tmp->data;
 
@@ -67,7 +70,8 @@ static void checkTaskEvent() {
     }
 }
 
-static struct Task *schedulerGetNextTask() {
+static struct Task *schedulerGetNextTask()
+{
     checkTaskEvent();
 
     u32 nbTask = listCountElem(&activeTaskLists);
@@ -81,7 +85,8 @@ static struct Task *schedulerGetNextTask() {
     return freeTimeTask;
 }
 
-u32 schedulerSwitchTask(u32 esp) {
+u32 schedulerSwitchTask(u32 esp)
+{
     taskSaveState(esp);
 
     struct Task *oldTask = currentTask;
@@ -94,7 +99,8 @@ u32 schedulerSwitchTask(u32 esp) {
     return taskSwitch(newTask);
 }
 
-void schedulerForceSwitchTask() {
+void schedulerForceSwitchTask()
+{
     LOG("[scheduler] force switch task\n");
     asm volatile("int $126");
 }

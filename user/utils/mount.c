@@ -3,18 +3,17 @@
 //
 
 #include <stdio.h>
-#include "kstd.h"
-#include <string.h>
 #include <unistd.h>
 #include <errno.h>
-#include <alloc.h>
 
-void help() {
+void help()
+{
     printf("mount <fs type> <arg> <mount point>\n");
     printf("<fs type> : kfs / procfs / devfs / ext2fs\n");
 }
 
-int main(int ac, char **av) {
+int main(int ac, char **av)
+{
     if (ac != 4) {
         help();
         return 1;

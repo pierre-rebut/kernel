@@ -117,7 +117,8 @@ char *enter_bold;		/* ANSI sequence to set color to bold mode */
 
 static int rval;
 
-static bool do_color_from_env(void) {
+static bool do_color_from_env(void)
+{
     const char *p;
     bool doit;
 
@@ -139,7 +140,8 @@ static bool do_color_from_env(void) {
 }
 
 static bool
-do_color(void) {
+do_color(void)
+{
 
 #ifdef COLORLS
     if (colorflag == COLORFLAG_NEVER)
@@ -176,7 +178,8 @@ do_color_auto(const char *term)
 }
 #endif    /* COLORLS */
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     static char dot[] = ".", *dotav[] = {dot, NULL};
     // struct winsize win;
     int ch, fts_options, notused;
@@ -549,7 +552,8 @@ static int output;        /* If anything output. */
  * traversal it passes linked lists of structures to display() which represent
  * a superset (may be exact set) of the files to be displayed.
  */
-static void traverse(int argc, char *argv[], int options) {
+static void traverse(int argc, char *argv[], int options)
+{
     FTS *ftsp;
     FTSENT *p, *chp;
     int ch_options;
@@ -625,7 +629,8 @@ static void traverse(int argc, char *argv[], int options) {
  * along with any other necessary information to the print function.  P
  * points to the parent directory of the display list.
  */
-static void display(const FTSENT *p, FTSENT *list, int options) {
+static void display(const FTSENT *p, FTSENT *list, int options)
+{
     (void) options;
     struct stat *sp;
     DISPLAY d;
@@ -940,7 +945,8 @@ static void display(const FTSENT *p, FTSENT *list, int options) {
  * as larger than directories.  Within either group, use the sort function.
  * All other levels use the sort function.  Error entries remain unsorted.
  */
-static int mastercmp(const FTSENT **a, const FTSENT **b) {
+static int mastercmp(const FTSENT **a, const FTSENT **b)
+{
     int a_info, b_info;
 
     a_info = (*a)->fts_info;

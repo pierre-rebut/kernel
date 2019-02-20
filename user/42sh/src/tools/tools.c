@@ -14,7 +14,8 @@
 
 #include "functions.h"
 
-int tab_len(char **tab) {
+int tab_len(char **tab)
+{
     int i;
 
     i = 0;
@@ -23,7 +24,8 @@ int tab_len(char **tab) {
     return (i);
 }
 
-char **create_env(char **tab) {
+char **create_env(char **tab)
+{
     char **ret;
     int i;
     int j;

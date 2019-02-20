@@ -6,6 +6,7 @@
 #define KERNEL_ERR_H
 
 int warn(const char *fmt, ...);
+
 int err(const char *fmt, ...);
 
 #endif //KERNEL_ERR_H

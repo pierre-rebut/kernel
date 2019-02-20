@@ -4,7 +4,8 @@
 
 #include <string.h>
 
-int strcontain(const char *s1, char c) {
+int strcontain(const char *s1, char c)
+{
     for (; *s1 != '\0'; s1++) {
         if (*s1 == c)
             return 1;
@@ -12,14 +13,16 @@ int strcontain(const char *s1, char c) {
     return 0;
 }
 
-int strcmp(const char *s1, const char *s2) {
+int strcmp(const char *s1, const char *s2)
+{
     for (; *s1 == *s2 && *s1 != '\0'; s1++, s2++)
         continue;
 
     return *s1 - *s2;
 }
 
-char *strcpy(char *dest, const char *src) {
+char *strcpy(char *dest, const char *src)
+{
     char *p = dest;
 
     while (*src)
@@ -30,7 +33,8 @@ char *strcpy(char *dest, const char *src) {
     return dest;
 }
 
-u32 strlen(const char *s) {
+u32 strlen(const char *s)
+{
     register const char *p = s;
 
     while (*p)
@@ -39,7 +43,8 @@ u32 strlen(const char *s) {
     return (p - s);
 }
 
-char *strchr(const char *p, int ch) {
+char *strchr(const char *p, int ch)
+{
     char c = (char) ch;
     for (;; ++p) {
         if (*p == c)
@@ -49,7 +54,8 @@ char *strchr(const char *p, int ch) {
     }
 }
 
-u32 strcspn(const char *s1, register const char *s2) {
+u32 strcspn(const char *s1, register const char *s2)
+{
     register const char *p, *spanp;
     register char c, sc;
 
@@ -63,7 +69,8 @@ u32 strcspn(const char *s1, register const char *s2) {
     }
 }
 
-char *strtok(char *s, const char *delim) {
+char *strtok(char *s, const char *delim)
+{
     static char *lasts;
     register int ch;
 
@@ -80,7 +87,8 @@ char *strtok(char *s, const char *delim) {
     return s;
 }
 
-void strtoupper(char *str) {
+void strtoupper(char *str)
+{
     while (*str) {
         if (*str >= 'a' && *str <= 'z')
             *str = *str - 32;
@@ -88,7 +96,8 @@ void strtoupper(char *str) {
     }
 }
 
-u32 str_backspace(char *str, char c, char **file) {
+u32 str_backspace(char *str, char c, char **file)
+{
     size_t i = strlen(str);
     i--;
     while (i) {
@@ -103,7 +112,8 @@ u32 str_backspace(char *str, char c, char **file) {
     return 0;
 }
 
-u32 strsplit(char *str, char delim) {
+u32 strsplit(char *str, char delim)
+{
     size_t n = 0;
     u32 i = 0;
     while (str[i]) {
@@ -117,7 +127,8 @@ u32 strsplit(char *str, char delim) {
     return n;
 }
 
-u32 str_begins_with(const char *str, const char *with) {
+u32 str_begins_with(const char *str, const char *with)
+{
     size_t j = strlen(with);
     size_t i = 0;
     size_t ret = 1;
@@ -132,7 +143,8 @@ u32 str_begins_with(const char *str, const char *with) {
     return ret;
 }
 
-const char *strstr(register const char *string, char *substring) {
+const char *strstr(register const char *string, char *substring)
+{
     register const char *a, *b;
 
     /* First scan quickly through the two strings looking for a
@@ -162,7 +174,8 @@ const char *strstr(register const char *string, char *substring) {
     return NULL;
 }
 
-void strmode(register mode_t mode, register char *p) {
+void strmode(register mode_t mode, register char *p)
+{
     /* print type */
     switch (mode & S_IFMT) {
         case S_IFDIR:            /* directory */

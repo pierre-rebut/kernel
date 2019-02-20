@@ -9,6 +9,7 @@
 #include <errno-base.h>
 
 extern int errno;
+
 const char *strerror(int e);
 
 #endif //KERNEL_ERRNO_H

@@ -4,13 +4,14 @@
 
 #include <stdio.h>
 #include <unistd.h>
-#include "kstd.h"
 
-void help() {
+void help()
+{
     printf("umount <mount point>\n");
 }
 
-int main(int ac, char **av) {
+int main(int ac, char **av)
+{
     if (ac != 2) {
         help();
         return 1;

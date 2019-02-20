@@ -8,7 +8,8 @@
 
 int _input(FILE *stream, const char *format, va_list arglist);
 
-int fscanf(FILE *stream, const char *fmt, ...) {
+int fscanf(FILE *stream, const char *fmt, ...)
+{
     int rc;
     va_list args;
 
@@ -21,11 +22,13 @@ int fscanf(FILE *stream, const char *fmt, ...) {
     return rc;
 }
 
-int vfscanf(FILE *stream, const char *fmt, va_list args) {
+int vfscanf(FILE *stream, const char *fmt, va_list args)
+{
     return _input(stream, fmt, args);
 }
 
-int scanf(const char *fmt, ...) {
+int scanf(const char *fmt, ...)
+{
     int rc;
     va_list args;
 
@@ -38,14 +41,16 @@ int scanf(const char *fmt, ...) {
     return rc;
 }
 
-int vscanf(const char *fmt, va_list args) {
+int vscanf(const char *fmt, va_list args)
+{
     return _input(stdin, fmt, args);
 }
 
-int sscanf(const char *buffer, const char *fmt, ...) {
+int sscanf(const char *buffer, const char *fmt, ...)
+{
     int rc;
     va_list args;
-    FILE *str = fopenBuf((char*) buffer, strlen(buffer));
+    FILE *str = fopenBuf((char *) buffer, strlen(buffer));
 
     va_start(args, fmt);
 
@@ -57,9 +62,10 @@ int sscanf(const char *buffer, const char *fmt, ...) {
     return rc;
 }
 
-int vsscanf(const char *buffer, const char *fmt, va_list args) {
+int vsscanf(const char *buffer, const char *fmt, va_list args)
+{
     int rc;
-    FILE *str = fopenBuf((char *)buffer, strlen(buffer));
+    FILE *str = fopenBuf((char *) buffer, strlen(buffer));
 
     rc = _input(str, fmt, args);
 

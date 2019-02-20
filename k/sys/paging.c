@@ -4,7 +4,6 @@
 
 #include <string.h>
 #include <kstdio.h>
-#include <include/cpu.h>
 
 #include "paging.h"
 #include "allocator.h"
@@ -20,7 +19,8 @@ static int allocPages(struct PageDirectory *pd, void *addr, u32 pages);
 
 static void freePages(struct PageDirectory *pd, void *addr, u32 pages);
 
-void initPaging(u32 memSize) {
+void initPaging(u32 memSize)
+{
 
     kernelPageDirectory = kmalloc(sizeof(struct PageDirectory), PAGESIZE, "kernelPageDirectory");
     memset(kernelPageDirectory, 0, sizeof(struct PageDirectory));
@@ -63,12 +63,14 @@ void initPaging(u32 memSize) {
     asm volatile ("movl %0, %%cr0": :"a"(cr0));
 }
 
-static inline void invlpg(void *p) {
+static inline void invlpg(void *p)
+{
     LOG("invalid page\n");
     asm volatile("invlpg (%0)"::"r" (p) : "memory");
 }
 
-u32 pagingGetPhysAddr(const void *vaddr) {
+u32 pagingGetPhysAddr(const void *vaddr)
+{
     u32 pageNumber = (u32) vaddr / PAGESIZE;
     struct TableDirectory *pt = currentPageDirectory->tablesInfo[pageNumber / NB_TABLE];
     if (!pt)
@@ -78,12 +80,14 @@ u32 pagingGetPhysAddr(const void *vaddr) {
     return ((pt->pages[pageNumber % NB_PAGE] & 0xFFFFF000) + ((u32) vaddr & 0x00000FFF));
 }
 
-static int checkPageAllowed(struct PageDirectory *pageDirectory, u32 index) {
+static int checkPageAllowed(struct PageDirectory *pageDirectory, u32 index)
+{
     return kernelPageDirectory == pageDirectory ||
            (pageDirectory->tablesAddr[index] != kernelPageDirectory->tablesAddr[index]);
 }
 
-struct PageDirectory *pagingCreatePageDirectory() {
+struct PageDirectory *pagingCreatePageDirectory()
+{
     struct PageDirectory *pageDirectory = kmalloc(sizeof(struct PageDirectory), PAGESIZE, "newPageDirectory");
     if (!pageDirectory)
         return NULL;
@@ -93,6 +97,7 @@ struct PageDirectory *pagingCreatePageDirectory() {
     mutexReset(&pageDirectory->mtx);
     return pageDirectory;
 }
+
 /*
 struct PageDirectory *pagingDuplicatePageDirectory(struct PageDirectory *oldPd) {
     if (oldPd == NULL)
@@ -139,7 +144,8 @@ struct PageDirectory *pagingDuplicatePageDirectory(struct PageDirectory *oldPd) 
     return NULL;
 }*/
 
-void pagingDestroyPageDirectory(struct PageDirectory *pageDirectory) {
+void pagingDestroyPageDirectory(struct PageDirectory *pageDirectory)
+{
     if (pageDirectory == NULL)
         return;
 
@@ -168,7 +174,8 @@ void pagingDestroyPageDirectory(struct PageDirectory *pageDirectory) {
     kfree(pageDirectory);
 }
 
-void pagingSwitchPageDirectory(struct PageDirectory *pageDirectory) {
+void pagingSwitchPageDirectory(struct PageDirectory *pageDirectory)
+{
     if (pageDirectory == currentPageDirectory)
         return;
 
@@ -177,7 +184,8 @@ void pagingSwitchPageDirectory(struct PageDirectory *pageDirectory) {
     asm volatile("mov %0, %%cr3" : : "r" (pageDirectory->physAddr));
 }
 
-static int allocPages(struct PageDirectory *pd, void *addr, u32 pages) {
+static int allocPages(struct PageDirectory *pd, void *addr, u32 pages)
+{
     u32 i;
     for (i = 0; i < pages; i++) {
         u32 pageNumber = (u32) addr / PAGESIZE + i;
@@ -217,7 +225,8 @@ static int allocPages(struct PageDirectory *pd, void *addr, u32 pages) {
     return 1;
 }
 
-static void freePages(struct PageDirectory *pd, void *addr, u32 pages) {
+static void freePages(struct PageDirectory *pd, void *addr, u32 pages)
+{
     for (u32 i = 0; i < pages; i++) {
         u32 pageNumber = (u32) addr / PAGESIZE + i;
 
@@ -241,7 +250,8 @@ static void freePages(struct PageDirectory *pd, void *addr, u32 pages) {
     }
 }
 
-static int mapPagesToFrames(struct PageDirectory *pd, void *vaddr, u32 paddr, enum MEMFLAGS flags) {
+static int mapPagesToFrames(struct PageDirectory *pd, void *vaddr, u32 paddr, enum MEMFLAGS flags)
+{
     u32 pageNumber = (u32) vaddr / PAGESIZE;
 
     mutexLock(&pd->mtx);
@@ -292,7 +302,8 @@ static int pagingAllocRec(struct PageDirectory *pd, u32 index, u32 pages, void *
     return tmp;
 }*/
 
-int pagingAlloc(struct PageDirectory *pd, void *addr, u32 size, enum MEMFLAGS flags) {
+int pagingAlloc(struct PageDirectory *pd, void *addr, u32 size, enum MEMFLAGS flags)
+{
     LOG("pagingAlloc: %p - %u\n", addr, size);
 
     if (((u32) addr) % PAGESIZE != 0) {
@@ -330,7 +341,8 @@ int pagingAlloc(struct PageDirectory *pd, void *addr, u32 size, enum MEMFLAGS fl
     return 0;
 }
 
-void pagingFree(struct PageDirectory *pd, void *virtAddress, u32 size) {
+void pagingFree(struct PageDirectory *pd, void *virtAddress, u32 size)
+{
     LOG("pagingFree: %p - %u\n", virtAddress, size);
 
     if (((u32) virtAddress) % PAGESIZE != 0) {
@@ -359,7 +371,8 @@ void pagingFree(struct PageDirectory *pd, void *virtAddress, u32 size) {
     }
 }
 
-int pagingSetFlags(struct PageDirectory *pd, void *addr, u32 size, enum MEMFLAGS flags) {
+int pagingSetFlags(struct PageDirectory *pd, void *addr, u32 size, enum MEMFLAGS flags)
+{
     if (((u32) addr) % PAGESIZE != 0) {
         klog("paging_setFlags: addr not page aligned\n");
         return -1;

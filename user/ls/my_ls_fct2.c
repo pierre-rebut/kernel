@@ -14,7 +14,8 @@
 
 #include "include/my_ls.h"
 
-int set_opt_dd(t_option *opt, char *dir) {
+int set_opt_dd(t_option *opt, char *dir)
+{
     int i;
     char *direc;
 
@@ -34,7 +35,8 @@ int set_opt_dd(t_option *opt, char *dir) {
     return (0);
 }
 
-char *my_directory2(char *name) {
+char *my_directory2(char *name)
+{
     int i;
     int o;
     char *direc;
@@ -54,7 +56,8 @@ char *my_directory2(char *name) {
     return (direc);
 }
 
-int do_free(char **tab) {
+int do_free(char **tab)
+{
     int i;
 
     i = 0;
@@ -66,7 +69,8 @@ int do_free(char **tab) {
     return (0);
 }
 
-int set_sort(t_option *opt, char **tab, char *dir) {
+int set_sort(t_option *opt, char **tab, char *dir)
+{
     int i;
 
     i = 0;
@@ -88,7 +92,8 @@ int set_sort(t_option *opt, char **tab, char *dir) {
     return (0);
 }
 
-int do_sort(t_option *opt, char **tab) {
+int do_sort(t_option *opt, char **tab)
+{
     int bool;
     int i;
     int sizetab;

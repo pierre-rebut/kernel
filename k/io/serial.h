@@ -4,6 +4,7 @@
 #include <k/ktypes.h>
 
 void initSerial(int);
+
 int writeSerial(const void *str, u32 length);
 
 #endif //KERNEL_EPITA_SERIAL_H

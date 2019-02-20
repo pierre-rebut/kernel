@@ -6,15 +6,18 @@
 #include <stdio.h>
 #include "unistd.h"
 
-int putchar(char c) {
+int putchar(char c)
+{
     return write(1, &c, 1);
 }
 
-int puts(const char *s) {
+int puts(const char *s)
+{
     return write(1, s, strlen(s));
 }
 
-int printf(const char *fmt, ...) {
+int printf(const char *fmt, ...)
+{
     char printf_buf[1024];
     va_list args;
     int printed;
@@ -29,7 +32,8 @@ int printf(const char *fmt, ...) {
     return printed;
 }
 
-int warn(const char *fmt, ...) {
+int warn(const char *fmt, ...)
+{
     char printf_buf[1024];
     va_list args;
     int printed;
@@ -44,7 +48,8 @@ int warn(const char *fmt, ...) {
     return printed;
 }
 
-int err(const char *fmt, ...) {
+int err(const char *fmt, ...)
+{
     char printf_buf[1024];
     va_list args;
     int printed;

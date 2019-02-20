@@ -8,7 +8,8 @@
 #include <k/ktypes.h>
 #include <compiler.h>
 
-struct idt_entry {
+struct idt_entry
+{
     u16 offset;
     u16 segmentSelector;
     u8 reserved;
@@ -18,7 +19,8 @@ struct idt_entry {
     u16 offset2;
 }__attribute__((packed));
 
-struct esp_context {
+struct esp_context
+{
     u32 gs, fs, es, ds;
     u32 edi, esi, ebp, ebx, edx, ecx, eax;
     u32 int_no, err_code;
@@ -26,6 +28,7 @@ struct esp_context {
 };
 
 void initInterrupt();
+
 int interruptRegister(u32 int_no, void (*fct)(struct esp_context *));
 
 #endif //KERNEL_EPITA_INTERRUPT_H

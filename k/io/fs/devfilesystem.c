@@ -14,7 +14,8 @@
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
-static struct FsPath *devRoot(struct FsVolume *volume) {
+static struct FsPath *devRoot(struct FsVolume *volume)
+{
     struct FsPath *rootPath = kmalloc(sizeof(struct FsPath), 0, "devRoot");
     if (!rootPath)
         return NULL;
@@ -28,7 +29,8 @@ static struct FsPath *devRoot(struct FsVolume *volume) {
     return rootPath;
 }
 
-static struct FsVolume *devMount(struct FsPath *dev) {
+static struct FsVolume *devMount(struct FsPath *dev)
+{
     LOG("[dev] mount:\n");
     (void) dev;
 
@@ -41,17 +43,20 @@ static struct FsVolume *devMount(struct FsPath *dev) {
     return devVolume;
 }
 
-static int devUmount(struct FsVolume *volume) {
+static int devUmount(struct FsVolume *volume)
+{
     kfree(volume);
     return 0;
 }
 
-static int devClose(struct FsPath *path) {
+static int devClose(struct FsPath *path)
+{
     kfree(path);
     return 0;
 }
 
-static struct FsPath *devLookup(struct FsPath *path, const char *name) {
+static struct FsPath *devLookup(struct FsPath *path, const char *name)
+{
     (void) path;
 
     LOG("[dev] lookup enter\n");
@@ -79,7 +84,8 @@ static struct FsPath *devLookup(struct FsPath *path, const char *name) {
     return file;
 }
 
-static int devReaddir(struct FsPath *path, void *block, u32 nblock) {
+static int devReaddir(struct FsPath *path, void *block, u32 nblock)
+{
     (void) path;
 
     LOG("[dev] readdir: %u\n", nblock);
@@ -107,7 +113,8 @@ static int devReaddir(struct FsPath *path, void *block, u32 nblock) {
     return size;
 }
 
-static struct Kobject *devOpenFile(struct FsPath *dev) {
+static struct Kobject *devOpenFile(struct FsPath *dev)
+{
     struct Kobject *obj = koCreate(KO_UNDEFINED, NULL, 0);
     if (obj == NULL)
         return NULL;
@@ -135,6 +142,7 @@ static struct Fs fs_devfs = {
         .openFile = &devOpenFile
 };
 
-void initDevFileSystem() {
+void initDevFileSystem()
+{
     fsRegister(&fs_devfs);
 }

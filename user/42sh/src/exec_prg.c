@@ -18,7 +18,8 @@
 #include "define.h"
 #include "functions.h"
 
-char *my_getenv(char *str, char **env) {
+char *my_getenv(char *str, char **env)
+{
     int j;
     size_t i;
 
@@ -32,7 +33,8 @@ char *my_getenv(char *str, char **env) {
     return (NULL);
 }
 
-char *get_prg(char *prg, t_env *env) {
+char *get_prg(char *prg, t_env *env)
+{
     char *path;
 
     if ((path = my_getenv("PATH", env->env)) == NULL)
@@ -50,7 +52,8 @@ char *get_prg(char *prg, t_env *env) {
     return path;
 }
 
-int exec_prg(struct ExceveInfo *execInfo, t_cmd *lst, t_env *env) {
+int exec_prg(struct ExceveInfo *execInfo, t_cmd *lst, t_env *env)
+{
     if (lst->prg[0] != '/' && lst->prg[0] != '.')
         execInfo->cmdline = get_prg(lst->prg, env);
     else

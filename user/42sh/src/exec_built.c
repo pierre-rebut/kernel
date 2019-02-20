@@ -18,24 +18,27 @@
 #include "define.h"
 #include "functions.h"
 
-struct BuiltinCmd {
+struct BuiltinCmd
+{
     char *name;
+
     int (*fct)(int fd, t_cmd *lst, t_env *env);
 };
 
 static struct BuiltinCmd lstCmd[] = {
-        {"cd", cd_call},
-        {"env", env_call},
-        {"setenv", setenv_call},
+        {"cd",       cd_call},
+        {"env",      env_call},
+        {"setenv",   setenv_call},
         {"unsetenv", unsetenv_call},
-        {"echo", echo},
-        {"sync", sync_call},
+        {"echo",     echo},
+        {"sync",     sync_call},
         {NULL}
 };
 
-int redir_out_fd(t_cmd *lst) {
+int redir_out_fd(t_cmd *lst)
+{
     int fd;
-    
+
     if (lst->redir_out[0] == '>')
         fd = open(lst->redir_out + 1, O_WRONLY | O_CREAT | O_APPEND, 0x180);
     else
@@ -43,7 +46,8 @@ int redir_out_fd(t_cmd *lst) {
     return (fd);
 }
 
-int exec_built(t_cmd *lst, t_env *env) {
+int exec_built(t_cmd *lst, t_env *env)
+{
     int i = 0;
 
     while (lstCmd[i].name) {

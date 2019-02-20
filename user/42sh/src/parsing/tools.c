@@ -11,7 +11,8 @@
 #include    "define.h"
 #include    "functions.h"
 
-char *shift(char *str, int i) {
+char *shift(char *str, int i)
+{
     while (str[i] != 0) {
         str[i] = str[i + 1];
         i++;
@@ -19,7 +20,8 @@ char *shift(char *str, int i) {
     return (str);
 }
 
-char *epur_str(char *str) {
+char *epur_str(char *str)
+{
     int i;
 
     i = 0;
@@ -35,7 +37,8 @@ char *epur_str(char *str) {
     return (str);
 }
 
-int compare_chara(char c, const char *str) {
+int compare_chara(char c, const char *str)
+{
     int i;
 
     i = 0;

@@ -14,7 +14,8 @@ static const char *cmdline;
 static const char **args;
 static const char **env;
 
-void ttyTaskLoop() {
+void ttyTaskLoop()
+{
     struct ExceveInfo execInfo = {
             .cmdline = cmdline,
             .env = env,
@@ -39,13 +40,15 @@ void ttyTaskLoop() {
     taskExit();
 }
 
-void initTTY(const char *c, const char **av, const char **e) {
+void initTTY(const char *c, const char **av, const char **e)
+{
     cmdline = c;
     args = av;
     env = e;
 }
 
-void createNewTTY() {
+void createNewTTY()
+{
     struct TaskCreator taskInfo = {
             .type = T_PROCESS,
             .pageDirectory = kernelPageDirectory,

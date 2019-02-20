@@ -11,7 +11,8 @@
 #include <stdlib.h>
 #include <alloc.h>
 
-int count_nb_line(const char *str, int i) {
+int count_nb_line(const char *str, int i)
+{
     int num;
 
     num = 1;
@@ -34,7 +35,8 @@ int count_nb_line(const char *str, int i) {
     return (num);
 }
 
-int count_word(const char *str, int i) {
+int count_word(const char *str, int i)
+{
     int num;
 
     num = 1;
@@ -50,7 +52,8 @@ int count_word(const char *str, int i) {
     return (num);
 }
 
-int str_add_comand(char **tab, char *str, int i, int *y) {
+int str_add_comand(char **tab, char *str, int i, int *y)
+{
     int x;
     char bool;
 
@@ -74,7 +77,8 @@ int str_add_comand(char **tab, char *str, int i, int *y) {
     return (i);
 }
 
-int get_separ(char **tab, const char *str, int i, int *y) {
+int get_separ(char **tab, const char *str, int i, int *y)
+{
     int x;
 
     x = 0;
@@ -88,7 +92,8 @@ int get_separ(char **tab, const char *str, int i, int *y) {
     return (i);
 }
 
-char **str_parser_line(char *str, int i, int y) {
+char **str_parser_line(char *str, int i, int y)
+{
     int len;
     char **tab;
 

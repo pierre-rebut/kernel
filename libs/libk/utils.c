@@ -6,12 +6,12 @@
 #include <string.h>
 #include <stdio.h>
 #include <utils.h>
-#include <stdlib.h>
 #include <alloc.h>
 
 static const int maxscale = 7;
 
-int humanize_number(char *buf, size_t len, long long quotient, const char *suffix, int scale, int flags) {
+int humanize_number(char *buf, size_t len, long long quotient, const char *suffix, int scale, int flags)
+{
     const char *prefixes, *sep;
     int i, r, remainder, s1, s2, sign;
     int divisordeccut;
@@ -169,7 +169,8 @@ static struct {
  *	Convert file flags to a comma-separated string.  If no flags
  *	are set, return the empty string.
  */
-char *fflagstostr(u_long flags) {
+char *fflagstostr(u_long flags)
+{
     /*char *string;
     char *sp, *dp;
     u_long setflags;

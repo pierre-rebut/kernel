@@ -9,10 +9,15 @@
 #include "filestream.h"
 
 int fscanf(FILE *stream, const char *fmt, ...);
+
 int vfscanf(FILE *stream, const char *fmt, va_list args);
+
 int scanf(const char *fmt, ...);
+
 int vscanf(const char *fmt, va_list args);
+
 int sscanf(const char *buffer, const char *fmt, ...);
+
 int vsscanf(const char *buffer, const char *fmt, va_list args);
 
 #endif //KERNEL_SCANF_H

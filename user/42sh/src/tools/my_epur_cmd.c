@@ -13,7 +13,8 @@
 #include <alloc.h>
 #include "functions.h"
 
-int add_separ_line(char *new, const char *str, int *i, int cpt) {
+int add_separ_line(char *new, const char *str, int *i, int cpt)
+{
     if (str[*i] != ';' && str[*i] != '&' && str[*i] != '>'
         && str[*i] != '<' && str[*i] != '|')
         new[cpt++] = str[*i];
@@ -36,7 +37,8 @@ int add_separ_line(char *new, const char *str, int *i, int cpt) {
     return (cpt);
 }
 
-char *my_epur_cmd(char *str, int i) {
+char *my_epur_cmd(char *str, int i)
+{
     int cpt;
     int len;
     char *new;

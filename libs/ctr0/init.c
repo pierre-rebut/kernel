@@ -4,13 +4,15 @@
 
 #include <filestream.h>
 
-void _init() {
+void _init()
+{
     stdin = fdopen(0);
     stdout = fdopen(1);
     stderr = fdopen(2);
 }
 
-void _end() {
+void _end()
+{
     fflush(stdout);
     fflush(stderr);
 }

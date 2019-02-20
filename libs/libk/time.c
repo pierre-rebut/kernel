@@ -49,20 +49,23 @@ static const int _ytab[2][12] = {
         {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}
 };
 
-time_t time(time_t *tloc) {
+time_t time(time_t *tloc)
+{
     int res = syscall1(SYSCALL_TIME, (u32) tloc);
     if (res < 0)
         return 0;
     return (u32) res;
 }
 
-const char *getMonthAbrev(int mon) {
+const char *getMonthAbrev(int mon)
+{
     if (mon < 0 || mon > 11)
         return NULL;
     return _months_abbrev[mon];
 }
 
-static struct tm *gmtime_r(const time_t *timer, struct tm *tmbuf) {
+static struct tm *gmtime_r(const time_t *timer, struct tm *tmbuf)
+{
     time_t time = *timer;
     unsigned long dayclock, dayno;
     int year = EPOCH_YR;
@@ -92,7 +95,8 @@ static struct tm *gmtime_r(const time_t *timer, struct tm *tmbuf) {
     return tmbuf;
 }
 
-static struct tm *localtime_r(const time_t *timer, struct tm *tmbuf) {
+static struct tm *localtime_r(const time_t *timer, struct tm *tmbuf)
+{
     time_t t;
 
     t = *timer - _timezone;
@@ -100,18 +104,23 @@ static struct tm *localtime_r(const time_t *timer, struct tm *tmbuf) {
 }
 
 #ifndef KERNEL
-struct tm *gmtime(const time_t *timer) {
+
+struct tm *gmtime(const time_t *timer)
+{
     static struct tm buf;
     return gmtime_r(timer, &buf);
 }
 
-struct tm *localtime(const time_t *timer) {
+struct tm *localtime(const time_t *timer)
+{
     static struct tm buf;
     return localtime_r(timer, &buf);
 }
+
 #endif
 
-time_t mktime(struct tm *tmbuf) {
+time_t mktime(struct tm *tmbuf)
+{
     long day, year;
     int tm_year;
     int yday, month;
@@ -132,7 +141,7 @@ time_t mktime(struct tm *tmbuf) {
         tmbuf->tm_hour--;
     }
     day = tmbuf->tm_hour / 24;
-    tmbuf->tm_hour= tmbuf->tm_hour % 24;
+    tmbuf->tm_hour = tmbuf->tm_hour % 24;
     if (tmbuf->tm_hour < 0) {
         tmbuf->tm_hour += 24;
         day--;
@@ -145,7 +154,7 @@ time_t mktime(struct tm *tmbuf) {
     }
     day += (tmbuf->tm_mday - 1);
     while (day < 0) {
-        if(--tmbuf->tm_mon < 0) {
+        if (--tmbuf->tm_mon < 0) {
             tmbuf->tm_year--;
             tmbuf->tm_mon = 11;
         }
@@ -218,25 +227,30 @@ time_t mktime(struct tm *tmbuf) {
     return (time_t) seconds;
 }
 
-char *asctime_r(const struct tm *tm, char *buf) {
+char *asctime_r(const struct tm *tm, char *buf)
+{
     strftime(buf, ASCBUFSIZE, "%c\n", tm);
     return buf;
 }
 
-char *ctime_r(const time_t *timer, char *buf) {
+char *ctime_r(const time_t *timer, char *buf)
+{
     return asctime_r(localtime(timer), buf);
 }
 
-char *asctime(const struct tm *tm) {
+char *asctime(const struct tm *tm)
+{
     static char buf[ASCBUFSIZE];
     return asctime_r(tm, buf);
 }
 
-char *ctime(const time_t *timer) {
+char *ctime(const time_t *timer)
+{
     return asctime(localtime(timer));
 }
 
-char *_strdate(char *s) {
+char *_strdate(char *s)
+{
     time_t now;
 
     time(&now);
@@ -244,7 +258,8 @@ char *_strdate(char *s) {
     return s;
 }
 
-char *_strtime(char *s) {
+char *_strtime(char *s)
+{
     time_t now;
 
     time(&now);
@@ -263,7 +278,8 @@ static int _secs(const struct tm *);
 
 static size_t _fmt(const char *, const struct tm *);
 
-size_t strftime(char *s, size_t maxsize, const char *format, const struct tm *t) {
+size_t strftime(char *s, size_t maxsize, const char *format, const struct tm *t)
+{
 
     pt = s;
     if ((gsize = maxsize) < 1)
@@ -275,7 +291,8 @@ size_t strftime(char *s, size_t maxsize, const char *format, const struct tm *t)
     return (0);
 }
 
-static size_t _fmt(register const char *format, const struct tm *t) {
+static size_t _fmt(register const char *format, const struct tm *t)
+{
     for (; *format; ++format) {
         if (*format == '%')
             switch (*++format) {
@@ -285,26 +302,26 @@ static size_t _fmt(register const char *format, const struct tm *t) {
                 case 'A':
                     if (t->tm_wday < 0 || t->tm_wday > 6)
                         return (0);
-                    if (!_add((char *)_days[t->tm_wday]))
+                    if (!_add((char *) _days[t->tm_wday]))
                         return (0);
                     continue;
                 case 'a':
                     if (t->tm_wday < 0 || t->tm_wday > 6)
                         return (0);
-                    if (!_add((char *)_days_abbrev[t->tm_wday]))
+                    if (!_add((char *) _days_abbrev[t->tm_wday]))
                         return (0);
                     continue;
                 case 'B':
                     if (t->tm_mon < 0 || t->tm_mon > 11)
                         return (0);
-                    if (!_add((char *)_months[t->tm_mon]))
+                    if (!_add((char *) _months[t->tm_mon]))
                         return (0);
                     continue;
                 case 'b':
                 case 'h':
                     if (t->tm_mon < 0 || t->tm_mon > 11)
                         return (0);
-                    if (!_add((char *)_months_abbrev[t->tm_mon]))
+                    if (!_add((char *) _months_abbrev[t->tm_mon]))
                         return (0);
                     continue;
                 case 'C':
@@ -419,7 +436,7 @@ static size_t _fmt(register const char *format, const struct tm *t) {
                         return (0);
                     continue;
                 case 'Z':
-                    if (!t->tm_zone || !_add((char *)t->tm_zone))
+                    if (!t->tm_zone || !_add((char *) t->tm_zone))
                         return (0);
                     continue;
                 case '%':
@@ -438,7 +455,8 @@ static size_t _fmt(register const char *format, const struct tm *t) {
     return (gsize);
 }
 
-static int _secs(const struct tm *t) {
+static int _secs(const struct tm *t)
+{
     static char buf[15];
     register time_t s;
     register char *p;
@@ -448,22 +466,24 @@ static int _secs(const struct tm *t) {
     tmp = *t;
     s = mktime(&tmp);
     for (p = buf + sizeof(buf) - 2; s > 0 && p > buf; s /= 10)
-        *p-- = (char)(s % 10 + '0');
+        *p-- = (char) (s % 10 + '0');
     return (_add(++p));
 }
 
-static int _conv(int n, int digits, int pad) {
+static int _conv(int n, int digits, int pad)
+{
     static char buf[10];
     register char *p;
 
     for (p = buf + sizeof(buf) - 2; n > 0 && p > buf; n /= 10, --digits)
-        *p-- = (char)(n % 10 + '0');
+        *p-- = (char) (n % 10 + '0');
     while (p > buf && digits-- > 0)
         *p-- = (char) pad;
     return (_add(++p));
 }
 
-static int _add(register char *str) {
+static int _add(register char *str)
+{
     for (;; ++pt, --gsize) {
         if (!gsize)
             return (0);

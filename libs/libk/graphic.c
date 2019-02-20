@@ -22,7 +22,6 @@
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "include/graphic.h"
-#include <stdlib.h>
 #include <err.h>
 #include <alloc.h>
 #include "unistd.h"
@@ -296,19 +295,23 @@ static unsigned char font[2048] = {
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-void draw_begin(void) {
+void draw_begin(void)
+{
     draw_clear(CONS_BLACK);
 }
 
-void draw_end(void) {
+void draw_end(void)
+{
     swap_frontbuffer(offbuffer);
 }
 
-void draw_clear(color_t color) {
+void draw_clear(color_t color)
+{
     memset(offbuffer, color, FB_SIZE);
 }
 
-void draw_pixel(unsigned int x, unsigned int y, color_t color) {
+void draw_pixel(unsigned int x, unsigned int y, color_t color)
+{
     if (x >= GRAPHIC_WIDTH)
         return;
     if (y >= GRAPHIC_HEIGHT)
@@ -317,7 +320,8 @@ void draw_pixel(unsigned int x, unsigned int y, color_t color) {
     offbuffer[y * GRAPHIC_WIDTH + x] = color;
 }
 
-static int abs(int a) {
+static int abs(int a)
+{
     if (a < 0)
         return -a;
     else
@@ -325,7 +329,8 @@ static int abs(int a) {
 }
 
 void draw_line(unsigned int x1, unsigned int y1,
-               unsigned int x2, unsigned int y2, color_t color) {
+               unsigned int x2, unsigned int y2, color_t color)
+{
     unsigned int i;
 
     if (x1 >= GRAPHIC_WIDTH)
@@ -390,7 +395,8 @@ void draw_line(unsigned int x1, unsigned int y1,
 }
 
 void draw_rect(unsigned int x1, unsigned int y1,
-               unsigned int x2, unsigned int y2, color_t color) {
+               unsigned int x2, unsigned int y2, color_t color)
+{
     unsigned int x;
     unsigned int y;
 
@@ -406,7 +412,8 @@ void draw_rect(unsigned int x1, unsigned int y1,
 
 void draw_fillrect(unsigned int x1, unsigned int y1,
                    unsigned int x2, unsigned int y2,
-                   color_t color, color_t interior) {
+                   color_t color, color_t interior)
+{
     unsigned int x;
     unsigned int y;
 
@@ -427,7 +434,8 @@ void draw_fillrect(unsigned int x1, unsigned int y1,
  * Windows BMP file header.
  */
 
-struct bitmap_header {
+struct bitmap_header
+{
     char signature[2];
     unsigned long filesize;
     unsigned long reserved1;
@@ -442,7 +450,8 @@ struct bitmap_header {
     char reserved[16];
 } __attribute__ ((packed));
 
-struct image *load_image(const char *path) {
+struct image *load_image(const char *path)
+{
     struct bitmap_header bmp;
 
     int fd = open(path, O_RDONLY, 0);
@@ -518,14 +527,16 @@ struct image *load_image(const char *path) {
     return NULL;
 }
 
-void clear_image(struct image *image) {
+void clear_image(struct image *image)
+{
     for (unsigned int i = 0; i < image->height; i++)
         free(image->data[i]);
     free(image->data);
     free(image);
 }
 
-void draw_image_alpha(struct image *image, unsigned int x, unsigned int y, unsigned int alpha) {
+void draw_image_alpha(struct image *image, unsigned int x, unsigned int y, unsigned int alpha)
+{
     for (unsigned int i = 0; i < image->height; i++)
         for (unsigned int j = 0; j < image->width; j++) {
             if ((alpha == (unsigned int) -1) || (alpha != image->data[i][j]))
@@ -533,7 +544,8 @@ void draw_image_alpha(struct image *image, unsigned int x, unsigned int y, unsig
         }
 }
 
-void draw_image(struct image *image, unsigned int x, unsigned int y) {
+void draw_image(struct image *image, unsigned int x, unsigned int y)
+{
     draw_image_alpha(image, x, y, -1);
 }
 
@@ -541,14 +553,16 @@ void draw_image(struct image *image, unsigned int x, unsigned int y) {
  * used to decompose a byte
  */
 
-static int bit_on(char c, int n) {
+static int bit_on(char c, int n)
+{
     int mask;
 
     mask = 1 << (7 - n);
     return c & mask;
 }
 
-void draw_text(const char *s, unsigned int x, unsigned int y, color_t fg, color_t bg) {
+void draw_text(const char *s, unsigned int x, unsigned int y, color_t fg, color_t bg)
+{
     char c;
     char ch;
     char p;
@@ -571,7 +585,8 @@ void draw_text(const char *s, unsigned int x, unsigned int y, color_t fg, color_
     }
 }
 
-struct anim *load_anim(char *paths, int delay) {
+struct anim *load_anim(char *paths, int delay)
+{
     char *p;
     char *filename;
     struct anim *anim = NULL;
@@ -617,7 +632,8 @@ struct anim *load_anim(char *paths, int delay) {
     return anim;
 }
 
-void draw_anim(struct anim *anim, int x, int y, unsigned long jiffies) {
+void draw_anim(struct anim *anim, int x, int y, unsigned long jiffies)
+{
     if (anim->jiffies + anim->delay <= jiffies || anim->jiffies > jiffies) {
         anim->jiffies = jiffies;
         anim->current_img = (anim->current_img + 1) % anim->nr_img;
@@ -626,7 +642,8 @@ void draw_anim(struct anim *anim, int x, int y, unsigned long jiffies) {
     draw_image_alpha(anim->imgs[anim->current_img], x, y, 0);
 }
 
-static void blue_screen_cons(const char *message) {
+static void blue_screen_cons(const char *message)
+{
     char seq[] = {
             CONS_ESCAPE, CONS_COLOR,
             CONS_BACK(CONS_BLUE) | CONS_FRONT(CONS_WHITE) | CONS_LIGHT,
@@ -668,7 +685,8 @@ static void blue_screen_cons(const char *message) {
         continue;
 }
 
-static void blue_screen_fb(const char *message) {
+static void blue_screen_fb(const char *message)
+{
     draw_begin();
     draw_clear(CONS_BLUE);
 
@@ -691,13 +709,15 @@ static void blue_screen_fb(const char *message) {
 
 void (*blue_screen)(const char *message) = blue_screen_cons;
 
-void switch_graphic(void) {
+void switch_graphic(void)
+{
     if (setvideo(VIDEO_GRAPHIC))
         blue_screen("Unable to switch to graphic mode");
     blue_screen = blue_screen_fb;
 }
 
-void switch_text(void) {
+void switch_text(void)
+{
     if (setvideo(VIDEO_TEXT))
         blue_screen("Unable to switch to text mode");
     blue_screen = blue_screen_cons;

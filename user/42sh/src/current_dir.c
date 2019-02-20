@@ -15,7 +15,8 @@
 #include "functions.h"
 #include "define.h"
 
-char *cd_tild(t_env *env) {
+char *cd_tild(t_env *env)
+{
     char *home;
 
     if ((home = (my_getenv("HOME", env->env))) == NULL) {
@@ -29,7 +30,8 @@ char *cd_tild(t_env *env) {
     return (home);
 }
 
-char *cd_dash(t_env *env, int fd) {
+char *cd_dash(t_env *env, int fd)
+{
     char *oldpwd;
 
     if ((oldpwd = (my_getenv("OLDPWD", env->env))) == NULL) {
@@ -45,7 +47,8 @@ char *cd_dash(t_env *env, int fd) {
     return (oldpwd);
 }
 
-char *cd_check_arg(char *path, t_env *env, int fd) {
+char *cd_check_arg(char *path, t_env *env, int fd)
+{
     char *new_path = my_getenv("PWD", env->env);
 
     if (path == NULL || strcmp("~", path) == SUCCESS) {

@@ -8,7 +8,8 @@
 #include <fts.h>
 #include <kstd.h>
 
-typedef struct {
+typedef struct
+{
     char *p_end;            /* pointer to NULL at end of path */
     char *target_end;        /* pointer to end of target base */
     char p_path[MAXPATHLEN];    /* pointer to the start of a path */

@@ -5,7 +5,8 @@
 #ifndef KERNEL_FTS_H
 #define KERNEL_FTS_H
 
-typedef struct {
+typedef struct
+{
     struct _ftsent *fts_cur;    /* current node */
     struct _ftsent *fts_child;    /* linked list of children */
     struct _ftsent **fts_array;    /* sort array */
@@ -32,7 +33,8 @@ typedef struct {
     int fts_options;        /* fts_open options, global flags */
 } FTS;
 
-typedef struct _ftsent {
+typedef struct _ftsent
+{
     struct _ftsent *fts_cycle;    /* cycle node */
     struct _ftsent *fts_parent;    /* parent directory */
     struct _ftsent *fts_link;    /* next file in directory */

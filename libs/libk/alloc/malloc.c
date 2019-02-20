@@ -17,7 +17,8 @@ t_header *g_begin = NULL;
 size_t g_pagesize = 0;
 
 void *create_header(t_header *ptr, size_t len,
-                    t_header *next, t_header *prev) {
+                    t_header *next, t_header *prev)
+{
     if (ptr == NULL)
         return (NULL);
     ptr->magic_nb = 42;
@@ -28,7 +29,8 @@ void *create_header(t_header *ptr, size_t len,
     return ((void *) ptr);
 }
 
-void *malloc_new_pagesize(size_t len, t_header *header) {
+void *malloc_new_pagesize(size_t len, t_header *header)
+{
     size_t tmp;
     void *new;
 
@@ -47,7 +49,8 @@ void *malloc_new_pagesize(size_t len, t_header *header) {
     return (new + sizeof(t_header));
 }
 
-void *malloc_reallocsize(t_header *header, size_t len) {
+void *malloc_reallocsize(t_header *header, size_t len)
+{
     size_t tmp;
     t_header *new;
     t_header *link;
@@ -68,7 +71,8 @@ void *malloc_reallocsize(t_header *header, size_t len) {
     return ((void *) header + sizeof(t_header));
 }
 
-void *malloc_page_size(size_t len, t_header *header) {
+void *malloc_page_size(size_t len, t_header *header)
+{
     while (header->next != NULL) {
         if (header->magic_nb != 42)
             return (NULL);
@@ -79,7 +83,8 @@ void *malloc_page_size(size_t len, t_header *header) {
     return (malloc_new_pagesize(len, header));
 }
 
-void *malloc(size_t len) {
+void *malloc(size_t len)
+{
     void *new;
 
     if (len == 0)

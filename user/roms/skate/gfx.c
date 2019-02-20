@@ -24,25 +24,25 @@
 #include "skate.h"
 
 struct gfx graphics[] = {
-	{TRICK_NONE, 7, "skater1.bmp skater2.bmp", NULL},
-	{TRICK_RUN, 7, "skater3.bmp skater4.bmp skater5.bmp skater6.bmp", NULL},
-	{TRICK_FLIP, 5, "flip1.bmp flip2.bmp flip3.bmp flip4.bmp flip5.bmp", NULL},
-	{TRICK_UP, 4, "skaterup.bmp", NULL},
-	{TRICK_SLIDE, 6, "slide1.bmp slide2.bmp", NULL},
-	{TRICK_CRASH, 6, "crash.bmp", NULL},
-	{TRICK_ROTATE, 8, "rotate1.bmp rotate2.bmp rotate3.bmp rotate4.bmp rotate5.bmp", NULL},
-	{BOX_UP, 0, "boxup.bmp", NULL},
-	{BOX, 0, "box.bmp", NULL},
-	{BOX_RAIL, 0, "rail.bmp", NULL},
-	{0, 0, NULL, NULL}
+        {TRICK_NONE,   7, "skater1.bmp skater2.bmp",                                     NULL},
+        {TRICK_RUN,    7, "skater3.bmp skater4.bmp skater5.bmp skater6.bmp",             NULL},
+        {TRICK_FLIP,   5, "flip1.bmp flip2.bmp flip3.bmp flip4.bmp flip5.bmp",           NULL},
+        {TRICK_UP,     4, "skaterup.bmp",                                                NULL},
+        {TRICK_SLIDE,  6, "slide1.bmp slide2.bmp",                                       NULL},
+        {TRICK_CRASH,  6, "crash.bmp",                                                   NULL},
+        {TRICK_ROTATE, 8, "rotate1.bmp rotate2.bmp rotate3.bmp rotate4.bmp rotate5.bmp", NULL},
+        {BOX_UP,       0, "boxup.bmp",                                                   NULL},
+        {BOX,          0, "box.bmp",                                                     NULL},
+        {BOX_RAIL,     0, "rail.bmp",                                                    NULL},
+        {0,            0, NULL,                                                          NULL}
 };
 
 void gfx_init(void)
 {
-	for (int i = 0; graphics[i].filename; i++) {
-		if (graphics[i].delay)
-			graphics[i].gfx = load_anim(graphics[i].filename, graphics[i].delay);
-		else
-			graphics[i].gfx = load_image(graphics[i].filename);
-	}
+    for (int i = 0; graphics[i].filename; i++) {
+        if (graphics[i].delay)
+            graphics[i].gfx = load_anim(graphics[i].filename, graphics[i].delay);
+        else
+            graphics[i].gfx = load_image(graphics[i].filename);
+    }
 }

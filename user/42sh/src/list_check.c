@@ -14,7 +14,8 @@
 #include "struct.h"
 #include "functions.h"
 
-t_cmd *init_list() {
+t_cmd *init_list()
+{
     t_cmd *elem;
 
     elem = malloc(sizeof(t_cmd));

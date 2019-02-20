@@ -7,7 +7,8 @@
 
 #include <k/ktypes.h>
 
-struct DeviceDriver {
+struct DeviceDriver
+{
     char *name;
     u32 multiplier;
 
@@ -22,7 +23,8 @@ struct DeviceDriver {
     struct DeviceDriver *next;
 };
 
-struct Device {
+struct Device
+{
     char *name;
     int unit;
     int blockSize;
@@ -34,6 +36,7 @@ struct Device {
 void deviceDriverRegister(struct DeviceDriver *driver);
 
 struct Device *deviceCreate(const char *name, struct DeviceDriver *driver, int unit, u32 nblocks, int blockSize);
+
 struct Device *deviceGetByName(const char *name);
 
 void deviceDestroy(struct Device *device);
@@ -48,19 +51,23 @@ struct DeviceDriver *deviceGetDeviceDriverByIndex(u32 index);
 
 struct DeviceDriver *deviceGetDeviceDriverByName(const char *name);
 
-inline int deviceBlockSize(struct Device *d) {
+inline int deviceBlockSize(struct Device *d)
+{
     return d->blockSize * d->multiplier;
 }
 
-inline int deviceNblocks(struct Device *d) {
+inline int deviceNblocks(struct Device *d)
+{
     return d->nblocks / d->multiplier;
 }
 
-inline int deviceUnit(struct Device *d) {
+inline int deviceUnit(struct Device *d)
+{
     return d->unit;
 }
 
-inline const char *deviceDriverName(struct Device *d) {
+inline const char *deviceDriverName(struct Device *d)
+{
     return d->driver->name;
 }
 

@@ -13,7 +13,8 @@
 
 #include "malloc.h"
 
-void delete_all(t_header *tmp) {
+void delete_all(t_header *tmp)
+{
     if (tmp != NULL && tmp->next == NULL) {
         if (tmp->prev == NULL) {
             brk(g_begin);
@@ -23,7 +24,8 @@ void delete_all(t_header *tmp) {
     }
 }
 
-void free(const void *ptr) {
+void free(const void *ptr)
+{
     t_header *pos;
     t_header *tmp;
 

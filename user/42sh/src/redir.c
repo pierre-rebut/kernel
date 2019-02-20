@@ -9,9 +9,7 @@
 */
 
 #include <string.h>
-#include <stdlib.h>
 #include <stdio.h>
-#include <err.h>
 #include <unistd.h>
 #include <errno.h>
 #include <define.h>
@@ -20,7 +18,8 @@
 
 #include "functions.h"
 
-int exe_redir_in_double(t_cmd *lst) {
+int exe_redir_in_double(t_cmd *lst)
+{
     int fd;
     char *tmp;
 
@@ -41,7 +40,8 @@ int exe_redir_in_double(t_cmd *lst) {
     return (fd);
 }
 
-int exe_redir_in_simple(t_cmd *lst) {
+int exe_redir_in_simple(t_cmd *lst)
+{
     int fd;
 
     fd = open(lst->redir_in, O_RDONLY, 0);
@@ -52,14 +52,16 @@ int exe_redir_in_simple(t_cmd *lst) {
     return (fd);
 }
 
-int exe_redir_in(t_cmd *lst) {
+int exe_redir_in(t_cmd *lst)
+{
     if (lst->redir_in[0] == '<')
         return exe_redir_in_double(lst);
 
     return exe_redir_in_simple(lst);
 }
 
-int exe_redir_out(t_cmd *lst, int fd) {
+int exe_redir_out(t_cmd *lst, int fd)
+{
     if (lst->redir_out[0] == '>') {
         fd = open(lst->redir_out + 1, O_WRONLY | O_CREAT | O_APPEND, 0x180);
         if (fd == -1) {

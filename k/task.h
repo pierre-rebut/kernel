@@ -15,12 +15,14 @@
 
 struct Console;
 
-enum TaskPrivilege {
+enum TaskPrivilege
+{
     TaskPrivilegeKernel,
     TaskPrivilegeUser
 };
 
-enum TaskEventType {
+enum TaskEventType
+{
     TaskEventNone,
     TaskEventKeyboard,
     TaskEventTimer,
@@ -29,24 +31,28 @@ enum TaskEventType {
     TaskEventPipe
 };
 
-struct Heap {
+struct Heap
+{
     u32 start;
     u32 nbPage;
     u32 pos;
 };
 
-struct TaskEvent {
+struct TaskEvent
+{
     enum TaskEventType type;
     unsigned long timer;
     u32 arg;
 };
 
-enum TaskType {
+enum TaskType
+{
     T_PROCESS,
     T_THREAD
 };
 
-struct TaskCreator {
+struct TaskCreator
+{
     enum TaskType type;
     struct PageDirectory *pageDirectory;
     u32 entryPoint;
@@ -59,7 +65,8 @@ struct TaskCreator {
     void *parent;
 };
 
-struct Task {
+struct Task
+{
     enum TaskType type;
     u32 pid;
 
@@ -91,28 +98,41 @@ extern struct Task *freeTimeTask;
 extern struct Task kernelTask;
 
 void taskSaveState(u32 esp);
+
 u32 taskSwitch(struct Task *newTask);
 
 struct Task *createTask(struct TaskCreator *info);
+
 pid_t createProcess(const struct ExceveInfo *info);
+
 pid_t createThread(u32 entryPrg);
+
 void initTasking();
 
 int taskKill(struct Task *);
+
 int taskExit();
+
 void taskWaitEvent(enum TaskEventType event, u32 arg);
+
 void taskResetEvent(struct Task *task);
+
 pid_t taskGetpid();
+
 pid_t taskKillByPid(pid_t pid);
+
 struct Task *getTaskByPid(pid_t pid);
 
 u32 taskHeapInc(s32 size);
+
 int taskHeapSet(u32 addr);
 
 int taskChangeDirectory(const char *directory);
 
 int taskGetAvailableFd(struct Task *task);
+
 struct Kobject *taskGetKObjectByFd(int fd);
+
 int taskSetKObjectByFd(int fd, struct Kobject *obj);
 
 #endif //KERNEL_EPITA_USERLAND_H

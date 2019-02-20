@@ -8,7 +8,8 @@
 #include <k/ktypes.h>
 #include <sys/mutex.h>
 
-struct Pipe {
+struct Pipe
+{
     char *buffer;
     int read_pos;
     int write_pos;
@@ -19,9 +20,13 @@ struct Pipe {
 };
 
 struct Pipe *pipeCreate();
+
 struct Pipe *pipeAddref(struct Pipe *pipe);
+
 int pipeRead(struct Pipe *pipe, char *buffer, u32 size);
+
 int pipeWrite(struct Pipe *pipe, const char *buffer, u32 size);
+
 void pipeDelete(struct Pipe *pipe);
 
 

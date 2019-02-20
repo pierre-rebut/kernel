@@ -11,7 +11,8 @@
 #include <string.h>
 #include <alloc.h>
 
-void *calloc(size_t len, size_t u) {
+void *calloc(size_t len, size_t u)
+{
     void *tmp;
 
     if (len == 0 || u == 0)

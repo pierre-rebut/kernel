@@ -24,7 +24,9 @@
 #define KERNEL_STACK_SIZE 0x1000
 
 int initAllocator();
+
 void *kmalloc(u32 size, u32 allign, const char *comment);
+
 void kfree(void *alloc);
 
 void kmallocGetInfo(u32 *total, u32 *used);

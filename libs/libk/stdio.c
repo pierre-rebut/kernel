@@ -10,7 +10,8 @@
 #define TOOSMALL    2
 #define TOOLARGE    3
 
-long long int strtoll(const char *nptr, char **endptr, int base) {
+long long int strtoll(const char *nptr, char **endptr, int base)
+{
     const char *s;
     /* LONGLONG */
     long long int acc, cutoff;
@@ -118,11 +119,13 @@ long long int strtoll(const char *nptr, char **endptr, int base) {
     return (acc);
 }
 
-long long strtonum(const char *numstr, long long minval, long long maxval, const char **errstrp) {
+long long strtonum(const char *numstr, long long minval, long long maxval, const char **errstrp)
+{
     long long ll = 0;
     char *ep;
     int error = 0;
-    struct errval {
+    struct errval
+    {
         const char *errstr;
         int err;
     } ev[4] = {

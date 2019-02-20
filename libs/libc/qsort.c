@@ -27,7 +27,8 @@ static inline void swapfunc(char *, char *, int, int);
 #define SWAPINIT(a, es) swaptype = ((char *)(a) - (char *)0) % sizeof(long) || \
     (es) % sizeof(long) ? 2 : (es) == sizeof(long)? 0 : 1;
 
-static inline void swapfunc(char *a, char *b, int n, int swaptype) {
+static inline void swapfunc(char *a, char *b, int n, int swaptype)
+{
     if (swaptype <= 1) swapcode(long, a, b, n)
     else swapcode(char, a, b, n)
 }
@@ -42,13 +43,15 @@ static inline void swapfunc(char *a, char *b, int n, int swaptype) {
 
 #define vecswap(a, b, n)    if ((n) > 0) swapfunc(a, b, n, swaptype)
 
-static inline char *med3(char *a, char *b, char *c, int (*cmp)(const void *, const void *)) {
+static inline char *med3(char *a, char *b, char *c, int (*cmp)(const void *, const void *))
+{
     return cmp(a, b) < 0 ?
            (cmp(b, c) < 0 ? b : (cmp(a, c) < 0 ? c : a))
                          : (cmp(b, c) > 0 ? b : (cmp(a, c) < 0 ? a : c));
 }
 
-void qsort(void *a, size_t n, size_t es, int (*cmp)(const void *, const void *)) {
+void qsort(void *a, size_t n, size_t es, int (*cmp)(const void *, const void *))
+{
     char *pa, *pb, *pc, *pd, *pl, *pm, *pn;
     int d, r, swaptype, swap_cnt;
 
@@ -111,13 +114,13 @@ void qsort(void *a, size_t n, size_t es, int (*cmp)(const void *, const void *))
     }
 
     pn = a + n * es;
-    r = (int) min((u32)(pa - (char *) a), (u32)(pb - pa));
+    r = (int) min((u32) (pa - (char *) a), (u32) (pb - pa));
     vecswap(a, pb - r, r);
-    r = (int) min((u32)(pd - pc), (u32)(pn - pd - es));
+    r = (int) min((u32) (pd - pc), (u32) (pn - pd - es));
     vecswap(pb, pn - r, r);
-    if ((r = (int)(pb - pa)) > (int) es)
+    if ((r = (int) (pb - pa)) > (int) es)
         qsort(a, r / es, es, cmp);
-    if ((r = (int)(pd - pc)) > (int) es) {
+    if ((r = (int) (pd - pc)) > (int) es) {
         /* Iterate rather than recurse to save stack space */
         a = pn - r;
         n = r / es;
