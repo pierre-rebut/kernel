@@ -161,20 +161,24 @@ static int kfsClose(struct FsPath *path)
 static int kfsStat(struct FsPath *path, struct stat *result)
 {
     struct kfs_inode *inode = path->privateData;
+    struct stat tmpResult;
 
     cli();
     pagingSwitchPageDirectory(path->volume->privateData);
 
-    result->st_ino = inode->inumber;
-    result->st_size = inode->file_sz;
-    result->st_blksize = KFS_BLK_DATA_SZ;
-    result->st_mode = 0;
+    tmpResult.st_ino = inode->inumber;
+    tmpResult.st_size = inode->file_sz;
+    tmpResult.st_blksize = KFS_BLK_DATA_SZ;
 
-    result->st_uid = result->st_gid = result->st_nlink = 0;
-    result->st_atim = result->st_ctim = result->st_mtim = 0;
+    tmpResult.st_uid = tmpResult.st_gid = tmpResult.st_nlink = 0;
+    tmpResult.st_atim = tmpResult.st_ctim = tmpResult.st_mtim = 0;
 
     pagingSwitchPageDirectory(currentTask->pageDirectory);
     sti();
+
+    memcpy(result, &tmpResult, sizeof(struct stat));
+    result->st_mode = (u16) (path->type == FS_FOLDER ? S_IFDIR | S_IRWXU :
+            S_IFREG | S_IRUSR | S_IXUSR | S_IRGRP | S_IROTH);
     return 0;
 }
 
@@ -251,10 +255,7 @@ static int kfsReaddir(struct FsPath *path, void *block, u32 nblock)
         tmpDirent.d_type = FT_FILE;
         tmpDirent.d_namlen = strlen(dir->filename);
 
-        klog("bite en bois de chaine: %d\n", i);
-        memcpy(tmpBlock, &tmpDirent, sizeof(struct dirent));
-        klog("bite en marbre\n");
-        block += sizeof(struct dirent);
+        memcpy(tmpBlock + (size * sizeof(struct dirent)), &tmpDirent, sizeof(struct dirent));
         size += 1;
 
         dir = (struct kfs_inode *) (KFS_MEM_POS + (dir->next_inode * KFS_BLK_SZ));

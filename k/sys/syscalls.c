@@ -218,6 +218,7 @@ static int sys_gettick(struct esp_context *ctx)
 
 static int sys_open(struct esp_context *ctx)
 {
+    LOG("open: %s\n", (char *)ctx->ebx);
     int fd = taskGetAvailableFd(currentTask);
     if (fd < 0)
         return fd;
@@ -272,6 +273,7 @@ static int sys_write(struct esp_context *ctx)
 
 static int sys_seek(struct esp_context *ctx)
 {
+    LOG("seek: %u\n", ctx->ebx);
     struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
     if (!obj)
         return -EBADF;
@@ -281,6 +283,7 @@ static int sys_seek(struct esp_context *ctx)
 
 static int sys_close(struct esp_context *ctx)
 {
+    LOG("close: %u\n", ctx->ebx);
     struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
     if (!obj)
         return -EBADF;
@@ -331,12 +334,14 @@ static int sys_waitPid(struct esp_context *ctx)
 
 static int sys_kill(struct esp_context *ctx)
 {
+    LOG("kill: %d\n", (pid_t)ctx->ebx);
     return taskKillByPid((pid_t) ctx->ebx);
 }
 
 static int sys_getPid(struct esp_context *ctx)
 {
     (void) ctx;
+    LOG("getpid\n");
     return taskGetpid();
 }
 
@@ -351,6 +356,7 @@ static int sys_execve(struct esp_context *ctx)
 
 static int sys_stat(struct esp_context *ctx)
 {
+    LOG("stat: %s\n", (char *) ctx->ebx);
     struct FsPath *path = fsResolvePath((char *) ctx->ebx);
     if (!path)
         return -ENOENT;
@@ -363,6 +369,7 @@ static int sys_stat(struct esp_context *ctx)
 
 static int sys_fstat(struct esp_context *ctx)
 {
+    LOG("fstat: %u\n", ctx->ebx);
     struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
     if (!obj)
         return -EBADF;
@@ -406,6 +413,7 @@ static int sys_readdir(struct esp_context *ctx)
 
 static int sys_closedir(struct esp_context *ctx)
 {
+    LOG("closedir\n");
     struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
     if (!obj)
         return -EBADF;
@@ -570,7 +578,7 @@ static int sys_mkfile(struct esp_context *ctx)
 
 static int sys_fchdir(struct esp_context *ctx)
 {
-    klog("fchdir: %d\n", ctx->ebx);
+    LOG("fchdir: %d\n", ctx->ebx);
     struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
     if (!obj || obj->type != KO_FS_FOLDER)
         return -EBADF;
@@ -617,6 +625,7 @@ static int sys_unlink(struct esp_context *ctx)
 
 static int sys_isatty(struct esp_context *ctx)
 {
+    LOG("isatty: %u\n", ctx->ebx);
     struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
     if (!obj)
         return -EBADF;
@@ -626,6 +635,7 @@ static int sys_isatty(struct esp_context *ctx)
 
 static int sys_time(struct esp_context *ctx)
 {
+    LOG("time\n");
     time_t *tlc = (time_t *) ctx->ebx;
     if (tlc == NULL)
         return -EINVAL;

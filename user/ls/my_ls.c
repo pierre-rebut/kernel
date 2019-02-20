@@ -113,10 +113,17 @@ int main(int ac, char **av)
             err("Error1: no file or directory\n");
         else {
             tab = do_ls_allon(&opt, dirp, compte_nbfile("."));
+            if (tab == NULL)
+                err("tab = null\n");
+
             i = -1;
-            while (tab[++i])
+            warn("bite en bois de chaine\n");
+            while (tab[++i]) {
+                warn("test: %i, %p\n", i, tab[i]);
                 if (tab[i][0] != '.' && tab[i][0] != '#')
                     printf("%s\n", tab[i]);
+            }
+            warn("bite en bois de chaine end\n");
             closedir(dirp);
             do_free(tab);
         }

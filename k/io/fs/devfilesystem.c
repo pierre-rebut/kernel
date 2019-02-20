@@ -93,7 +93,7 @@ static int devReaddir(struct FsPath *path, void *block, u32 nblock)
     u32 i = nblock * DIRENT_BUFFER_NB;
 
     while (size < DIRENT_BUFFER_NB) {
-        struct DeviceDriver *driver = deviceGetDeviceDriverByIndex(i);
+        struct Device *driver = deviceGetByIndex(i);
         if (driver == NULL)
             break;
 
@@ -113,6 +113,24 @@ static int devReaddir(struct FsPath *path, void *block, u32 nblock)
     return size;
 }
 
+static int devStat(struct FsPath *path, struct stat *result)
+{
+    if (path->type == FS_FOLDER) {
+        result->st_mode = S_IFDIR | S_IRWXU;
+    } else {
+        result->st_mode = S_IFREG | S_IRUSR | S_IRGRP | S_IROTH;
+    }
+
+    result->st_ino = path->inode;
+    result->st_size = 0;
+    result->st_blksize = path->volume->blockSize;
+
+    result->st_gid = result->st_uid = result->st_nlink = 0;
+    result->st_atim = result->st_ctim = result->st_mtim = 0;
+
+    return 0;
+}
+
 static struct Kobject *devOpenFile(struct FsPath *dev)
 {
     struct Kobject *obj = koCreate(KO_UNDEFINED, NULL, 0);
@@ -122,10 +140,10 @@ static struct Kobject *devOpenFile(struct FsPath *dev)
     if (dev->type == FS_FOLDER) {
         obj->type = KO_FS_FOLDER;
         obj->data = dev;
+        dev->refcount += 1;
     } else {
         obj->type = KO_DEVICE;
         obj->data = dev->privateData;
-        fsPathDestroy(dev);
     }
 
     return obj;
@@ -137,6 +155,7 @@ static struct Fs fs_devfs = {
         .umount = &devUmount,
         .root = &devRoot,
         .lookup = &devLookup,
+        .stat = &devStat,
         .readdir = &devReaddir,
         .close = &devClose,
         .openFile = &devOpenFile

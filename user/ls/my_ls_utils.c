@@ -11,6 +11,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <alloc.h>
+#include <err.h>
 
 
 #include "include/my_ls.h"
@@ -48,8 +49,8 @@ char **do_ls_allon(t_option *opt, DIR *dirp, int nb_file)
     i = 0;
     while ((entry = readdir(dirp)) != NULL) {
         j = -1;
-        if ((tab[i] = malloc(sizeof(char) * (strlen(entry->d_name)) + 1))
-            == NULL)
+        int tmp = strlen(entry->d_name);
+        if ((tab[i] = malloc(sizeof(char) * (tmp + 1))) == NULL)
             return (NULL);
         while (entry->d_name[++j] != '\0')
             tab[i][j] = entry->d_name[j];

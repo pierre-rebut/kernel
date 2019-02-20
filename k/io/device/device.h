@@ -51,6 +51,8 @@ struct DeviceDriver *deviceGetDeviceDriverByIndex(u32 index);
 
 struct DeviceDriver *deviceGetDeviceDriverByName(const char *name);
 
+struct Device *deviceGetByIndex(u32 index);
+
 inline int deviceBlockSize(struct Device *d)
 {
     return d->blockSize * d->multiplier;

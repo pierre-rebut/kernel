@@ -47,7 +47,7 @@ struct dirent *readdir(DIR *dirp)
     if (dirp == NULL)
         return NULL;
 
-    warn("[dirent] readdir: %d / %d\n", dirp->offset, dirp->size);
+    //warn("[dirent] readdir: %d / %d\n", dirp->offset, dirp->size);
     if (dirp->offset >= dirp->size) {
         int size = syscall3(SYSCALL_READDIR, (u32) dirp->fd, (u32) dirp->block, dirp->nblock);
         if (size <= 0)
@@ -61,7 +61,7 @@ struct dirent *readdir(DIR *dirp)
     struct dirent *tmp = (struct dirent *) dirp->block;
     memcpy(&(dirp->data), tmp + dirp->offset, sizeof(struct dirent));
     dirp->offset += 1;
-    warn("[dirent] readdir end\n");
+    //warn("[dirent] readdir end\n");
 
     return &(dirp->data);
 }

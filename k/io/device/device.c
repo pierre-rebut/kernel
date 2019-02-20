@@ -85,6 +85,11 @@ struct Device *deviceGetByName(const char *name)
     return listGetElem(&deviceList, &deviceGetFromList, name);
 }
 
+struct Device *deviceGetByIndex(u32 index)
+{
+    return listGetElemByIndex(&deviceList, index);
+}
+
 void deviceDestroy(struct Device *device)
 {
     (void) device;

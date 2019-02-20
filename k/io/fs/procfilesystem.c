@@ -73,12 +73,14 @@ static int procClose(struct FsPath *path)
 static int procStat(struct FsPath *path, struct stat *result)
 {
     struct ProcPath *procPath = (struct ProcPath *) path->privateData;
-    if (procPath->type == PP_FOLDER)
-        return -1;
+    if (procPath->type == PP_FOLDER) {
+        result->st_mode = S_IFDIR | S_IRWXU;
+    } else {
+        result->st_mode = S_IFREG | S_IRUSR | S_IRGRP | S_IROTH;
+    }
 
     result->st_ino = (u32) procPath->data;
     result->st_size = 0;
-    result->st_mode = 0;
     result->st_blksize = path->volume->blockSize;
 
     result->st_gid = result->st_uid = result->st_nlink = 0;
@@ -93,11 +95,7 @@ static struct FsPath *procLookup(struct FsPath *path, const char *name)
     struct ProcPath *procPath = NULL;
 
     if (*name == 0 || strcmp(name, ".") == 0) {
-        procPath = kmalloc(sizeof(struct ProcPath), 0, "procPath");
-        if (procPath == NULL)
-            return NULL;
-
-        procPath->type = PP_FOLDER;
+        procPath = &(staticProcData[0]);
     } else {
         for (u32 i = 0; i < STATIC_PROC_DATA_NB; i++) {
             if (strcmp(name, staticProcData[i].name) == 0) {
@@ -201,10 +199,10 @@ static struct Kobject *procOpenFile(struct FsPath *proc)
     if (p->type == PP_FOLDER) {
         obj->type = KO_FS_FOLDER;
         obj->data = proc;
+        proc->refcount += 1;
     } else {
         obj->type = KO_PROC;
         obj->data = p;
-        fsPathDestroy(proc);
     }
 
     return obj;
