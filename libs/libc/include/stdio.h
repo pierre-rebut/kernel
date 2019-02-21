@@ -42,4 +42,6 @@ int snprintf(char *buf, u32 size, const char *format, ...);
 
 int vsprintf(char *buf, const char *format, va_list args);
 
+int vsnprintf(char *buf, u32 size, const char *fmt, va_list args);
+
 #endif                /* !STDLIB_H_ */

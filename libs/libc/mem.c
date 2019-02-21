@@ -36,3 +36,28 @@ void *memset(void *s, int c, u32 n)
 
     return s;
 }
+
+void *memchr(const void *s, int c, size_t n)
+{
+    const unsigned char *p = s;
+    const unsigned char *end = p + n;
+
+    for (;;) {
+        if (p >= end || p[0] == c)
+            break;
+        p++;
+        if (p >= end || p[0] == c)
+            break;
+        p++;
+        if (p >= end || p[0] == c)
+            break;
+        p++;
+        if (p >= end || p[0] == c)
+            break;
+        p++;
+    }
+
+    if (p >= end)
+        return NULL;
+    return (void *) p;
+}

@@ -230,3 +230,11 @@ int unlink(const char *p1)
 {
     return syscall1(SYSCALL_UNLINK, (u32) p1);
 }
+
+int futimens(int fd, time_t time[2]) {
+    return syscall2(SYSCALL_FUTIMENS, (u32) fd, (u32) time);
+}
+
+int beep() {
+    return syscall0(SYSCALL_BEEP);
+}

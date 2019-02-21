@@ -255,6 +255,19 @@ int fprintf(FILE *stream, const char *fmt, ...)
     return printed;
 }
 
+int vfprintf(FILE *stream, const char *fmt, va_list args) {
+    if (stream == NULL || stream->flags != 0)
+        return -1;
+
+    char printf_buf[1024];
+    int printed = vsprintf(printf_buf, fmt, args);
+
+    if (printed > 0)
+        fwrite(printf_buf, (u32) printed, 1, stream);
+
+    return printed;
+}
+
 int fputs(FILE *stream, const char *str) {
     if (stream == NULL || stream->flags != 0)
         return -1;

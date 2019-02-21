@@ -83,4 +83,18 @@ char *strncat(char *s1, const char *s2, size_t n);
 
 void strmode(register mode_t mode, register char *p);
 
+char *strpbrk(register char *string, char *chars);
+
+int strcasecmp(register const char *s1, register const char *s2);
+
+int strncasecmp(register const char *s1, register const char *s2, size_t length);
+
+const char *strcasestr(register const char *string, const char *substring);
+
+char *dirname(char *str);
+
+char *basename (const char *filename);
+
+void *memchr(const void *s, int c, size_t n);
+
 #endif                /* !STRING_H_ */

@@ -634,10 +634,6 @@ static int sys_isatty(struct esp_context *ctx)
 static int sys_time(struct esp_context *ctx)
 {
     LOG("time\n");
-    time_t *tlc = (time_t *) ctx->ebx;
-    if (tlc == NULL)
-        return -EINVAL;
-
     time_t res = 0;
     struct tm cmostime;
     cmosTime(&cmostime);
@@ -648,6 +644,10 @@ static int sys_time(struct esp_context *ctx)
     res += (cmostime.weekday - 1) * 86400;
     res += (cmostime.month - 1) * 86400 * 4;
     res += ((cmostime.century * 100 + cmostime.year) - 1970) * 86400 * 4 * 12;
-    *tlc = res;
+
+    time_t *tlc = (time_t *) ctx->ebx;
+    if (tlc != NULL)
+        *tlc = res;
+
     return res;
 }

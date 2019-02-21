@@ -279,3 +279,51 @@ void strmode(register mode_t mode, register char *p)
     *p++ = ' ';        /* will be a '+' if ACL's implemented */
     *p = '\0';
 }
+
+char *strpbrk(register char *string, char *chars)
+{
+    register char c, *p;
+
+    for (c = *string; c != 0; string++, c = *string) {
+        for (p = chars; *p != 0; p++) {
+            if (c == *p) {
+                return string;
+            }
+        }
+    }
+    return 0;
+}
+
+char *dirname(char *path)
+{
+    static const char dot[] = ".";
+    char *last_slash;
+    /* Find last '/'.  */
+    last_slash = path != NULL ? strrchr(path, '/') : NULL;
+
+    if (last_slash == path)
+        /* The last slash is the first character in the string.  We have to
+       return "/".  */
+        ++last_slash;
+    else if (last_slash != NULL && last_slash[1] == '\0')
+        /* The '/' is the last character, we have to look further.  */
+        last_slash = memchr(path, last_slash - path, '/');
+
+    if (last_slash != NULL)
+        /* Terminate the path.  */
+        last_slash[0] = '\0';
+    else
+        /* This assignment is ill-designed but the XPG specs require to
+       return a string containing "." in any case no directory part is
+       found and so a static and constant string is required.  */
+        path = (char *) dot;
+
+    return path;
+}
+
+char *basename (const char *filename)
+{
+    char *p = strrchr (filename, '/');
+    return p ? p + 1 : (char *) filename;
+}
+

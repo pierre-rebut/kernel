@@ -6,10 +6,18 @@
 #define isspace(c) ((c) == '\t' || (c) == '\n' || (c) == '\v' || (c) == '\f' || (c) == '\r' || (c) == ' ')
 #define isdigit(c) ((c) >= '0' && (c) <= '9')
 #define isupper(c) ((c) >= 'A' && (c) <= 'Z')
+#define islower(c) ((c) >= 'a' && (c) <= 'z')
 #define isascii(c) ((c) >= 0 && (c) < 128)
 #define isprint(c) ((c) >= 20 && (c) <= 126)
 #define isalpha(c) (((c) >= 'A' && (c) <= 'Z') || ((c) >= 'a' || (c) <= 'z'))
 #define isxdigit(c) (((c) >= '0' && (c) <= '9') || ((c) >= 'a' && (c) <= 'f') || ((c) >= 'A' && (c) <= 'F'))
+#define isalnum(c) (isdigit(c) || isalpha(c))
+#define isblank(c) ((c) == '\t' || (c) == ' ')
+#define ispunct(c) ((c) == '.' || (c) == '!' || (c) == '?' || (c) == ',' || (c) == ';' || (c) == ':')
+#define iscntrl(c) 1 // todo
+
+#define tolower(c) ((c) >= 'A' && (c) <= 'Z' ? (c) + 32 : (c))
+#define toupper(c) ((c) >= 'a' && (c) <= 'z' ? (c) - 32 : (c))
 
 #define howmany(x, y)  (((x) + ((y) - 1)) / (y))
 
@@ -53,6 +61,11 @@
 #define    S_IROTH    4    /* Read by others.  */
 #define    S_IWOTH    2    /* Write by others.  */
 #define    S_IXOTH    1    /* Execute by others.  */
+
+#define R_OK S_IXUSR
+#define W_OK S_IWUSR
+#define X_OK S_IXUSR
+#define F_OK 0
 
 #define    S_IRWXU    (S_IRUSR|S_IWUSR|S_IXUSR) /* Read, write, and execute by owner.  */
 #define    S_IRWXG    (S_IRWXU >> 3) /* Read, write, and execute by group.  */

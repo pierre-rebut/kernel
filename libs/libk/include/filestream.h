@@ -7,6 +7,7 @@
 
 #define FILE_BUFFER_SIZE 4096
 
+#include <stdarg.h>
 #include <types.h>
 
 typedef struct
@@ -49,6 +50,8 @@ size_t fwrite(const char *buf, size_t size, size_t nmemb, FILE *stream);
 
 int fprintf(FILE *stream, const char *fmt, ...);
 
+int vfprintf(FILE *stream, const char *fmt, va_list args);
+
 int fputs(FILE *stream, const char *str);
 
 int fputchar(FILE *stream, char c);
@@ -56,6 +59,8 @@ int fputchar(FILE *stream, char c);
 char *getline(FILE *stream);
 
 char *getdelim(FILE *stream, char delim);
+
+#define putc(c, f) fputchar(f, c)
 
 extern FILE *stdin;
 extern FILE *stdout;

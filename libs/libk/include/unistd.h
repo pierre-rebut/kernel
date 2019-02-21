@@ -8,6 +8,9 @@
 #include <kstd.h>
 
 char *getenv(const char *name);
+mode_t umask(mode_t mode);
+int access(const char *name, int amode);
+int mkstemp(char *template);
 
 /*
 ** syscalls
@@ -92,7 +95,15 @@ int symlink(const char *, const char *);
 int unlink(const char *name);
 
 uid_t getuid();
+#define geteuid getuid
 
 int isatty(int fd);
+
+#define fchown(fd, owner, grp) 0 // todo
+#define chown(path, owner, grp) 0
+
+int futimens(int fd, time_t time[2]);
+
+int beep();
 
 #endif //KERNEL_SYSCALLW_H

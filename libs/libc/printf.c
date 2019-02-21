@@ -315,3 +315,14 @@ int snprintf(char *buf, u32 size, const char *format, ...)
     return i;
 }
 
+int vsnprintf(char *buf, u32 size, const char *fmt, va_list args) {
+    char buffer[1024];
+    int i = vsprintf(buffer, fmt, args);
+
+    if (i > 0 && buf) {
+        i = MIN((u32) i, size);
+        memcpy(buf, buffer, (u32) i);
+    }
+    return i;
+}
+
