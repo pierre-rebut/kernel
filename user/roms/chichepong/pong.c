@@ -114,11 +114,11 @@ static void game_loop(void)
 
             k = getkey();
             if (k != -1) {
-                if (k == KEY_DOWN)
+                if (k == K_KEY_DOWN)
                     player1 += 5;
-                if (k == KEY_UP)
+                if (k == K_KEY_UP)
                     player1 -= 5;
-                if (k == KEY_ESC)
+                if (k == K_KEY_ESC)
                     break;
             }
         }

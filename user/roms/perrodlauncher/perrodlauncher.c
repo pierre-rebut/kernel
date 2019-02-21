@@ -124,17 +124,17 @@ static void game_loop(void)
 
         k = getkey();
         if (k != -1) {
-            if (k == KEY_RIGHT)
+            if (k == K_KEY_RIGHT)
                 angle += 2;
-            if (k == KEY_LEFT)
+            if (k == K_KEY_LEFT)
                 angle -= 2;
-            if (k == KEY_UP)
+            if (k == K_KEY_UP)
                 gravity += 1;
-            if (k == KEY_DOWN)
+            if (k == K_KEY_DOWN)
                 gravity -= 1;
-            if (k == KEY_ESC)
+            if (k == K_KEY_ESC)
                 break;
-            if ((k == KEY_SPACE) && (fire < 3))
+            if ((k == K_KEY_SPACE) && (fire < 3))
                 fire = (fire + 1) % 4;
         }
 

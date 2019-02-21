@@ -51,13 +51,13 @@ static int splash_screen(void)
     if (!imgchef || !imgchiche)
         blue_screen("Unable to load chiche.bmp");
 
-    while (k != KEY_ENTER) {
+    while (k != K_KEY_ENTER) {
 
         k = getkey();
-        if (k == KEY_UP)
+        if (k == K_KEY_UP)
             sel = 1;
 
-        if (k == KEY_DOWN)
+        if (k == K_KEY_DOWN)
             sel = 0;
 
         draw_begin();
@@ -168,20 +168,20 @@ static void game_loop(struct image *img)
 
         k = getkey();
         if (k != -1) {
-            if (k == KEY_ESC)
+            if (k == K_KEY_ESC)
                 standby = !standby;
 
-            if ((standby || fin) && k == KEY_ENTER)
+            if ((standby || fin) && k == K_KEY_ENTER)
                 return;
 
             if (!standby && !fin) {
-                if (k == KEY_LEFT && p > (P_SIZE / 2 + 5))
+                if (k == K_KEY_LEFT && p > (P_SIZE / 2 + 5))
                     p -= 5;
-                if (k == KEY_RIGHT
+                if (k == K_KEY_RIGHT
                     && p < (WIDTH - (P_SIZE / 2 + 5)))
                     p += 5;
 
-                if ((k == KEY_SPACE) && x == -1 && y == -1) {
+                if ((k == K_KEY_SPACE) && x == -1 && y == -1) {
                     x = p;
                     y = 200 - (P_SIZE / 3);
                 }

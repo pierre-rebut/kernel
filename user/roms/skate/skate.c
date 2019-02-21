@@ -154,22 +154,22 @@ static void game_loop(void)
         unsigned long t = gettick();
         if (!skater.trick_delay)
             switch (getkey()) {
-                case KEY_SPACE:
+                case K_KEY_SPACE:
                     skater_jump(scrolling.freq);
                     break;
-                case KEY_RIGHT:
+                case K_KEY_RIGHT:
                     scroll_speedup();
                     break;
-                case KEY_DOWN:
+                case K_KEY_DOWN:
                     skater_slide();
                     break;
-                case KEY_LEFT:
+                case K_KEY_LEFT:
                     skater_rotate();
                     break;
-                case KEY_UP:
+                case K_KEY_UP:
                     skater_flip();
                     break;
-                case KEY_ESC:
+                case K_KEY_ESC:
                     return;
                 default:
                     break;

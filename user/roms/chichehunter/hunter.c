@@ -46,15 +46,15 @@ static int splash_screen(void)
         blue_screen("Unable to load chiche.bmp");
 
     getmouse(&mouse_x, &mouse_y, &buttons);
-    while (k != KEY_ENTER && !(buttons & 1)) {
+    while (k != K_KEY_ENTER && !(buttons & 1)) {
         t = gettick();
 
         getmouse(&mouse_x, &mouse_y, &buttons);
         k = getkey();
-        if (k == KEY_UP || mouse_y > 0)
+        if (k == K_KEY_UP || mouse_y > 0)
             sel = 1;
 
-        if (k == KEY_DOWN || mouse_y < 0)
+        if (k == K_KEY_DOWN || mouse_y < 0)
             sel = 0;
 
         draw_begin();
@@ -167,10 +167,10 @@ static void game_loop(struct image *img)
         getmouse(&mouse_x, &mouse_y, &buttons);
         k = getkey();
         if (k != -1) {
-            if (k == KEY_ESC)
+            if (k == K_KEY_ESC)
                 standby = !standby;
 
-            if ((standby || fin) && k == KEY_ENTER)
+            if ((standby || fin) && k == K_KEY_ENTER)
                 return;
         }
         if (!standby && !fin) {
