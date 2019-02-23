@@ -5,7 +5,7 @@
 #ifndef KERNEL_EXT2FILESYSTEM_H
 #define KERNEL_EXT2FILESYSTEM_H
 
-#include <k/ktypes.h>
+#include <stddef.h>
 #include <io/device/device.h>
 
 #define EXT2_SIGNATURE 0xEF53

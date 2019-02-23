@@ -2,7 +2,7 @@
 #include "proto.h"
 #include "revision.h"
 
-#include <types.h>
+#include <ctype.h>
 #include <errno.h>
 #include <getopt.h>
 
@@ -17,7 +17,7 @@
 #endif
 
 #include <unistd.h>
-#include <alloc.h>
+#include <stdlib.h>
 #include <err.h>
 
 #ifdef ENABLE_MULTIBUFFER
@@ -1922,6 +1922,7 @@ void do_output(char *output, size_t output_len, bool allow_cntrls)
 
 int main(int argc, char **argv)
 {
+    printf("nano starting\n");
 	int optchr;
 #ifdef ENABLE_NANORC
 	bool ignore_rcfiles = false;

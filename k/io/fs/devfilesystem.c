@@ -2,11 +2,12 @@
 // Created by rebut_p on 24/12/18.
 //
 
-#include <sys/allocator.h>
 #include <kstdio.h>
 #include <string.h>
+
 #include <io/device/device.h>
-#include <sys/kobject.h>
+#include <system/kobject.h>
+#include <system/allocator.h>
 
 #include "devfilesystem.h"
 #include "filesystem.h"

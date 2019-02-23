@@ -80,7 +80,7 @@
 
 #include <stddef.h>
 #include <stdlib.h>
-#include <types.h>
+#include <ctype.h>
 #include <dirent.h>
 #include <assert.h>
 #include <filestream.h>

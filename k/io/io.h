@@ -1,7 +1,7 @@
 #ifndef IO_H_
 #define IO_H_
 
-#include <k/ktypes.h>
+#include <stddef.h>
 
 static inline void outb(u16 port, u8 val)
 {

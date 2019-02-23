@@ -6,6 +6,8 @@
 
 int keypad(WINDOW *win, bool bf)
 {
+    (void) win;
+    (void) bf;
     return 0;
 }
 
@@ -47,28 +49,36 @@ int nonl(void)
 
 int nodelay(WINDOW *win, bool bf)
 {
+    (void) win;
+    (void) bf;
     return 0;
 }
 
 int move(int y, int x)
 {
+    (void) y;
+    (void) x;
     return 0;
 }
 
 int wmove(WINDOW *win, int y, int x)
 {
     (void) win;
+    (void) y;
+    (void) x;
     return 0;
 }
 
 int scrollok(WINDOW *win, bool bf)
 {
     (void) win;
+    (void) bf;
     return 0;
 }
 
 int wscrl(WINDOW *win, int n)
 {
     (void) win;
+    (void) n;
     return 0;
 }

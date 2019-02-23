@@ -10,7 +10,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <utils.h>
-#include <alloc.h>
+#include <stdlib.h>
 #include <filestream.h>
 
 #ifdef COLORLS
@@ -44,7 +44,7 @@ static void aclmode(char *, const FTSENT *);
 #define    IS_NOPRINT(p)    ((p)->fts_number == NO_PRINT)
 
 #ifdef COLORLS
-/* Most of these are taken from <sys/stat.h> */
+/* Most of these are taken from <system/stat.h> */
 typedef enum Colors {
     C_DIR,			/* directory */
     C_LNK,			/* symbolic link */

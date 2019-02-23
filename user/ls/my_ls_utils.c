@@ -10,7 +10,7 @@
 
 #include <string.h>
 #include <unistd.h>
-#include <alloc.h>
+#include <stdlib.h>
 #include <err.h>
 
 

@@ -9,7 +9,7 @@
 */
 
 #include <stdlib.h>
-#include <alloc.h>
+#include <stdlib.h>
 
 int count_nb_line(const char *str, int i)
 {

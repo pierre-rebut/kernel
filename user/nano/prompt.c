@@ -2,7 +2,7 @@
 #include "proto.h"
 
 #include <string.h>
-#include <alloc.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 static char *prompt = NULL;

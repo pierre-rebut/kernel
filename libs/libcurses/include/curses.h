@@ -5,7 +5,7 @@
 #ifndef KERNEL_CURSES_H
 #define KERNEL_CURSES_H
 
-#include <stdarg.h>
+#include <kernel/stdarg.h>
 #include <stddef.h>
 #include "key-curses.h"
 

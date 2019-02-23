@@ -2,9 +2,10 @@
 // Created by rebut_p on 15/12/18.
 //
 
-#include <include/kstdio.h>
-#include <include/cpu.h>
-#include <sys/paging.h>
+#include <kstdio.h>
+#include <cpu.h>
+
+#include <system/paging.h>
 #include <io/pit.h>
 #include "sheduler.h"
 

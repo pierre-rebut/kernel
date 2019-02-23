@@ -6,4 +6,4 @@ set(SOURCE
         my_ls_utils2.c)
 
 add_executable(ls ${SOURCE})
-target_link_libraries(ls stdk stdc crt0)
+target_link_libraries(ls stdc)

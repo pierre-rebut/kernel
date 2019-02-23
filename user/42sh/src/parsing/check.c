@@ -8,7 +8,7 @@
 ** Last update Sun May 24 15:08:26 2015 despla_s
 */
 
-#include <alloc.h>
+#include <stdlib.h>
 
 #include "define.h"
 #include "functions.h"

@@ -3,7 +3,7 @@
 //
 
 #include <string.h>
-#include <sys/allocator.h>
+#include <system/allocator.h>
 
 char *strdup(const char *s)
 {

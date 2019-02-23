@@ -44,7 +44,9 @@ static void skater_anim(void)
             case BOX_RAIL:
                 if (skater.slide)
                     break;
+                goto case_default;
             default:
+            case_default:
                 if (scrolling.freq < 6)
                     skater.trick = TRICK_RUN;
                 else

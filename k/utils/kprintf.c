@@ -15,11 +15,11 @@
  *
  */
 
-#include <k/ktypes.h>
-
+#include <stddef.h>
 #include <string.h>
 #include <stdio.h>
-#include <sys/console.h>
+
+#include <system/console.h>
 #include <io/serial.h>
 
 int kputs(const char *s)

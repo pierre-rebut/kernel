@@ -1,8 +1,8 @@
 #ifndef KERNEL_EPITA_TERMINAL_H
 #define KERNEL_EPITA_TERMINAL_H
 
-#include <k/ktypes.h>
-#include <kstd.h>
+#include <stddef.h>
+#include <ctype.h>
 
 struct TerminalBuffer
 {

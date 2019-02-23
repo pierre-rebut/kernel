@@ -13,6 +13,7 @@
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
+#include <sys/types.h>
 
 #include "struct.h"
 #include "define.h"

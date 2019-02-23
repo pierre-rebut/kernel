@@ -12,7 +12,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <alloc.h>
+#include <stdlib.h>
 
 #include "functions.h"
 #include "define.h"

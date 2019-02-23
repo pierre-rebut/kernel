@@ -2,17 +2,18 @@
 // Created by rebut_p on 23/09/18.
 //
 
-#include "kfilesystem.h"
-#include "filesystem.h"
-
-#include <k/kfs.h>
+#include <kfs.h>
 #include <kstdio.h>
 #include <string.h>
 #include <cpu.h>
-#include <sys/paging.h>
-#include <sys/allocator.h>
-#include <sys/physical-memory.h>
 #include <errno-base.h>
+
+#include <system/paging.h>
+#include <system/allocator.h>
+#include <system/physical-memory.h>
+
+#include "kfilesystem.h"
+#include "filesystem.h"
 
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)

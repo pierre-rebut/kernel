@@ -9,9 +9,8 @@ set(CMAKE_EXE_LINKER_FLAGS "-nostdlib -m32 -Wl,--build-id=none -nostartfiles")
 add_subdirectory(k)
 
 add_subdirectory(libs/libc)
-add_subdirectory(libs/libk)
-add_subdirectory(libs/ctr0)
 add_subdirectory(libs/libcurses)
+#add_subdirectory(libs/libcurses2)
 
 add_subdirectory(tools/mkkfs)
 #add_subdirectory(tools/mkksf)

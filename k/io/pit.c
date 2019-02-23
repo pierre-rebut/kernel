@@ -2,7 +2,7 @@
 // Created by rebut_p on 22/09/18.
 //
 
-#include <sys/idt.h>
+#include <system/idt.h>
 #include "pit.h"
 #include "io.h"
 

@@ -2,7 +2,7 @@
 #include "proto.h"
 
 #include <string.h>
-#include <alloc.h>
+#include <stdlib.h>
 
 #ifdef ENABLE_UTF8
 #include <wchar.h>

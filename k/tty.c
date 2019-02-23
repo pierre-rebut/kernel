@@ -2,10 +2,11 @@
 // Created by rebut_p on 10/02/19.
 //
 
-#include <sys/paging.h>
-#include <include/kstdio.h>
+#include <kstdio.h>
 #include <string.h>
-#include <sys/console.h>
+
+#include <system/paging.h>
+#include <system/console.h>
 #include <io/terminal.h>
 #include "tty.h"
 #include "sheduler.h"

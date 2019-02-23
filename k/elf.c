@@ -5,7 +5,7 @@
 #include <cpu.h>
 
 #include "elf.h"
-#include "sys/physical-memory.h"
+#include "system/physical-memory.h"
 
 #include <kstdio.h>
 #include <string.h>

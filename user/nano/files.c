@@ -1,33 +1,17 @@
-/**************************************************************************
- *   files.c  --  This file is part of GNU nano.                          *
- *                                                                        *
- *   Copyright (C) 1999-2011, 2013-2018 Free Software Foundation, Inc.    *
- *   Copyright (C) 2015-2018 Benno Schulenberg                            *
- *                                                                        *
- *   GNU nano is free software: you can redistribute it and/or modify     *
- *   it under the terms of the GNU General Public License as published    *
- *   by the Free Software Foundation, either version 3 of the License,    *
- *   or (at your option) any later version.                               *
- *                                                                        *
- *   GNU nano is distributed in the hope that it will be useful,          *
- *   but WITHOUT ANY WARRANTY; without even the implied warranty          *
- *   of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.              *
- *   See the GNU General Public License for more details.                 *
- *                                                                        *
- *   You should have received a copy of the GNU General Public License    *
- *   along with this program.  If not, see http://www.gnu.org/licenses/.  *
- *                                                                        *
- **************************************************************************/
+//
+// Created by rebut_p on 16/12/18.
+//
+
+#include <errno.h>
+#include <string.h>
+#include <unistd.h>
+#include <stdlib.h>
 
 #include "proto.h"
 
-#include <errno.h>
 #ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif
-#include <string.h>
-#include <unistd.h>
-#include <alloc.h>
 
 #define LOCKBUFSIZE 8192
 
@@ -316,9 +300,10 @@ int do_lockfile(const char *filename)
 
 	if (stat(lockfilename, &fileinfo) != -1) {
 		size_t readtot = 0;
-		size_t readamt = 0;
+		int readamt = 0;
 		char *lockbuf, *question, *pidstring, *postedname, *promptstr;
-		int room, response;
+		size_t room;
+		int response;
 
 		if ((lockfd = open(lockfilename, O_RDONLY, 0)) < 0) {
 			statusline(MILD, _("Error opening lock file %s: %s"),

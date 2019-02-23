@@ -3,7 +3,7 @@
 #include "revision.h"
 
 #include <string.h>
-#include <alloc.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 #ifdef REVISION

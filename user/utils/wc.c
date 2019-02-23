@@ -9,6 +9,7 @@
 #include <err.h>
 #include <kstd.h>
 #include <errno.h>
+#include <sys/types.h>
 
 int lflag = 0;
 int cflag = 0;

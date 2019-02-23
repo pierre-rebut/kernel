@@ -3,20 +3,18 @@
 //
 
 #include <stdio.h>
-#include <unistd.h>
-
-void help()
-{
-    printf("umount <mount point>\n");
-}
+#include <sys/mount.h>
+#include <errno.h>
 
 int main(int ac, char **av)
 {
     if (ac != 2) {
-        help();
+        printf("umount <mount point>\n");
         return 1;
     }
 
-    printf("umount: %d\n", umount(av[1]));
+    int res = umount(av[1]);
+    if (res < 0)
+        printf("umount: %s: %s\n", av[1], strerror(errno));
     return 0;
 }

@@ -21,4 +21,4 @@ set(SOURCE
         winio.c)
 
 add_executable(nano ${SOURCE})
-target_link_libraries(nano stdk stdc crt0 stdcurses)
+target_link_libraries(nano stdc stdcurses)

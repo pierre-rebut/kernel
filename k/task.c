@@ -2,20 +2,21 @@
 // Created by rebut_p on 28/09/18.
 //
 
-#include "task.h"
-#include "sys/gdt.h"
-#include "sys/allocator.h"
-#include "sys/paging.h"
-#include "elf.h"
-#include "sheduler.h"
-#include "sys/console.h"
-
-#include <kstdio.h>
-#include <sys/physical-memory.h>
 #include <cpu.h>
 #include <string.h>
-#include <io/pit.h>
 #include <errno-base.h>
+#include <kstdio.h>
+
+#include <io/pit.h>
+#include <system/physical-memory.h>
+#include <system/gdt.h>
+#include <system/allocator.h>
+#include <system/paging.h>
+#include <system/console.h>
+
+#include "task.h"
+#include "elf.h"
+#include "sheduler.h"
 
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
@@ -39,7 +40,7 @@ void initTasking()
     kernelTask.cmdline = strdup("kernelTask");
     kernelTask.parent = NULL;
 
-    for (int i = 0; i < MAX_NB_FILE; i++)
+    for (int i = 0; i < MAX_NB_KOBJECT; i++)
         kernelTask.objectList[i] = NULL;
 
     struct TaskCreator taskInfo = {
@@ -109,7 +110,7 @@ struct Task *createTask(struct TaskCreator *info)
 
     task->cmdline = info->cmdline;
 
-    for (int i = 0; i < MAX_NB_FILE; i++)
+    for (int i = 0; i < MAX_NB_KOBJECT; i++)
         task->objectList[i] = NULL;
 
     if (info->privilege == TaskPrivilegeUser)
@@ -436,7 +437,7 @@ int taskKill(struct Task *task)
             taskKill(tmp->data);
 
         LOG("[TASK] kill process\n");
-        for (int fd = 0; fd < MAX_NB_FILE; fd++) {
+        for (int fd = 0; fd < MAX_NB_KOBJECT; fd++) {
             struct Kobject *obj = task->objectList[fd];
             if (obj)
                 koDestroy(obj);
@@ -609,11 +610,11 @@ int taskGetAvailableFd(struct Task *task)
         tmp = task->parent->objectList;
 
     int id;
-    for (id = 0; id < MAX_NB_FILE; id++)
+    for (id = 0; id < MAX_NB_KOBJECT; id++)
         if (tmp[id] == NULL)
             break;
 
-    if (id >= MAX_NB_FILE)
+    if (id >= MAX_NB_KOBJECT)
         return -EMFILE;
 
     return id;
@@ -621,7 +622,7 @@ int taskGetAvailableFd(struct Task *task)
 
 struct Kobject *taskGetKObjectByFd(int fd)
 {
-    if (fd >= MAX_NB_FILE || fd < 0)
+    if (fd >= MAX_NB_KOBJECT || fd < 0)
         return NULL;
 
     if (currentTask->type == T_THREAD)
@@ -631,7 +632,7 @@ struct Kobject *taskGetKObjectByFd(int fd)
 
 int taskSetKObjectByFd(int fd, struct Kobject *obj)
 {
-    if (fd >= MAX_NB_FILE || fd < 0)
+    if (fd >= MAX_NB_KOBJECT || fd < 0)
         return -EBADF;
 
     if (currentTask->type == T_THREAD)

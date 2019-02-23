@@ -28,7 +28,7 @@
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
-#include <alloc.h>
+#include <stdlib.h>
 
 #ifndef NANO_TINY
 static pid_t pid_of_command = -1;

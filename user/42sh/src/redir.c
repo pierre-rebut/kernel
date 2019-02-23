@@ -14,7 +14,8 @@
 #include <errno.h>
 #include <define.h>
 #include <filestream.h>
-#include <alloc.h>
+#include <stdlib.h>
+#include <sys/types.h>
 
 #include "functions.h"
 

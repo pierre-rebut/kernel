@@ -3,11 +3,13 @@
 //
 
 #include <kstdio.h>
-#include <sys/idt.h>
 #include <string.h>
 #include <task.h>
-#include <sys/mutex.h>
+
+#include <system/idt.h>
+#include <system/mutex.h>
 #include <io/pit.h>
+
 #include "ata.h"
 #include "io/io.h"
 #include "io/pic.h"
@@ -110,7 +112,8 @@ static int ataWait(int id, int mask, int state)
     retry2:
     status = inb(ata_base[id] + ATA_STATUS);
     if (status & ATA_STATUS_ERR) {
-        klog("ERR set, device failure!\n");
+        klog("[ata] ERR set, device failure!\n");
+        ataReset(id);
         return 0;
     }
 

@@ -5,10 +5,10 @@
 #ifndef KERNEL_FSCACHE_H
 #define KERNEL_FSCACHE_H
 
-#define FSCACHE_NB_BLOCK_LIMIT 2000
-
-#include <k/ktypes.h>
+#include <stddef.h>
 #include "device.h"
+
+#define FSCACHE_NB_BLOCK_LIMIT 2000
 
 struct FsCacheBlock
 {

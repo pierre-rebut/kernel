@@ -5,13 +5,11 @@
 #ifndef KERNEL_FILESYSTEM_H
 #define KERNEL_FILESYSTEM_H
 
-#include <k/ktypes.h>
-#include <types.h>
+#include <stddef.h>
+#include <ctype.h>
+#include <sys/types.h>
 
-typedef s32 off_t;
-
-#define MAX_NB_FILE 255
-#define MAX_NB_FOLDER 50
+#define MAX_NB_KOBJECT 255
 
 enum FS_TYPE
 {

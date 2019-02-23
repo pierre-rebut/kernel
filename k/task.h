@@ -4,12 +4,11 @@
 #ifndef KERNEL_EPITA_USERLAND_H
 #define KERNEL_EPITA_USERLAND_H
 
-#include <k/ktypes.h>
-#include <kstd.h>
+#include <ctype.h>
 #include <list.h>
 
 #include "io/fs/filesystem.h"
-#include "sys/kobject.h"
+#include "system/kobject.h"
 
 #define TASK_MAX_PID 1024
 
@@ -83,7 +82,7 @@ struct Task
     struct TaskEvent event;
 
     struct PageDirectory *pageDirectory;
-    struct Kobject *objectList[MAX_NB_FILE];
+    struct Kobject *objectList[MAX_NB_KOBJECT];
 
     struct FsPath *currentDir;
     struct FsPath *rootDir;

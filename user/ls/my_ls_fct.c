@@ -9,7 +9,7 @@
 */
 
 #include "kstd.h"
-#include <alloc.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>

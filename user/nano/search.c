@@ -1,7 +1,7 @@
 #include "proto.h"
 
 #include <string.h>
-#include <alloc.h>
+#include <stdlib.h>
 #include <time.h>
 
 #ifdef DEBUG

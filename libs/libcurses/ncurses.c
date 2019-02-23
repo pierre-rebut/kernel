@@ -33,6 +33,10 @@ int endwin(void)
 
 WINDOW *newwin(int nlines, int ncols, int begin_y, int begin_x)
 {
+    (void) nlines;
+    (void) ncols;
+    (void) begin_x;
+    (void) begin_y;
     return NULL;
 }
 
@@ -56,6 +60,7 @@ int wgetch(WINDOW *win)
 
 int ungetch(int ch)
 {
+    (void) ch;
     return 0;
 }
 
@@ -77,6 +82,7 @@ int refresh(void)
 
 int wrefresh(WINDOW *win)
 {
+    (void) win;
     return 0;
 }
 
@@ -88,5 +94,6 @@ int curs_set(int visibility)
 
 int napms(int ms)
 {
+    (void) ms;
     return 0;
 }

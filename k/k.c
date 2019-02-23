@@ -1,24 +1,28 @@
+//
+// Created by rebut_p on 10/02/19.
+//
+
 #include <kstdio.h>
 #include <cpu.h>
 #include <multiboot.h>
-#include <io/device/ata.h>
-#include <sys/syscall.h>
-#include <io/fs/procfilesystem.h>
-#include <io/fs/devfilesystem.h>
-#include <io/device/device.h>
-#include <io/fs/ext2filesystem.h>
 
+#include "io/device/ata.h"
+#include "io/fs/procfilesystem.h"
+#include "io/fs/devfilesystem.h"
+#include "io/device/device.h"
+#include "io/fs/ext2filesystem.h"
 #include "io/serial.h"
-#include "sys/gdt.h"
 #include "io/pic.h"
 #include "io/keyboard.h"
 #include "io/pit.h"
 #include "io/fs/kfilesystem.h"
 #include "task.h"
-#include "sys/allocator.h"
-#include "sys/physical-memory.h"
-#include "sys/paging.h"
-#include "sys/console.h"
+#include "system/syscall.h"
+#include "system/gdt.h"
+#include "system/allocator.h"
+#include "system/physical-memory.h"
+#include "system/paging.h"
+#include "system/console.h"
 #include "tty.h"
 
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)

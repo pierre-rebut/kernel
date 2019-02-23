@@ -1,7 +1,7 @@
 #ifndef KERNEL_EPITA_SERIAL_H
 # define KERNEL_EPITA_SERIAL_H
 
-#include <k/ktypes.h>
+#include <stddef.h>
 
 void initSerial(int);
 

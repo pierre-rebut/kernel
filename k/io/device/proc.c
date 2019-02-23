@@ -2,12 +2,11 @@
 // Created by rebut_p on 17/02/19.
 //
 
-#include <kstd.h>
 #include <task.h>
 #include <kstdio.h>
-#include <sys/allocator.h>
-#include <sys/physical-memory.h>
-#include <sys/time.h>
+#include <system/allocator.h>
+#include <system/physical-memory.h>
+#include <system/time.h>
 #include <io/pit.h>
 
 #include "proc.h"

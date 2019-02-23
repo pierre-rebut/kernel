@@ -3,8 +3,8 @@
 //
 
 #include <stdio.h>
-#include <unistd.h>
 #include <errno.h>
+#include <sys/mount.h>
 
 void help()
 {
@@ -19,8 +19,9 @@ int main(int ac, char **av)
         return 1;
     }
 
-    printf("mount %s -> %s: %d\n", av[2], av[3], mount(av[1], av[2], av[3]));
-    if (errno)
-        strerror(errno);
-    return 0;
+    int res = mount(av[1], av[2], av[3]);
+    if (res < 0)
+        printf("mount: %s (%s): %s\n", av[2], av[1], strerror(errno));
+
+    return res;
 }

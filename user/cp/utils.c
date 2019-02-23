@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <filestream.h>
 #include <string.h>
-#include <alloc.h>
+#include <stdlib.h>
 #include "extern.h"
 
 #define    cp_pct(x, y)    ((y == 0) ? 0 : (int)(100.0 * (x) / (y)))

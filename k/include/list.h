@@ -5,6 +5,7 @@
 #ifndef KERNEL_LIST_H
 #define KERNEL_LIST_H
 
+#include <stddef.h>
 #include <stdarg.h>
 
 struct ListElem

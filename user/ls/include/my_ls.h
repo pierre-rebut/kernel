@@ -11,7 +11,7 @@
 #ifndef MY_LS_H_
 # define MY_LS_H_
 
-#include <types.h>
+#include <ctype.h>
 #include <dirent.h>
 
 typedef struct s_option

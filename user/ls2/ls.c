@@ -11,10 +11,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <limits.h>
-#include <getnbr.h>
 #include <utils.h>
-#include <scanf.h>
-#include <alloc.h>
+#include <stdlib.h>
 
 #ifdef COLORLS
 #include <termcap.h>

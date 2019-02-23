@@ -1,55 +1,14 @@
-/*	$NetBSD: exec_elf.h,v 1.60 2002/01/28 22:15:54 thorpej Exp $	*/
+//
+// Created by rebut_p on 10/02/19.
+//
 
-/*-
- * Copyright (c) 1994 The NetBSD Foundation, Inc.
- * All rights reserved.
- *
- * This code is derived from software contributed to The NetBSD Foundation
- * by Christos Zoulas.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *	This product includes software developed by the NetBSD
- *	Foundation, Inc. and its contributors.
- * 4. Neither the name of The NetBSD Foundation nor the names of its
- *    contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE NETBSD FOUNDATION, INC. AND CONTRIBUTORS
- * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
- * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR CONTRIBUTORS
- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
 #ifndef _SYS_EXEC_ELF_H_
-#define    _SYS_EXEC_ELF_H_
+#define _SYS_EXEC_ELF_H_
 
-/*
- * The current ELF ABI specification is available at:
- *	http://www.sco.com/developer/gabi/
- *
- * Current header definitions are in:
- *	http://www.sco.com/developer/gabi/latest/ch4.eheader.html
- */
-
-#include <k/ktypes.h>
+#include <ctype.h>
 #include <multiboot.h>
 
-#include "sys/paging.h"
+#include "system/paging.h"
 
 u32 loadBinary(struct PageDirectory *pd, const void *data, u32 size);
 
@@ -120,10 +79,6 @@ typedef struct
 } Elf32_Ehdr;
 
 /* e_ident offsets */
-#define    EI_MAG0        0    /* '\177' */
-#define    EI_MAG1        1    /* 'E'    */
-#define    EI_MAG2        2    /* 'L'    */
-#define    EI_MAG3        3    /* 'F'    */
 #define    EI_CLASS    4    /* File class */
 #define    EI_DATA        5    /* Data encoding */
 #define    EI_VERSION    6    /* File version */
@@ -131,11 +86,6 @@ typedef struct
 #define    EI_ABIVERSION    8    /* ABI version */
 #define    EI_PAD        9    /* Start of padding bytes up to EI_NIDENT */
 
-/* e_ident[ELFMAG0,ELFMAG3] */
-#define    ELFMAG0        0x7f
-#define    ELFMAG1        'E'
-#define    ELFMAG2        'L'
-#define    ELFMAG3        'F'
 #define    ELFMAG        "\177ELF"
 #define    SELFMAG        4
 
@@ -573,29 +523,6 @@ typedef struct
 #define    ELF_NOTE_NETBSD_DESCSZ        4
 /* NetBSD-specific note name */
 #define    ELF_NOTE_NETBSD_NAME        "NetBSD\0\0"
-
-/*
- * NetBSD-specific core file information.
- *
- * NetBSD ELF core files use notes to provide information about
- * the process's state.  The note name is "NetBSD-CORE" for
- * information that is global to the process, and "NetBSD-CORE@nn",
- * where "nn" is the lwpid of the LWP that the information belongs
- * to (such as register state).
- *
- * We use the following note identifiers:
- *
- *	ELF_NOTE_NETBSD_CORE_PROCINFO
- *		Note is a "netbsd_elfcore_procinfo" structure.
- *
- * We also use ptrace(2) request numbers (the ones that exist in
- * machine-dependent space) to identify register info notes.  The
- * info in such notes is in the same format that ptrace(2) would
- * export that information.
- *
- * Please try to keep the members of this structure nicely aligned,
- * and if you add elements, add them to the end and bump the version.
- */
 
 #define    ELF_NOTE_NETBSD_CORE_NAME    "NetBSD-CORE"
 

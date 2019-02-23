@@ -16,7 +16,7 @@ set(FILES
         yaka.bmp)
 
 add_executable(perrodlauncher ${SOURCE})
-target_link_libraries(perrodlauncher stdk stdc crt0)
+target_link_libraries(perrodlauncher stdc)
 
 add_custom_command(TARGET perrodlauncher
         POST_BUILD

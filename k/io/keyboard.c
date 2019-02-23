@@ -3,8 +3,8 @@
 //
 
 #include <task.h>
-#include <sys/idt.h>
-#include <sys/console.h>
+#include <system/idt.h>
+#include <system/console.h>
 #include "io.h"
 
 #define KEYBOARD_REGISTER 0x60

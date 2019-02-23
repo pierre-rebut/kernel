@@ -9,7 +9,7 @@
 */
 
 #include <stdlib.h>
-#include <alloc.h>
+#include <stdlib.h>
 
 #include "struct.h"
 #include "functions.h"

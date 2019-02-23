@@ -26,7 +26,7 @@
 
 #include "graphic.h"
 #include "sound.h"
-#include <alloc.h>
+#include <stdlib.h>
 
 enum e_gfx
 {
