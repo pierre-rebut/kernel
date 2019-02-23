@@ -5,6 +5,7 @@
 #include <string.h>
 #include <kstdio.h>
 #include <errno-base.h>
+#include <fs.h>
 
 #include <io/device/device.h>
 #include <io/device/fscache.h>
@@ -435,7 +436,7 @@ static int ext2UpdateParentDir(struct Ext2DirEntry *entry, struct Ext2Inode *par
     return 0;
 }
 
-static struct FsPath *ext2InternalLink(u32 id, struct Ext2Inode *inode, struct FsPath *parentDir, const char *filename)
+static struct FsPath *ext2InternalLink(u32 id, struct Ext2Inode *inode, struct FsPath *parentDir, const char *name)
 {
     struct Ext2VolumeData *priv = parentDir->volume->privateData;
     struct Ext2Inode parentInode;
@@ -445,15 +446,15 @@ static struct FsPath *ext2InternalLink(u32 id, struct Ext2Inode *inode, struct F
     if (block_buf == NULL)
         return NULL;
 
-    u32 filenameSize = strlen(filename) + 1;
-    struct Ext2DirEntry *entry = kmalloc(sizeof(struct Ext2DirEntry) + filenameSize, 0, "ext2Dir");
+    u32 nameSize = strlen(name) + 1;
+    struct Ext2DirEntry *entry = kmalloc(sizeof(struct Ext2DirEntry) + nameSize, 0, "ext2Dir");
     if (entry == NULL)
         goto failure_entry;
 
-    entry->size = sizeof(struct Ext2DirEntry) + filenameSize;
+    entry->size = sizeof(struct Ext2DirEntry) + nameSize;
     entry->reserved = 0;
-    entry->namelength = (u8) filenameSize;
-    memcpy(&entry->reserved + 1, filename, filenameSize);
+    entry->namelength = (u8) nameSize;
+    memcpy(&entry->reserved + 1, name, nameSize);
 
     entry->inode = id;
 
@@ -489,25 +490,25 @@ static struct FsPath *ext2InternalLink(u32 id, struct Ext2Inode *inode, struct F
     return NULL;
 }
 
-static struct FsPath *ext2MkFile(struct FsPath *parentDir, const char *filename, mode_t mode)
+static struct FsPath *ext2MkFile(struct FsPath *parentDir, const char *name, mode_t mode)
 {
     u32 id;
     struct Ext2Inode inode;
     struct Ext2VolumeData *priv = parentDir->volume->privateData;
-    LOG("[ext2] mkfile\n");
+    LOG("[ext2] mkentry\n");
 
     memset(&inode, 0, sizeof(struct Ext2Inode));
 
     inode.hardlinks = 1;
     inode.size = 0;
-    inode.type = (u16) (INODE_TYPE_FILE | mode);
+    inode.type = (u16) mode;
     inode.disk_sectors = 2;
     inode.last_modif = inode.last_access = inode.create_time = gettick();
 
     id = ext2FindNewInodeId(priv);
-    LOG("[ext2] mkfile: new id = %u\n", id);
+    LOG("[ext2] mkentry: new id = %u\n", id);
 
-    return ext2InternalLink(id, &inode, parentDir, filename);
+    return ext2InternalLink(id, &inode, parentDir, name);
 }
 
 static struct FsPath *ext2Link(struct FsPath *nodeToLink, struct FsPath *parentDir, const char *filename)
@@ -617,7 +618,7 @@ static struct FsPath *ext2Lookup(struct FsPath *path, const char *name)
         goto ext2LookupFaillure;
 
     newPath->size = inode.size;
-    newPath->mode = (u16) (inode.type & 0x1FF);
+    newPath->mode = (u16) (inode.type & 0x0FFF);
     newPath->inode = fileInode;
     newPath->type = ((inode.type & 0xF000) == INODE_TYPE_DIRECTORY ? FS_FOLDER : FS_FILE);
 
@@ -667,6 +668,7 @@ static struct FsPath *ext2Root(struct FsVolume *volume)
     rootPath->size = 0;
     rootPath->inode = 2;
     rootPath->type = FS_FOLDER;
+    rootPath->mode = (u16)(rootInode.type & 0xFFF);
     return rootPath;
 
     ext2RootFaillure:
@@ -754,6 +756,18 @@ static struct Kobject *ext2OpenFile(struct FsPath *path)
     return koCreate((path->type == FS_FILE ? KO_FS_FILE : KO_FS_FOLDER), path, 0);
 }
 
+static int ext2Chmod(struct FsPath *path, mode_t mode)
+{
+    struct Ext2Inode pathInode;
+    struct Ext2VolumeData *priv = path->volume->privateData;
+    ext2ReadInode(&pathInode, path->inode, priv);
+
+    pathInode.type = (u16) ((pathInode.type & 0xF000) | mode);
+
+    ext2WriteInode(&pathInode, path->inode, priv);
+    return 0;
+}
+
 static struct Fs fs_ext2 = {
         "ext2fs",
         .mount = &ext2Mount,
@@ -768,7 +782,8 @@ static struct Fs fs_ext2 = {
         .stat = &ext2Stat,
         .resizeFile = &ext2ResizeFile,
         .mkfile = &ext2MkFile,
-        .link = &ext2Link
+        .link = &ext2Link,
+        .chmod = &ext2Chmod
 };
 
 void initExt2FileSystem()

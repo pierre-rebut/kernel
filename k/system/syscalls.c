@@ -15,6 +15,7 @@
 #include <string.h>
 #include <io/device/fscache.h>
 #include <errno-base.h>
+#include <include/fs.h>
 
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
@@ -105,6 +106,10 @@ static int sys_isatty(struct esp_context *ctx);
 
 static int sys_time(struct esp_context *ctx);
 
+static int sys_chmod(struct esp_context *ctx);
+
+static int sys_fchmod(struct esp_context *ctx);
+
 typedef int (*syscall_t)(struct esp_context *);
 
 static syscall_t syscall[] = {
@@ -144,8 +149,8 @@ static syscall_t syscall[] = {
         sys_mkdir,
         sys_mkfile,
         sys_fchdir,
-        sys_notimplemented, // todo chmod
-        sys_notimplemented, // todo fchmod
+        sys_chmod,
+        sys_fchmod,
         sys_link,
         sys_symlink,
         sys_unlink,
@@ -228,7 +233,7 @@ static int sys_open(struct esp_context *ctx)
         if (!(ctx->ecx & O_CREAT))
             return -EACCES;
 
-        path = fsMkFile((const char *) ctx->ebx, ctx->edx);
+        path = fsMkFile((const char *) ctx->ebx, INODE_TYPE_FILE | ctx->edx);
         if (!path)
             return -EIO;
     }
@@ -379,8 +384,46 @@ static int sys_fstat(struct esp_context *ctx)
 
 static int sys_chdir(struct esp_context *ctx)
 {
-    LOG("change dir: %s\n", (char *) ctx->ebx);
-    return taskChangeDirectory((void *) ctx->ebx);
+    LOG("chdir: %s\n", (char *) ctx->ebx);
+    struct FsPath *newPath = fsResolvePath((char*) ctx->ebx);
+    if (!newPath)
+        return -ENOENT;
+
+    if (newPath->type != FS_FOLDER) {
+        fsPathDestroy(newPath);
+        return -ENOTDIR;
+    }
+
+    if ((newPath->mode & S_IRUSR) != S_IRUSR) {
+        fsPathDestroy(newPath);
+        return -EACCES;
+    }
+
+    fsPathDestroy(currentTask->currentDir);
+    currentTask->currentDir = newPath;
+    return 0;
+}
+
+static int sys_fchdir(struct esp_context *ctx)
+{
+    LOG("fchdir: %d\n", ctx->ebx);
+    struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
+    if (!obj)
+        return -EBADF;
+
+    struct FsPath *path = obj->data;
+    if (path->type != FS_FOLDER)
+        return -ENOTDIR;
+
+    if ((path->mode & S_IRUSR) != S_IRUSR)
+        return -EACCES;
+
+    fsPathDestroy(currentTask->currentDir);
+
+    currentTask->currentDir = obj->data;
+    currentTask->currentDir->refcount += 1;
+
+    return 0;
 }
 
 static int sys_opendir(struct esp_context *ctx)
@@ -392,6 +435,22 @@ static int sys_opendir(struct esp_context *ctx)
     struct FsPath *path = fsResolvePath((char *) ctx->ebx);
     if (!path)
         return -ENOENT;
+
+    klog("bite en bois dsdsds\n");
+
+    if (path->type != FS_FOLDER) {
+        fsPathDestroy(path);
+        return -ENOTDIR;
+    }
+
+    klog("bite en bois !!!!: %x, %x, %x\n", path->mode, path->mode & S_IRUSR, S_IRUSR);
+
+    if ((path->mode & S_IRUSR) != S_IRUSR) {
+        fsPathDestroy(path);
+        return -EACCES;
+    }
+
+    klog("bite en bois :::\n");
 
     path->refcount += 1;
     taskSetKObjectByFd(fd, koCreate(KO_FS_FOLDER, path, 0));
@@ -430,9 +489,14 @@ static int sys_mount(struct esp_context *ctx)
         return -ENODEV;
 
     LOG("mount: get fspath\n");
-    struct FsPath *path = fsResolvePath((char *) ctx->edx);
+    struct FsPath *path = fsResolvePath2((char *) ctx->edx);
     if (!path)
         return -ENOENT;
+
+    if (path->type != FS_FOLDER) {
+        fsPathDestroy(path);
+        return -ENOTDIR;
+    }
 
     LOG("mount: get device path\n");
     struct FsPath *device = fsResolvePath((char *) ctx->ecx);
@@ -457,7 +521,7 @@ static int sys_umount(struct esp_context *ctx)
 {
     LOG("umount: %s\n", (char *) ctx->ebx);
 
-    struct FsPath *path = fsResolvePath((char *) ctx->ebx);
+    struct FsPath *path = fsResolvePath2((char *) ctx->ebx);
     if (!path)
         return -ENOENT;
 
@@ -555,8 +619,15 @@ static int sys_mkdir(struct esp_context *ctx)
 {
     LOG("mkdir: %s\n", (char *) ctx->ebx);
 
-    void *tmp = fsMkdir((const char *) ctx->ebx);
-    return (tmp ? 0 : -EPERM);
+    void *tmp = fsResolvePath((const char *) ctx->ebx);
+    if (tmp) {
+        fsPathDestroy(tmp);
+        return -EEXIST;
+    }
+
+    tmp = fsMkFile((const char *) ctx->ebx, INODE_TYPE_DIRECTORY | ctx->ecx);
+    fsPathDestroy(tmp);
+    return (tmp ? 0 : -EIO);
 }
 
 static int sys_mkfile(struct esp_context *ctx)
@@ -569,24 +640,9 @@ static int sys_mkfile(struct esp_context *ctx)
         return -EEXIST;
     }
 
-    tmp = fsMkFile((const char *) ctx->ebx, ctx->ecx);
+    tmp = fsMkFile((const char *) ctx->ebx, INODE_TYPE_FILE | ctx->ecx);
     fsPathDestroy(tmp);
     return (tmp ? 0 : -EIO);
-}
-
-static int sys_fchdir(struct esp_context *ctx)
-{
-    LOG("fchdir: %d\n", ctx->ebx);
-    struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
-    if (!obj || obj->type != KO_FS_FOLDER)
-        return -EBADF;
-
-    fsPathDestroy(currentTask->currentDir);
-
-    currentTask->currentDir = obj->data;
-    currentTask->currentDir->refcount += 1;
-
-    return 0;
 }
 
 static int sys_link(struct esp_context *ctx)
@@ -650,4 +706,24 @@ static int sys_time(struct esp_context *ctx)
         *tlc = res;
 
     return res;
+}
+
+static int sys_chmod(struct esp_context *ctx) {
+    LOG("chmod: %s\n", (char *) ctx->ebx);
+    struct FsPath *path = fsResolvePath((char*) ctx->ebx);
+    if (!path)
+        return -ENOENT;
+
+    int tmp = fsChmod(path, ctx->ecx);
+    fsPathDestroy(path);
+    return tmp;
+}
+
+static int sys_fchmod(struct esp_context *ctx) {
+    LOG("fchmod: %d\n", ctx->ebx);
+    struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
+    if (!obj)
+        return -EBADF;
+
+    return fsChmod(obj->data, ctx->ecx);
 }

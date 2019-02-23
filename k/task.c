@@ -261,6 +261,11 @@ pid_t createProcess(const struct ExceveInfo *info)
         return -ENOENT;
     }
 
+    if (file->type == FS_FOLDER) {
+        fsPathDestroy(file);
+        return -EISDIR;
+    }
+
     if ((file->mode & S_IXUSR) != S_IXUSR) {
         fsPathDestroy(file);
         return -EACCES;
@@ -590,17 +595,6 @@ struct Task *getTaskByPid(pid_t pid)
         return NULL;
 
     return tasksTable[pid];
-}
-
-int taskChangeDirectory(const char *directory)
-{
-    struct FsPath *newPath = fsResolvePath(directory);
-    if (!newPath)
-        return -ENOENT;
-
-    fsPathDestroy(currentTask->currentDir);
-    currentTask->currentDir = newPath;
-    return 0;
 }
 
 int taskGetAvailableFd(struct Task *task)

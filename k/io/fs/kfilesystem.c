@@ -2,7 +2,7 @@
 // Created by rebut_p on 23/09/18.
 //
 
-#include <kfs.h>
+#include <fs.h>
 #include <kstdio.h>
 #include <string.h>
 #include <cpu.h>
@@ -19,6 +19,20 @@
 #define LOG(x, ...)
 
 #define KFS_MEM_POS 0x1400000
+
+static unsigned int kfs_checksum(const void *data, u32 size)
+{
+    register unsigned int a = 1;
+    register unsigned int b = 0;
+    register u32 i = 0;
+    const u8 *buf = data;
+
+    while (i < size) {
+        a = (a + buf[i++]) % ADLER32_MOD;
+        b = (a + b) % ADLER32_MOD;
+    }
+    return (b << 16) | a;
+}
 
 static char checkBlockChecksum(struct kfs_block *block)
 {

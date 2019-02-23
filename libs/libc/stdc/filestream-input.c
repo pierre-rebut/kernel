@@ -316,10 +316,11 @@ int _input(FILE *stream, const char *format, va_list arglist)
                     case 'p':
                         // Force %hp to be treated as %p
                         longone = 1;
-
+                        goto case_d_test;
                     case 'o':
                     case 'u':
                     case 'd':
+                    case_d_test:
                         if (ch == '-') {
                             ++negative;
                             goto d_incwidth;

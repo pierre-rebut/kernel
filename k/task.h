@@ -126,8 +126,6 @@ u32 taskHeapInc(s32 size);
 
 int taskHeapSet(u32 addr);
 
-int taskChangeDirectory(const char *directory);
-
 int taskGetAvailableFd(struct Task *task);
 
 struct Kobject *taskGetKObjectByFd(int fd);

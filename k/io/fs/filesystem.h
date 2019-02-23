@@ -31,13 +31,13 @@ struct Fs
 
     int (*close)(struct FsPath *path);
 
-    struct FsPath *(*mkdir)(struct FsPath *path, const char *name);
-
     struct FsPath *(*mkfile)(struct FsPath *parentDir, const char *name, mode_t mode);
 
     struct FsPath *(*link)(struct FsPath *nodeToLink, struct FsPath *parentDir, const char *name);
 
     int (*unlink)(struct FsPath *parentDir, struct FsPath *path);
+
+    int (*chmod)(struct FsPath *path, mode_t mode);
 
     int (*stat)(struct FsPath *path, struct stat *result);
 
@@ -92,6 +92,8 @@ struct FsPath
 
 struct FsPath *fsResolvePath(const char *path);
 
+struct FsPath *fsResolvePath2(const char *path);
+
 void fsRegister(struct Fs *fs);
 
 struct Fs *fsGetFileSystemByName(const char *name);
@@ -118,15 +120,15 @@ struct FsPath *fsGetPathByName(struct FsPath *path, const char *name);
 
 int fsPathReaddir(struct FsPath *path, void *block, u32 nblock);
 
-int fsRmdir(struct FsPath *path, const char *name);
-
-struct FsPath *fsMkdir(const char *name);
+struct FsPath *fsMkdir(const char *name, mode_t mode);
 
 struct FsPath *fsMkFile(const char *name, mode_t mode);
 
 struct FsPath *fsLink(const char *name, const char *linkTo);
 
-struct FsPath *fsUnlink(const char *name);
+int fsUnlink(const char *name);
+
+int fsChmod(struct FsPath *path, mode_t mode);
 
 int fsPathDestroy(struct FsPath *path);
 

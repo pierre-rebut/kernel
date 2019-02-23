@@ -18,13 +18,36 @@ struct FsVolume *fsRootVolume = NULL;
 
 struct FsPath *fsResolvePath(const char *path)
 {
+    struct FsPath *starting = currentTask->currentDir;
     if (path[0] == '/') {
-        LOG("[FS] resolve path 1\n");
-        return fsGetPathByName(currentTask->rootDir, path + 1);
+        path++;
+        starting = currentTask->rootDir;
+    }
+
+    LOG("[FS] resolve path\n");
+    struct FsPath *resPath = fsGetPathByName(starting, path);
+    if (resPath == NULL)
+        return NULL;
+
+    struct FsMountVolume *mntVol = fsGetMountedVolumeByNode(resPath->volume, resPath->inode);
+    if (mntVol != NULL) {
+        fsPathDestroy(resPath);
+        resPath = mntVol->mountedVolume->root;
+        resPath->refcount += 1;
+    }
+    return resPath;
+}
+
+struct FsPath *fsResolvePath2(const char *path)
+{
+    struct FsPath *starting = currentTask->currentDir;
+    if (path[0] == '/') {
+        path++;
+        starting = currentTask->rootDir;
     }
 
     LOG("[FS] resolve path 2\n");
-    return fsGetPathByName(currentTask->currentDir, path);
+    return fsGetPathByName(starting, path);
 }
 
 struct FsMountVolume *fsGetMountedVolumeByNode(struct FsVolume *v, u32 inode)
@@ -81,9 +104,8 @@ struct Kobject *fsOpenFile(struct FsPath *path, int mode)
     if (!path || !path->volume->fs->openFile)
         return NULL;
 
-    (void) mode;
-    //if (~(path->mode) & mode)
-    //   return NULL;
+    if ((path->mode & mode) != mode)
+      return NULL;
 
     struct Kobject *obj = path->volume->fs->openFile(path);
     if (obj == NULL)
@@ -315,15 +337,7 @@ int fsReadFile(struct FsPath *file, char *buffer, u32 length, u32 offset)
     return total;
 }
 
-struct FsPath *fsMkdir(const char *name)
-{
-    if (!name)
-        return NULL;
-    //path->volume->fs->mkdir(path, name);
-    return 0;
-}
-
-static char *fsMkLink(const char *name, struct FsPath **parent)
+static char *fsSplitPath(const char *name, struct FsPath **parent)
 {
     if (!name)
         return NULL;
@@ -358,7 +372,7 @@ struct FsPath *fsMkFile(const char *name, mode_t mode)
 {
     struct FsPath *parent;
 
-    char *filename = fsMkLink(name, &parent);
+    char *filename = fsSplitPath(name, &parent);
     if (filename == NULL || parent == NULL || parent->volume->fs->mkfile == NULL) {
         kfree(filename);
         fsPathDestroy(parent);
@@ -390,7 +404,7 @@ struct FsPath *fsLink(const char *name, const char *linkTo)
         return NULL;
 
     struct FsPath *parent;
-    char *filename = fsMkLink(name, &parent);
+    char *filename = fsSplitPath(name, &parent);
     if (filename == NULL || parent == NULL || !parent->volume->fs->link)
         goto failure;
 
@@ -420,12 +434,18 @@ struct FsPath *fsLink(const char *name, const char *linkTo)
     return NULL;
 }
 
-int fsRmdir(struct FsPath *path, const char *name)
-{
-    if (!path || !name || !path->volume->fs->rmdir)
-        return -EPERM;
+int fsUnlink(const char *name) {
+    struct FsPath *path = fsResolvePath(name);
 
-    return path->volume->fs->rmdir(path, name);
+    struct FsPath *parent;
+    char *filename = fsSplitPath(name, &parent);
+    kfree(filename);
+
+    if (parent == NULL || path == NULL) {
+        fsPathDestroy(parent);
+        fsPathDestroy(path);
+    }
+    return 0;
 }
 
 int fsWriteFile(struct FsPath *file, const char *buffer, u32 length, u32 offset)
@@ -517,4 +537,11 @@ int fsResizeFile(struct FsPath *path, u32 size)
         return -EPERM;
 
     return path->volume->fs->resizeFile(path, size);
+}
+
+int fsChmod(struct FsPath *path, mode_t mode) {
+    if (!path || !path->volume->fs->chmod)
+        return -EPERM;
+
+    return path->volume->fs->chmod(path, mode & (S_IRWXU | S_IRWXG | S_IRWXO));
 }

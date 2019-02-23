@@ -4,9 +4,10 @@
 
 #include "errno.h"
 
-#define NB_ERRNO 30
+#define NB_ERRNO 31
 
 static const char *errnoStr[] = {
+        "No error",
         "Operation not permitted",
         "No such file or directory",
         "No such process",
@@ -43,9 +44,7 @@ int errno = 0;
 
 const char *strerror(int e)
 {
-    e -= 1;
-
-    if (e >= NB_ERRNO)
+    if (e < 0 || e >= NB_ERRNO)
         return NULL;
 
     return errnoStr[e];

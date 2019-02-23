@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <dirent.h>
 #include <err.h>
+#include <errno.h>
 #include "include/my_ls.h"
 
 int set_zero(t_option *opt)
@@ -89,7 +90,7 @@ int do_ls(t_option *opt, char **av)
                 printf("%s:\n", av[i]);
             if (set_opt_dd(opt, av[i]) == 1);
             else if (print_ls(opt, av[i]) == 0)
-                puts("Error2: no file or directory\n");
+                printf("Error2: %s\n", strerror(errno));
             nb--;
             if (nb > 0)
                 puts("\n");
@@ -110,7 +111,7 @@ int main(int ac, char **av)
         verife_option(&opt, av);
     else {
         if ((dirp = opendir(".")) == NULL)
-            err("Error1: no file or directory\n");
+            err("Error1: %s\n", strerror(errno));
         else {
             tab = do_ls_allon(&opt, dirp, compte_nbfile("."));
             if (tab == NULL)

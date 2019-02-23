@@ -30,7 +30,7 @@ int syscall1(int syscall_nb, u32 ebx)
 
     if (res < 0) {
         errno = -res;
-        warn("syscall1: %u - %d\n", syscall_nb, errno);
+        warn("syscall1: %u - %d (%s)\n", syscall_nb, errno, strerror(errno));
         return -1;
     }
 
