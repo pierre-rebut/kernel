@@ -13,6 +13,8 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <signal.h>
+#include <errno.h>
 
 #include "functions.h"
 #include "define.h"
@@ -149,5 +151,22 @@ int sync_call(int fd, t_cmd *cmd, t_env *env)
     (void) env;
 
     sync();
+    return SUCCESS;
+}
+
+int kill_call(int fd, t_cmd *cmd, t_env *env)
+{
+    (void)env;
+
+    char *error;
+    int pid = strtol(cmd->args[1], &error, 10);
+    if (error == cmd->args[1])
+        return FAIL;
+
+    int res = kill(pid, 0);
+    if (res < 0) {
+        dprintf(fd, "kill: %d: %s\n", pid, strerror(errno));
+        return FAIL;
+    }
     return SUCCESS;
 }

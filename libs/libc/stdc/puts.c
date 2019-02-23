@@ -32,6 +32,22 @@ int printf(const char *fmt, ...)
     return printed;
 }
 
+int dprintf(int fd, const char *fmt, ...)
+{
+    char printf_buf[1024];
+    va_list args;
+    int printed;
+
+    va_start(args, fmt);
+    printed = vsprintf(printf_buf, fmt, args);
+    va_end(args);
+
+    if (printed > 0)
+        write(fd, printf_buf, (u32) printed);
+
+    return printed;
+}
+
 int warn(const char *fmt, ...)
 {
     char printf_buf[1024];

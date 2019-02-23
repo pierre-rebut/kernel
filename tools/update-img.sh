@@ -21,13 +21,14 @@ fi
 
 echo "Copy bin app on $mntpoint/bin"
 cp "$2/k/kernel_epita" "$mntpoint/boot"
-cp "$2/user/ls/ls" "$2/user/42sh/42sh" "$mntpoint/bin"
+cp "$2/user/42sh/42sh" "$mntpoint/bin"
 cp "$2/user/utils/mount" "$2/user/utils/umount" "$2/user/utils/cat" "$mntpoint/bin"
 cp "$2/user/utils/touch" "$mntpoint/bin"
 cp "$2/user/cp/cp" "$mntpoint/bin"
 cp "$2/user/utils/wc" "$mntpoint/bin"
-cp "$2/user/ls2/ls2" "$mntpoint/bin"
+cp "$2/user/ls2/ls" "$mntpoint/bin"
 cp "$2/user/nano/nano" "$mntpoint/bin"
+cp "$2/user/utils/link" "$2/user/utils/mkdir" "$2/user/utils/chmod" "$mntpoint/bin"
 
 echo "Copy roms on $mntpoint/roms"
 cp "$2/user/roms/skate/skate.rom" "$2/user/roms/perrodlauncher/perrodlauncher.rom" "$mntpoint/roms"

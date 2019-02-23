@@ -14,7 +14,7 @@ int syscall0(int syscall_nb)
 
     if (res < 0) {
         errno = -res;
-        warn("syscall0: %u - %d\n", syscall_nb, errno);
+        // warn("syscall0: %u - %d\n", syscall_nb, errno);
         return -1;
     }
 
@@ -30,7 +30,7 @@ int syscall1(int syscall_nb, u32 ebx)
 
     if (res < 0) {
         errno = -res;
-        warn("syscall1: %u - %d (%s)\n", syscall_nb, errno, strerror(errno));
+        // warn("syscall1: %u - %d (%s)\n", syscall_nb, errno, strerror(errno));
         return -1;
     }
 
@@ -46,7 +46,7 @@ int syscall2(int syscall_nb, u32 ebx, u32 ecx)
 
     if (res < 0) {
         errno = -res;
-        warn("syscall2: %u - %d\n", syscall_nb, errno);
+        // warn("syscall2: %u - %d\n", syscall_nb, errno);
         return -1;
     }
 
@@ -62,7 +62,7 @@ int syscall3(int syscall_nb, u32 ebx, u32 ecx, u32 edx)
 
     if (res < 0) {
         errno = -res;
-        warn("syscall3: %u - %d\n", syscall_nb, errno);
+        // warn("syscall3: %u - %d\n", syscall_nb, errno);
         return -1;
     }
 

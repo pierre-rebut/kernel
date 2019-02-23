@@ -48,6 +48,8 @@ int cd_call(int fd, t_cmd *cmd, t_env *env);
 
 int env_call(int fd, t_cmd *cmd, t_env *env);
 
+int kill_call(int fd, t_cmd *cmd, t_env *env);
+
 int setenv_call(int fd, t_cmd *cmd, t_env *env);
 
 int unsetenv_call(int fd, t_cmd *cmd, t_env *env);

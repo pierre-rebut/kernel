@@ -33,6 +33,7 @@ static struct BuiltinCmd lstCmd[] = {
         {"unsetenv", unsetenv_call},
         {"echo",     echo},
         {"sync",     sync_call},
+        {"kill",     kill_call},
         {NULL}
 };
 

@@ -436,21 +436,15 @@ static int sys_opendir(struct esp_context *ctx)
     if (!path)
         return -ENOENT;
 
-    klog("bite en bois dsdsds\n");
-
     if (path->type != FS_FOLDER) {
         fsPathDestroy(path);
         return -ENOTDIR;
     }
 
-    klog("bite en bois !!!!: %x, %x, %x\n", path->mode, path->mode & S_IRUSR, S_IRUSR);
-
     if ((path->mode & S_IRUSR) != S_IRUSR) {
         fsPathDestroy(path);
         return -EACCES;
     }
-
-    klog("bite en bois :::\n");
 
     path->refcount += 1;
     taskSetKObjectByFd(fd, koCreate(KO_FS_FOLDER, path, 0));

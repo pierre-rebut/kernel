@@ -893,7 +893,7 @@ static void display(const FTSENT *p, FTSENT *list, int options)
         ++entries;
     }
 
-    warn("divided by toto\n");
+    // warn("divided by toto\n");
 
     /*
      * If there are no entries to display, we normally stop right
@@ -922,16 +922,16 @@ static void display(const FTSENT *p, FTSENT *list, int options)
     }
     if (f_thousands)            /* make space for commas */
         d.s_size += (d.s_size - 1) / 3;
-    warn("divided by bite\n");
+    // warn("divided by bite\n");
     printfcn(&d);
-    warn("divided by flop\n");
+    // warn("divided by flop\n");
     output = 1;
 
     if (f_longform)
         for (cur = list; cur; cur = cur->fts_link)
             free(cur->fts_pointer);
 
-    warn("divided by end\n");
+    // warn("divided by end\n");
 }
 
 /*

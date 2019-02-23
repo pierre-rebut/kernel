@@ -12,3 +12,12 @@ target_link_libraries(touch stdc)
 
 add_executable(wc wc.c)
 target_link_libraries(wc stdc)
+
+add_executable(link link.c)
+target_link_libraries(link stdc)
+
+add_executable(mkdir mkdir.c)
+target_link_libraries(mkdir stdc)
+
+add_executable(chmod chmod.c)
+target_link_libraries(chmod stdc)

@@ -14,6 +14,8 @@ int puts(const char *s);
 
 int printf(const char *format, ...);
 
+int dprintf(int fd, const char *fmt, ...);
+
 int fscanf(FILE *stream, const char *fmt, ...);
 
 int vfscanf(FILE *stream, const char *fmt, va_list args);

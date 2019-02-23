@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include "functions.h"
 #include "define.h"
@@ -42,6 +43,9 @@ static int do_pid_zero(t_cmd *lst, t_env *env)
         close(execInfo.fd_out);
     if (execInfo.fd_in != -1)
         close(execInfo.fd_in);
+
+    if (ret < 0)
+        printf("42sh: %s: %s\n", execInfo.cmdline, strerror(errno));
 
     return ret;
 }
