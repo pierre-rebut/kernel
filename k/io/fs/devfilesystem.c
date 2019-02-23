@@ -27,6 +27,7 @@ static struct FsPath *devRoot(struct FsVolume *volume)
     rootPath->privateData = 0;
     rootPath->inode = 0;
     rootPath->type = FS_FOLDER;
+    rootPath->mode = S_IRUSR | S_IRGRP | S_IROTH;
     return rootPath;
 }
 

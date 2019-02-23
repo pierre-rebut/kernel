@@ -61,6 +61,17 @@ struct FsMountVolume *fsGetMountedVolumeByNode(struct FsVolume *v, u32 inode)
     return NULL;
 }
 
+struct FsMountVolume *fsGetMountedVolume(struct FsVolume *v)
+{
+    struct FsMountVolume *tmpVolume = fsMountedVolumeList;
+    while (tmpVolume != NULL) {
+        if (tmpVolume->mountedVolume == v)
+            return tmpVolume;
+        tmpVolume = tmpVolume->next;
+    }
+    return NULL;
+}
+
 void fsRegister(struct Fs *f)
 {
     f->next = fsList;
@@ -105,7 +116,7 @@ struct Kobject *fsOpenFile(struct FsPath *path, int mode)
         return NULL;
 
     if ((path->mode & mode) != mode)
-      return NULL;
+        return NULL;
 
     struct Kobject *obj = path->volume->fs->openFile(path);
     if (obj == NULL)
@@ -207,10 +218,6 @@ static struct FsPath *fsPathLookup(struct FsPath *path, const char *name)
     if (!curPath->volume->fs->lookup)
         return NULL;
 
-    if (strcmp(name, "..") == 0) {
-        curPath = path;
-    }
-
     LOG("[FS] lookup fct\n");
     struct FsPath *newPath = curPath->volume->fs->lookup(curPath, name);
     if (!newPath)
@@ -221,6 +228,33 @@ static struct FsPath *fsPathLookup(struct FsPath *path, const char *name)
     newPath->volume->refcount++;
     newPath->refcount = 1;
     return newPath;
+}
+
+struct FsPath *fsGetParentDir(struct FsPath *path)
+{
+    struct FsPath tmpPath;
+
+    struct FsMountVolume *vol = fsGetMountedVolume(path->volume);
+    if (vol != NULL) {
+        tmpPath.volume = vol->volumeId;
+        tmpPath.inode = vol->inodeId;
+    } else {
+        tmpPath.volume = path->volume;
+        tmpPath.inode = path->inode;
+    }
+
+    if (!tmpPath.volume->fs->lookup)
+        return NULL;
+
+    struct FsPath *parent = tmpPath.volume->fs->lookup(&tmpPath, "..");
+    if (parent == NULL)
+        return NULL;
+
+    LOG("[FS] getParentDir path not null\n");
+    parent->volume = tmpPath.volume;
+    parent->volume->refcount++;
+    parent->refcount = 1;
+    return parent;
 }
 
 struct FsPath *fsGetPathByName(struct FsPath *d, const char *path)
@@ -245,7 +279,10 @@ struct FsPath *fsGetPathByName(struct FsPath *d, const char *path)
     LOG("[FS] strtok\n");
     while (part) {
         LOG("[FS] lookup\n");
-        new2 = fsPathLookup(new, part);
+        if (strcmp(part, "..") == 0)
+            new2 = fsGetParentDir(new);
+        else
+            new2 = fsPathLookup(new, part);
         LOG("[FS] destroy old\n");
         fsPathDestroy(new);
         LOG("[FS] check\n");
@@ -434,7 +471,8 @@ struct FsPath *fsLink(const char *name, const char *linkTo)
     return NULL;
 }
 
-int fsUnlink(const char *name) {
+int fsUnlink(const char *name)
+{
     struct FsPath *path = fsResolvePath(name);
 
     struct FsPath *parent;
@@ -539,7 +577,8 @@ int fsResizeFile(struct FsPath *path, u32 size)
     return path->volume->fs->resizeFile(path, size);
 }
 
-int fsChmod(struct FsPath *path, mode_t mode) {
+int fsChmod(struct FsPath *path, mode_t mode)
+{
     if (!path || !path->volume->fs->chmod)
         return -EPERM;
 

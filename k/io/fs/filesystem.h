@@ -45,8 +45,6 @@ struct Fs
 
     int (*readdir)(struct FsPath *path, void *block, u32 nblock);
 
-    int (*rmdir)(struct FsPath *path, const char *name);
-
     int (*readBlock)(struct FsPath *path, char *buffer, u32 blocknum);
 
     int (*writeBlock)(struct FsPath *path, const char *buffer, u32 blocknum);
@@ -105,6 +103,10 @@ int fsUmountVolume(struct FsPath *mntPoint);
 struct FsVolume *fsVolumeOpen(struct Fs *fs, struct FsPath *dev);
 
 struct FsMountVolume *fsGetMountedVolumeByNode(struct FsVolume *v, u32 inode);
+
+struct FsMountVolume *fsGetMountedVolume(struct FsVolume *v);
+
+struct FsPath *fsGetParentDir(struct FsPath *path);
 
 struct FsPath *fsVolumeRoot(struct FsVolume *volume);
 

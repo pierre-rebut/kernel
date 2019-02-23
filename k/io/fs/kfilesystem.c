@@ -81,6 +81,7 @@ static struct FsPath *kfsRoot(struct FsVolume *volume)
     sti();
 
     rootPath->type = FS_FOLDER;
+    rootPath->mode = S_IRUSR | S_IRGRP | S_IROTH;
     return rootPath;
 }
 

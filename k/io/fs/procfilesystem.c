@@ -16,9 +16,10 @@
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
-#define STATIC_PROC_DATA_NB 7
+#define STATIC_PROC_DATA_NB 8
 static struct ProcPath staticProcData[] = {
         {PP_FOLDER, 0, "."},
+        {PP_FOLDER, 0, ".."},
         {PP_INFO,   0, "mounts"},
         {PP_INFO,   1, "meminfo"},
         {PP_INFO,   2, "time"},
@@ -38,6 +39,7 @@ static struct FsPath *procRoot(struct FsVolume *volume)
     rootPath->privateData = &(staticProcData[0]);
     rootPath->inode = 0;
     rootPath->type = FS_FOLDER;
+    rootPath->mode = S_IRUSR | S_IRGRP | S_IROTH;
     return rootPath;
 }
 

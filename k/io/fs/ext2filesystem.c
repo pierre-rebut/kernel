@@ -668,7 +668,7 @@ static struct FsPath *ext2Root(struct FsVolume *volume)
     rootPath->size = 0;
     rootPath->inode = 2;
     rootPath->type = FS_FOLDER;
-    rootPath->mode = (u16)(rootInode.type & 0xFFF);
+    rootPath->mode = (u16) (rootInode.type & 0xFFF);
     return rootPath;
 
     ext2RootFaillure:
