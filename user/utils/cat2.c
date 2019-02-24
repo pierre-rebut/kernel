@@ -172,7 +172,6 @@ static void cook_cat(FILE *fp)
     fflush(out);
 
     if (ferror(fp)) {
-        warn("%s", filename);
         rval = 1;
         clearerr(fp);
     }
@@ -190,7 +189,6 @@ static void raw_cat(int rfd)
                 err("stdout\n");
 
     if (nr < 0) {
-        warn("%s\n", filename);
         rval = 1;
     }
 }

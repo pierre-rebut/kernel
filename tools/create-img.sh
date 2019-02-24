@@ -9,8 +9,9 @@ img_filename="test.img"
 img_size="1G"
 file_exist="y"
 grub_timeout=5
-os_app_name="A:/bin/mysh"
+os_app_name="/bin/42sh"
 kernel_name="kernel_epita"
+user="rebut_p"
 
 function readline() {
     read -p "$1" tmpValue
@@ -29,10 +30,11 @@ function doExit() {
 }
 
 echo "### Create new k img ###"
+readline "Owner ($user): " user
 readline "Filename ($img_filename): " img_filename
 readline "Size ($img_size): " img_size
 readline "Kernel name ($kernel_name): " kernel_name
-readline "Os starting app ($os_app_name)" os_app_name
+readline "Os starting app ($os_app_name): " os_app_name
 readline "Mount point ($img_mnt): " img_mnt
 readline "Grub timeout ($grub_timeout): " grub_timeout
 
@@ -62,7 +64,7 @@ fi
 
 ismounted=1
 
-mkdir -p "$img_mnt/boot/grub" "$img_mnt/home" "$img_mnt/bin" && echo "Directory created"
+mkdir -p "$img_mnt/boot/grub" "$img_mnt/home" "$img_mnt/bin" "$img_mnt/tmp" "$img_mnt/proc" "$img_mnt/dev" "$img_mnt/mnt" "$img_mnt/roms" && echo "Directory created"
 if [ $? -ne 0 ]; then
     doExit
 fi
@@ -89,5 +91,7 @@ umount "$img_mnt" && echo "Img umounted"
 if [ $? -ne 0 ]; then
     doExit
 fi
+
+chmod "$user:users" "$img_filename" && echo "Change owner"
 
 echo "### New K image created successfully ###"

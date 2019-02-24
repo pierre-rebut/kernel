@@ -538,7 +538,6 @@ int fsWriteFile(struct FsPath *file, const char *buffer, u32 length, u32 offset)
     if (temp == NULL)
         return -ENOMEM;
 
-    klog("test 1: %u\n", length);
     if (offset + length > file->size) {
         if (file->volume->fs->resizeFile == NULL)
             return -EPERM;
