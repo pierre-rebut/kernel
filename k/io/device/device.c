@@ -98,7 +98,7 @@ void deviceDestroy(struct Device *device)
     // listDeleteElem(&deviceList, device);
 }
 
-int deviceRead(struct Device *device, void *buffer, int size, int offset)
+int deviceRead(struct Device *device, void *buffer, int size, u32 offset)
 {
     if (device == NULL || device->driver->read == NULL)
         return -1;
@@ -106,7 +106,7 @@ int deviceRead(struct Device *device, void *buffer, int size, int offset)
     return device->driver->read(device->unit, buffer, size * device->multiplier, offset * device->multiplier);
 }
 
-int deviceWrite(struct Device *device, const void *buffer, int size, int offset)
+int deviceWrite(struct Device *device, const void *buffer, int size, u32 offset)
 {
     if (device == NULL || device->driver->write == NULL)
         return -1;

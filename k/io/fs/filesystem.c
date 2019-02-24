@@ -115,15 +115,15 @@ struct Kobject *fsOpenFile(struct FsPath *path, int mode)
     if (!path || !path->volume->fs->openFile)
         return NULL;
 
-    mode = ((mode & 0x3) << 1) << 6;
-    if ((path->mode & mode) != mode)
+    int tmpMode = ((mode & 0x3) << 1) << 6;
+    if ((path->mode & tmpMode) != tmpMode)
         return NULL;
 
     struct Kobject *obj = path->volume->fs->openFile(path);
     if (obj == NULL)
         return NULL;
 
-    obj->mode = mode;
+    obj->mode = mode & 0x3;
     return obj;
 }
 

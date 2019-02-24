@@ -14,9 +14,9 @@ struct DeviceDriver
 
     void (*reset)(int id);
 
-    int (*read)(int id, void *buffer, int nblocks, int offset);
+    int (*read)(int id, void *buffer, int nblocks, u32 offset);
 
-    int (*write)(int id, const void *buffer, int nblocks, int offset);
+    int (*write)(int id, const void *buffer, int nblocks, u32 offset);
 
     int (*probe)(int id, unsigned int *nblocks, int *blocksize, char *name);
 
@@ -43,9 +43,9 @@ void deviceDestroy(struct Device *device);
 
 void deviceReset(struct Device *device);
 
-int deviceRead(struct Device *device, void *buffer, int size, int offset);
+int deviceRead(struct Device *device, void *buffer, int size, u32 offset);
 
-int deviceWrite(struct Device *device, const void *buffer, int size, int offset);
+int deviceWrite(struct Device *device, const void *buffer, int size, u32 offset);
 
 struct DeviceDriver *deviceGetDeviceDriverByIndex(u32 index);
 

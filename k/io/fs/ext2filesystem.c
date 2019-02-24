@@ -25,7 +25,7 @@ static int ext2DeviceReadBlock(void *buf, u32 block, struct Ext2VolumeData *priv
     if (!sectors_per_block)
         sectors_per_block = 1;
 
-    LOG("we want to read block %d which is sectors [%d; %d] (sector per block: %d)\n",
+    LOG("[ext2] device read block %d in sectors [%d; %d] (sector per block: %d)\n",
         block, block * sectors_per_block, block * sectors_per_block + sectors_per_block, sectors_per_block);
 
     int tmp = fsCacheRead(priv->device, buf, sectors_per_block, block * sectors_per_block);
@@ -39,7 +39,7 @@ static void ext2DeviceWriteBlock(const void *buf, u32 block, struct Ext2VolumeDa
     if (!sectors_per_block)
         sectors_per_block = 1;
 
-    LOG("we want to write block %d which is sectors [%d; %d] (sector per block: %d)\n",
+    LOG("[ext2] device write block %d in sectors [%d; %d] (sector per block: %d)\n",
         block, block * sectors_per_block, block * sectors_per_block + sectors_per_block, sectors_per_block);
 
     fsCacheWrite(priv->device, buf, sectors_per_block, block * sectors_per_block);
@@ -130,25 +130,34 @@ static void ext2WriteInode(struct Ext2Inode *inode_buf, u32 inode, struct Ext2Vo
 static u32 ext2GetInodeBlock(u32 inode, u32 *b, u32 *ioff, struct Ext2VolumeData *priv)
 {
     u32 bg = (inode - 1) / priv->sb.inodes_in_blockgroup;
-    u32 i = 0;
+
+    u32 nbBgPerBlock = priv->blocksize / sizeof(struct Ext2BlockGroupDesc);
+    u32 bgblockId = bg / nbBgPerBlock;
+
+    LOG("We seek BG %d (block: %d, offset: %d)\n", bg, bgblockId, bg % nbBgPerBlock);
+    bg %= nbBgPerBlock;
+
     /* Now we have which BG the inode is in, load that desc */
     void *block_buf = kmalloc(priv->blocksize, 0, "blockBuf");
     if (block_buf == NULL)
         return 0;
 
-    ext2DeviceReadBlock(block_buf, priv->first_bgd, priv);
+    ext2DeviceReadBlock(block_buf, priv->first_bgd + bgblockId, priv);
     struct Ext2BlockGroupDesc *bgd = (struct Ext2BlockGroupDesc *) block_buf;
     LOG("We seek BG %d\n", bg);
     /* Seek to the BG's desc */
-    for (i = 0; i < bg; i++)
-        bgd++;
-    /* Find the index and seek to the inode */
+    bgd += bg;
 
+    /* Find the index and seek to the inode */
     u32 index = (inode - 1) % priv->sb.inodes_in_blockgroup;
     u32 block = (index * sizeof(struct Ext2Inode)) / priv->blocksize;
+    LOG("index = %u, block = %u\n", index, block);
+
     index = index % priv->inodes_per_block;
     *b = block + bgd->block_of_inode_table;
     *ioff = index;
+
+    LOG("index2 = %u, blockInodeTable = %u\n", index, bgd->block_of_inode_table);
     kfree(block_buf);
     return 1;
 }
@@ -463,7 +472,9 @@ static struct FsPath *ext2InternalLink(u32 id, struct Ext2Inode *inode, struct F
 
     u32 block = 0; // The block where this inode should be written
     u32 ioff = 0;  // Offset into the block function to sizeof(inode_t)
-    ext2GetInodeBlock(id, &block, &ioff, priv);
+    if (ext2GetInodeBlock(id, &block, &ioff, priv) == 0)
+        goto failure_update;
+
     LOG("[ext2] link: block = %u, ioff = %u\n", block, ioff);
 
     ext2DeviceReadBlock(block_buf, block, priv);
@@ -650,7 +661,7 @@ static struct FsPath *ext2Lookup(struct FsPath *path, const char *name)
         u32 b = pathInode.dbp[i];
         LOG("test loop %d: %u\n", i, b);
         if (b == 0) {
-            klog("[ext2] invalid dbp: %s\n", name);
+            LOG("[ext2] invalid dbp: %s\n", name);
             goto ext2LookupFaillure;
         }
 
@@ -768,7 +779,7 @@ struct FsVolume *ext2MountDevice(struct Device *device)
     if (!number_of_bgs0)
         number_of_bgs0 = 1;
 
-    LOG("There are %d block group(s).\n", number_of_bgs0);
+    klog("There are %d block group(s).\n", number_of_bgs0);
     priv->number_of_bgs = number_of_bgs0;
 
     u32 block_bgdt = sb->superblock_id + (sizeof(struct Ext2Superblock) / blocksize);
@@ -795,7 +806,7 @@ struct FsVolume *ext2MountDevice(struct Device *device)
 
 static struct FsVolume *ext2Mount(struct FsPath *dev)
 {
-    struct Kobject *device = fsOpenFile(dev, S_IRUSR);
+    struct Kobject *device = fsOpenFile(dev, O_RDWR);
     if (device == NULL)
         return NULL;
 

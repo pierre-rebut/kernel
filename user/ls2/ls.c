@@ -576,9 +576,7 @@ static void traverse(int argc, char *argv[], int options)
     ch_options = !f_recursive && !f_label &&
                  options & FTS_NOSTAT ? FTS_NAMEONLY : 0;
 
-    warn("on fait des test\n");
     while ((p = fts_read(ftsp)) != NULL) {
-        warn("au moin sa read\n");
         switch (p->fts_info) {
             case FTS_DC:
                 printf("%s: directory causes a cycle", p->fts_name);

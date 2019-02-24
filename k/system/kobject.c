@@ -28,8 +28,8 @@ struct Kobject *koCreate(enum KObjectType type, void *data, int mode)
 
 s32 koRead(struct Kobject *obj, void *buffer, u32 size)
 {
-    int mode = obj->mode & 3;
-    if ((mode & O_RDONLY) != O_RDONLY)
+    int mode = obj->mode & 0x3;
+    if (!(mode & O_RDONLY))
         return -EPERM;
 
     int actual;
@@ -62,7 +62,7 @@ s32 koRead(struct Kobject *obj, void *buffer, u32 size)
 s32 koWrite(struct Kobject *obj, void *buffer, u32 size)
 {
     int mode = obj->mode & 3;
-    if ((mode & O_WRONLY) != O_WRONLY)
+    if (!(mode & O_WRONLY))
         return -EPERM;
 
     int actual;

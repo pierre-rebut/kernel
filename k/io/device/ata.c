@@ -154,10 +154,10 @@ static void ataWritePio(int id, const void *buffer, int size)
 }
 
 
-static int ataBegin(int id, int command, int nblocks, int offset)
+static int ataBegin(int id, int command, int nblocks, u32 offset)
 {
     int base = ata_base[id];
-    int sector, clow, chigh, flags;
+    u32 sector, clow, chigh, flags;
 
     flags = ATA_FLAGS_ECC | ATA_FLAGS_LBA | ATA_FLAGS_SEC;
 
@@ -179,11 +179,11 @@ static int ataBegin(int id, int command, int nblocks, int offset)
     if (!ready)
         return 0;
 
-    outb(base + ATA_CONTROL, 0);
-    outb(base + ATA_COUNT, nblocks);
-    outb(base + ATA_SECTOR, sector);
-    outb(base + ATA_CYL_LO, clow);
-    outb(base + ATA_CYL_HI, chigh);
+    outw(base + ATA_CONTROL, 0);
+    outw(base + ATA_COUNT, nblocks);
+    outw(base + ATA_SECTOR, sector);
+    outw(base + ATA_CYL_LO, clow);
+    outw(base + ATA_CYL_HI, chigh);
     outb(base + ATA_FDH, flags);
 
     outb(base + ATA_COMMAND, command);
@@ -191,9 +191,9 @@ static int ataBegin(int id, int command, int nblocks, int offset)
     return 1;
 }
 
-static int ataReadBlockUnlocked(int id, void *buffer, int nblocks, int offset)
+static int ataReadBlockUnlocked(int id, void *buffer, int nblocks, u32 offset)
 {
-    LOG("ata read unlocked\n");
+    LOG("[ata] read unlocked: %d - %u\n", nblocks, offset);
 
     if (!ataBegin(id, ATA_COMMAND_READ, nblocks, offset))
         return -2;
@@ -216,7 +216,7 @@ static int ataReadBlockUnlocked(int id, void *buffer, int nblocks, int offset)
     return nblocks;
 }
 
-static int ataReadBlock(int id, void *buffer, int nblocks, int offset)
+static int ataReadBlock(int id, void *buffer, int nblocks, u32 offset)
 {
     int result;
     mutexLock(&ata_mutex);
@@ -228,7 +228,7 @@ static int ataReadBlock(int id, void *buffer, int nblocks, int offset)
     return result;
 }
 
-static int ataWriteUnlocked(int id, const void *buffer, int nblocks, int offset)
+static int ataWriteUnlocked(int id, const void *buffer, int nblocks, u32 offset)
 {
     LOG("ata write unlocked\n");
 
@@ -263,7 +263,7 @@ static int ataWriteUnlocked(int id, const void *buffer, int nblocks, int offset)
     return nblocks;
 }
 
-int ataWriteBlock(int id, const void *buffer, int nblocks, int offset)
+int ataWriteBlock(int id, const void *buffer, int nblocks, u32 offset)
 {
     int result;
     mutexLock(&ata_mutex);
