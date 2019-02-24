@@ -11,6 +11,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include "functions.h"
 #include "define.h"
@@ -24,27 +25,27 @@ char *cd_tild(t_env *env)
         return (NULL);
     }
     if (chdir(home) == -1) {
-        printf("cd: '%s' doesn't exist\n", home);
+        printf("cd: '%s': %s\n", home, strerror(errno));
         return (NULL);
     }
-    return (home);
+    return (strdup(home));
 }
 
 char *cd_dash(t_env *env, int fd)
 {
-    char *oldpwd;
+    char *oldpwd = my_getenv("OLDPWD", env->env);
 
-    if ((oldpwd = (my_getenv("OLDPWD", env->env))) == NULL) {
+    if (oldpwd == NULL) {
         printf("cd: OLDPWD not set or doesn't exist\n");
         return (NULL);
     }
     if (chdir(oldpwd) == -1) {
-        printf("cd: '%s' doesn't exist\n", oldpwd);
+        printf("cd: '%s': %s\n", oldpwd, strerror(errno));
         return (NULL);
     }
     my_putfd(oldpwd, fd);
     my_putfd("\n", fd);
-    return (oldpwd);
+    return (strdup(oldpwd));
 }
 
 char *cd_check_arg(char *path, t_env *env, int fd)
@@ -52,17 +53,17 @@ char *cd_check_arg(char *path, t_env *env, int fd)
     char *new_path = my_getenv("PWD", env->env);
 
     if (path == NULL || strcmp("~", path) == SUCCESS) {
-        if ((new_path = cd_tild(env)) == NULL)
-            return (NULL);
+        new_path = cd_tild(env);
     } else if (strcmp(path, "-") == SUCCESS) {
-        if ((new_path = cd_dash(env, fd)) == NULL)
-            return (NULL);
-    } else if (chdir(path) == FAIL) {
-        printf("cd: '%s' : Aucun fichier ou dossier de ce type\n", path);
-        return (NULL);
+        new_path = cd_dash(env, fd);
     } else {
+        if (chdir(path) == FAIL) {
+            printf("cd: '%s': %s\n", path, strerror(errno));
+            return (NULL);
+        }
         new_path = strdup(new_path);
         new_path = strcat(new_path, path);
     }
+
     return (new_path);
 }

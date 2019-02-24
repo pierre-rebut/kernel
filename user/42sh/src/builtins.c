@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <errno.h>
+#include <err.h>
 
 #include "functions.h"
 #include "define.h"
@@ -27,7 +28,7 @@ static int my_setenv(char *name, char *value, t_env *env)
     i = 0;
     if (name == NULL) {
         printf("Usage : setenv NAME [VAR]\n");
-        return FAIL;
+        return ERROR_FILS;
     }
 
     new_env_var = strcat(name, "=");
@@ -55,7 +56,7 @@ int cd_call(int fd, t_cmd *cmd, t_env *env)
     old_path = my_getenv("PWD", env->env);
 
     if ((new_path = cd_check_arg(cmd->args[1], env, fd)) == NULL)
-        return (FAIL);
+        return (ERROR_FILS);
 
     my_setenv("OLDPWD", old_path, env);
     my_setenv("PWD", new_path, env);
@@ -72,7 +73,7 @@ int env_call(int fd, t_cmd *cmd, t_env *env)
 
     i = 0;
     if (env->env == NULL)
-        return FAIL;
+        return ERROR_FILS;
 
     while (env->env[i] != NULL) {
         my_putfd(env->env[i], fd);
@@ -102,7 +103,7 @@ int unsetenv_call(int fd, t_cmd *cmd, t_env *env)
 
     if (var == NULL) {
         printf("Usage : unsetenv NAME\n");
-        return FAIL;
+        return ERROR_FILS;
     }
     if ((line_cpy = my_getenv_line(var, env->env)) == -1) {
         printf("%s doesn't exist\n", var);
@@ -112,7 +113,7 @@ int unsetenv_call(int fd, t_cmd *cmd, t_env *env)
     while (env->env[lines] != NULL)
         lines++;
     if ((new_env = malloc(sizeof(char *) * (lines + 2))) == NULL)
-        return FAIL;
+        return ERROR_FILS;
     remove_var(new_env, line_cpy, env);
 
     return SUCCESS;
@@ -157,16 +158,21 @@ int sync_call(int fd, t_cmd *cmd, t_env *env)
 int kill_call(int fd, t_cmd *cmd, t_env *env)
 {
     (void)env;
+    if (cmd->args[1] == NULL) {
+        dprintf(fd, "kill: missing argument\n");
+        return ERROR_FILS;
+    }
 
-    char *error;
-    int pid = strtol(cmd->args[1], &error, 10);
-    if (error == cmd->args[1])
-        return FAIL;
+    int pid = atoi(cmd->args[1]);
+    if (pid == 0) {
+        dprintf(fd, "kill: %s: invalid argument\n", cmd->args[1]);
+        return ERROR_FILS;
+    }
 
     int res = kill(pid, 0);
     if (res < 0) {
         dprintf(fd, "kill: %d: %s\n", pid, strerror(errno));
-        return FAIL;
+        return ERROR_FILS;
     }
     return SUCCESS;
 }

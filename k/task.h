@@ -108,7 +108,7 @@ pid_t createThread(u32 entryPrg);
 
 void initTasking();
 
-int taskKill(struct Task *);
+int taskKill(struct Task *task);
 
 int taskExit();
 
@@ -118,7 +118,7 @@ void taskResetEvent(struct Task *task);
 
 pid_t taskGetpid();
 
-pid_t taskKillByPid(pid_t pid);
+int taskKillByPid(pid_t pid);
 
 struct Task *getTaskByPid(pid_t pid);
 

@@ -581,11 +581,11 @@ static void traverse(int argc, char *argv[], int options)
         warn("au moin sa read\n");
         switch (p->fts_info) {
             case FTS_DC:
-                warn("%s: directory causes a cycle", p->fts_name);
+                printf("%s: directory causes a cycle", p->fts_name);
                 break;
             case FTS_DNR:
             case FTS_ERR:
-                warn("%s: %s", p->fts_path, strerror(p->fts_errno));
+                printf("%s: %s", p->fts_path, strerror(p->fts_errno));
                 rval = 1;
                 break;
             case FTS_D:
@@ -737,7 +737,7 @@ static void display(const FTSENT *p, FTSENT *list, int options)
     flags = NULL;
     for (cur = list, entries = 0; cur; cur = cur->fts_link) {
         if (cur->fts_info == FTS_ERR || cur->fts_info == FTS_NS) {
-            warn("%s: %s",
+            printf("%s: %s",
                  cur->fts_name, strerror(cur->fts_errno));
             cur->fts_number = NO_PRINT;
             rval = 1;

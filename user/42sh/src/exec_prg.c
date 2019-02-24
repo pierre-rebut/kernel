@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <errno.h>
 
 #include "struct.h"
 #include "define.h"
@@ -46,6 +47,7 @@ char *get_prg(char *prg, t_env *env)
     path = strcat(path, prg);
 
     if (stat(path, NULL) == -1) {
+        printf("42sh: %s: %s\n", prg, strerror(errno));
         free(path);
         return NULL;
     }
@@ -60,19 +62,15 @@ int exec_prg(struct ExceveInfo *execInfo, t_cmd *lst, t_env *env)
     else
         execInfo->cmdline = strdup(lst->prg);
 
-    if (execInfo->cmdline == NULL)
-        goto failure;
+    if (execInfo->cmdline == NULL) {
+        return ERROR_FILS;
+    }
 
-
-    u32 pid = execve(execInfo);
-    if (pid == 0)
-        goto failure;
+    int pid = execve(execInfo);
+    if (pid < 0) {
+        printf("42sh: %s: %s\n", execInfo->cmdline, strerror(errno));
+    }
 
     free(execInfo->cmdline);
-    return 0;
-
-    failure:
-    printf("%s: Command not found.\n", lst->prg);
-    free(execInfo->cmdline);
-    return ERROR_FILS;
+    return (pid < 0 ? ERROR_FILS : pid);
 }

@@ -14,6 +14,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <sys/types.h>
+#include <err.h>
 
 #include "struct.h"
 #include "define.h"
@@ -34,7 +35,7 @@ static struct BuiltinCmd lstCmd[] = {
         {"echo",     echo},
         {"sync",     sync_call},
         {"kill",     kill_call},
-        {NULL}
+        {NULL, NULL}
 };
 
 int redir_out_fd(t_cmd *lst)

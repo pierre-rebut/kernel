@@ -488,14 +488,13 @@ pid_t taskGetpid()
     return currentTask->pid;
 }
 
-pid_t taskKillByPid(pid_t pid)
+int taskKillByPid(pid_t pid)
 {
     struct Task *task = getTaskByPid(pid);
     if (task == NULL)
         return -ESRCH;
 
-    taskKill(task);
-    return pid;
+    return taskKill(task);
 }
 
 int taskExit()
