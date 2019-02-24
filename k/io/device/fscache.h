@@ -12,12 +12,11 @@
 
 struct FsCacheBlock
 {
-    int offset;
-    void *data;
+    u32 offset;
     int nblocks;
-
     char updated;
 
+    void *data;
     struct FsCacheBlock *next;
     struct FsCacheBlock *prev;
 };
@@ -34,9 +33,9 @@ struct FsCache
     struct FsCacheBlock *lastBlock;
 };
 
-int fsCacheRead(struct Device *device, void *buffer, int nblocks, int offset);
+int fsCacheRead(struct Device *device, void *buffer, int nblocks, u32 offset);
 
-int fsCacheWrite(struct Device *device, const void *buffer, int nblocks, int offset);
+int fsCacheWrite(struct Device *device, const void *buffer, int nblocks, u32 offset);
 
 int fsCacheFlush(struct Device *device);
 

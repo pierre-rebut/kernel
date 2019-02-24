@@ -57,7 +57,7 @@ static struct FsCache *findFsCache(struct Device *device)
     return NULL;
 }
 
-static struct FsCacheBlock *findFsCacheBlock(struct FsCache *fsCache, int offset)
+static struct FsCacheBlock *findFsCacheBlock(struct FsCache *fsCache, u32 offset)
 {
     struct FsCacheBlock *tmpBlock = fsCache->dataBlock;
 
@@ -91,7 +91,7 @@ static struct FsCacheBlock *findFsCacheBlock(struct FsCache *fsCache, int offset
     return NULL;
 }
 
-static struct FsCacheBlock *createFsCacheBlock(struct FsCache *fsCache, void *data, int nblocks, int offset)
+static struct FsCacheBlock *createFsCacheBlock(struct FsCache *fsCache, void *data, int nblocks, u32 offset)
 {
     LOG("[fsCache] create new block cache: %d\n", offset);
 
@@ -131,7 +131,7 @@ static struct FsCacheBlock *createFsCacheBlock(struct FsCache *fsCache, void *da
     return tmpBlock;
 }
 
-int fsCacheRead(struct Device *device, void *buffer, int nblocks, int offset)
+int fsCacheRead(struct Device *device, void *buffer, int nblocks, u32 offset)
 {
     struct FsCache *fsCache = findOrCreateFsCache(device);
     if (fsCache == NULL)
@@ -149,17 +149,17 @@ int fsCacheRead(struct Device *device, void *buffer, int nblocks, int offset)
         }
 
         fsCacheBlock = createFsCacheBlock(fsCache, data, nblocks, offset);
+        if (fsCacheBlock == NULL)
+            return -1;
+
+        fsCacheBlock->updated = 0;
     }
 
-    if (fsCacheBlock == NULL)
-        return -1;
-
-    fsCacheBlock->updated = 0;
     memcpy(buffer, fsCacheBlock->data, (u32) nblocks * device->blockSize);
     return nblocks;
 }
 
-int fsCacheWrite(struct Device *device, const void *buffer, int nblocks, int offset)
+int fsCacheWrite(struct Device *device, const void *buffer, int nblocks, u32 offset)
 {
     struct FsCache *fsCache = findOrCreateFsCache(device);
     if (fsCache == NULL)
@@ -175,7 +175,7 @@ int fsCacheWrite(struct Device *device, const void *buffer, int nblocks, int off
 
         fsCacheBlock = createFsCacheBlock(fsCache, data, nblocks, offset);
     } else {
-        klog("[fsCache] write: cache found\n");
+        LOG("[fsCache] write: cache found [%d, %d]\n", nblocks, offset);
         data = fsCacheBlock->data;
     }
 
