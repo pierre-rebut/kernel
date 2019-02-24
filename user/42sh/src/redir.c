@@ -13,7 +13,6 @@
 #include <unistd.h>
 #include <errno.h>
 #include <define.h>
-#include <filestream.h>
 #include <stdlib.h>
 #include <sys/types.h>
 
@@ -25,9 +24,9 @@ int exe_redir_in_double(t_cmd *lst)
     char *tmp;
 
     my_putfd("> ", 1);
-    fd = open("/tmp/test", O_RDWR | O_CREAT | O_TRUNC, 0x180);
+    fd = open("/tmp/test", O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     if (fd < 0) {
-        printf("42sh : %s\n", strerror(errno));
+        printf("42sh: double redir: %s\n", strerror(errno));
         return FAIL;
     }
 
@@ -47,7 +46,7 @@ int exe_redir_in_simple(t_cmd *lst)
 
     fd = open(lst->redir_in, O_RDONLY, 0);
     if (fd == -1) {
-        printf("42sh : %s\n", strerror(errno));
+        printf("42sh: simple redir: %s\n", strerror(errno));
         return (-1);
     }
     return (fd);
@@ -64,15 +63,15 @@ int exe_redir_in(t_cmd *lst)
 int exe_redir_out(t_cmd *lst, int fd)
 {
     if (lst->redir_out[0] == '>') {
-        fd = open(lst->redir_out + 1, O_WRONLY | O_CREAT | O_APPEND, 0x180);
+        fd = open(lst->redir_out + 1, O_WRONLY | O_CREAT | O_APPEND, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
         if (fd == -1) {
-            printf("42sh : %s\n", strerror(errno));
+            printf("42sh: double redir out: %s\n", strerror(errno));
             return (-1);
         }
     } else {
-        fd = open(lst->redir_out, O_WRONLY | O_CREAT | O_TRUNC, 0x180);
+        fd = open(lst->redir_out, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
         if (fd == -1) {
-            printf("42sh : %s\n", strerror(errno));
+            printf("42sh: redir out: %s\n", strerror(errno));
             return (-1);
         }
     }

@@ -33,6 +33,8 @@ struct Fs
 
     struct FsPath *(*mkfile)(struct FsPath *parentDir, const char *name, mode_t mode);
 
+    struct FsPath *(*mkdir)(struct FsPath *parentDir, const char *name, mode_t mode);
+
     struct FsPath *(*link)(struct FsPath *nodeToLink, struct FsPath *parentDir, const char *name);
 
     int (*unlink)(struct FsPath *parentDir, struct FsPath *path);
@@ -122,7 +124,7 @@ struct FsPath *fsGetPathByName(struct FsPath *path, const char *name);
 
 int fsPathReaddir(struct FsPath *path, void *block, u32 nblock);
 
-struct FsPath *fsMkdir(const char *name, mode_t mode);
+struct FsPath *fsMkDir(const char *name, mode_t mode);
 
 struct FsPath *fsMkFile(const char *name, mode_t mode);
 

@@ -124,10 +124,7 @@ static void cook_cat(FILE *fp)
     if (fp == stdin && feof(stdin))
         clearerr(stdin);
 
-    FILE *out = fdopen(1);
-    if (out == NULL)
-        return;
-
+    FILE *out = stdout;
     line = gobble = 0;
     for (prev = '\n'; (ch = getc(fp)) != EOF; prev = ch) {
         if (prev == '\n') {

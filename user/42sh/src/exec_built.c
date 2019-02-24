@@ -42,9 +42,9 @@ int redir_out_fd(t_cmd *lst)
     int fd;
 
     if (lst->redir_out[0] == '>')
-        fd = open(lst->redir_out + 1, O_WRONLY | O_CREAT | O_APPEND, 0x180);
+        fd = open(lst->redir_out + 1, O_WRONLY | O_CREAT | O_APPEND, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     else
-        fd = open(lst->redir_out, O_WRONLY | O_CREAT | O_TRUNC, 0x180);
+        fd = open(lst->redir_out, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     return (fd);
 }
 
@@ -61,7 +61,7 @@ int exec_built(t_cmd *lst, t_env *env)
                 fd = redir_out_fd(lst);
 
             if (fd < 0) {
-                printf("42sh : %s\n", strerror(errno));
+                printf("42sh: builtin redir out: %s\n", strerror(errno));
                 return FAIL;
             }
 

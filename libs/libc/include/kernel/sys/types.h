@@ -41,14 +41,13 @@ struct dirent
 #define DIRENT_BUFFER_SIZE (DIRENT_BUFFER_NB * sizeof(struct dirent))
 
 /* misc */
-#define O_ACCMODE       0003
-#define O_RDONLY         00
-#define O_WRONLY         01
-#define O_RDWR             02
-#define O_CREAT        0100
-#define O_EXCL           0200
-#define O_TRUNC          01000
-#define O_APPEND      02000
+#define O_WRONLY    0x1
+#define O_RDONLY    0x2
+#define O_RDWR      O_RDONLY | O_WRONLY
+#define O_CREAT     0x4
+#define O_APPEND    0x8
+#define O_TRUNC     0x10
+#define O_EXCL      0x20
 
 #define SEEK_SET    0
 #define SEEK_CUR    1

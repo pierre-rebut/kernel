@@ -105,7 +105,7 @@ static int __gen_tempname(char *tmpl, int suffixlen, int flags, int kind)
         switch (kind)
         {
             case 0:
-                fd = open(tmpl, (flags & ~O_ACCMODE) | O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
+                fd = open(tmpl, flags | O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
                 break;
             case 1:
                 fd = mkdir (tmpl, S_IRUSR | S_IWUSR | S_IXUSR);

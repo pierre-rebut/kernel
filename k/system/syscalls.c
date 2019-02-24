@@ -230,18 +230,25 @@ static int sys_open(struct esp_context *ctx)
 
     struct FsPath *path = fsResolvePath((char *) ctx->ebx);
     if (!path) {
+        klog("open: path not found (try to create)\n");
         if (!(ctx->ecx & O_CREAT))
             return -EACCES;
 
-        path = fsMkFile((const char *) ctx->ebx, INODE_TYPE_FILE | ctx->edx);
+        path = fsMkFile((const char *) ctx->ebx, ctx->edx);
         if (!path)
             return -EIO;
+    } else {
+        if ((ctx->ecx & O_EXCL) == O_EXCL) {
+            fsPathDestroy(path);
+            return -EEXIST;
+        }
     }
 
     struct Kobject *obj = fsOpenFile(path, ctx->ecx);
     fsPathDestroy(path);
 
     if (obj == NULL) {
+        klog("open: fsOpenFile failed\n");
         return -EACCES;
     }
 
@@ -619,7 +626,7 @@ static int sys_mkdir(struct esp_context *ctx)
         return -EEXIST;
     }
 
-    tmp = fsMkFile((const char *) ctx->ebx, INODE_TYPE_DIRECTORY | ctx->ecx);
+    tmp = fsMkDir((const char *) ctx->ebx, ctx->ecx);
     fsPathDestroy(tmp);
     return (tmp ? 0 : -EIO);
 }
@@ -634,7 +641,7 @@ static int sys_mkfile(struct esp_context *ctx)
         return -EEXIST;
     }
 
-    tmp = fsMkFile((const char *) ctx->ebx, INODE_TYPE_FILE | ctx->ecx);
+    tmp = fsMkFile((const char *) ctx->ebx, ctx->ecx);
     fsPathDestroy(tmp);
     return (tmp ? 0 : -EIO);
 }

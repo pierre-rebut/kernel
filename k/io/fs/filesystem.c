@@ -115,6 +115,7 @@ struct Kobject *fsOpenFile(struct FsPath *path, int mode)
     if (!path || !path->volume->fs->openFile)
         return NULL;
 
+    mode = ((mode & 0x3) << 1) << 6;
     if ((path->mode & mode) != mode)
         return NULL;
 
@@ -416,7 +417,13 @@ struct FsPath *fsMkFile(const char *name, mode_t mode)
         return NULL;
     }
 
-    struct FsPath *path = parent->volume->fs->mkfile(parent, filename, mode);
+    if (strlen(filename) >= MAXPATHLEN) {
+        kfree(filename);
+        fsPathDestroy(parent);
+        return NULL;
+    }
+
+    struct FsPath *path = parent->volume->fs->mkfile(parent, filename, mode & 0xFFF);
     kfree(filename);
 
     if (path == NULL) {
@@ -426,7 +433,37 @@ struct FsPath *fsMkFile(const char *name, mode_t mode)
 
     path->volume = parent->volume;
     fsPathDestroy(parent);
-    path->size = 0;
+    path->refcount = 1;
+    return path;
+}
+
+struct FsPath *fsMkDir(const char *name, mode_t mode)
+{
+    struct FsPath *parent;
+
+    char *filename = fsSplitPath(name, &parent);
+    if (filename == NULL || parent == NULL || parent->volume->fs->mkdir == NULL) {
+        kfree(filename);
+        fsPathDestroy(parent);
+        return NULL;
+    }
+
+    if (strlen(filename) >= MAXPATHLEN) {
+        kfree(filename);
+        fsPathDestroy(parent);
+        return NULL;
+    }
+
+    struct FsPath *path = parent->volume->fs->mkdir(parent, filename, mode & 0xFFF);
+    kfree(filename);
+
+    if (path == NULL) {
+        fsPathDestroy(parent);
+        return NULL;
+    }
+
+    path->volume = parent->volume;
+    fsPathDestroy(parent);
     path->refcount = 1;
     return path;
 }
@@ -446,6 +483,9 @@ struct FsPath *fsLink(const char *name, const char *linkTo)
         goto failure;
 
     if (pathLinkTo->volume != parent->volume)
+        goto failure;
+
+    if (strlen(filename) >= MAXPATHLEN)
         goto failure;
 
     struct FsPath *path = parent->volume->fs->link(pathLinkTo, parent, filename);
