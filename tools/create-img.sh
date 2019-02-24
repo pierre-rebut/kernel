@@ -1,5 +1,7 @@
 #!/bin/bash
 
+[ "$UID" -eq 0 ] || exec sudo "$0" "$@"
+
 ismounted=0
 
 img_mnt="/mnt"
@@ -21,7 +23,7 @@ function doExit() {
     echo "An error occurred" >&2
     if [ "$ismounted" -eq 1 ]; then
 	    echo "Umount $img_mnt"
-	    sudo umount "$img_mnt"
+	    umount "$img_mnt"
     fi
     exit 1
 }
@@ -53,19 +55,19 @@ fi
 
 mkfs.ext2 "$img_filename" -r 0 -b 1024 > /dev/null && echo "Img formatted"
 
-sudo mount -o loop "$img_filename" "$img_mnt" && echo "Img mounted"
+mount -o loop "$img_filename" "$img_mnt" && echo "Img mounted"
 if [ $? -ne 0 ]; then
     doExit
 fi
 
 ismounted=1
 
-sudo mkdir -p "$img_mnt/boot/grub" "$img_mnt/home" "$img_mnt/bin" && echo "Directory created"
+mkdir -p "$img_mnt/boot/grub" "$img_mnt/home" "$img_mnt/bin" && echo "Directory created"
 if [ $? -ne 0 ]; then
     doExit
 fi
 
-cat <<EOF > /tmp/testfilegrub && sudo mv /tmp/testfilegrub "$img_mnt/boot/grub/grub.cfg" && echo "Grub config created"
+cat <<EOF > "$img_mnt/boot/grub/grub.cfg" && echo "Grub config created"
 default="0"
 timeout=$grub_timeout
 
@@ -78,12 +80,12 @@ if [ $? -ne 0 ]; then
     doExit
 fi
     
-sudo grub-install --force --no-floppy --root-directory="$img_mnt" /dev/loop0 > /dev/null && echo "Grub installed"
+grub-install --force --no-floppy --root-directory="$img_mnt" /dev/loop0 > /dev/null && echo "Grub installed"
 if [ $? -ne 0 ]; then
     doExit
 fi
 
-sudo umount "$img_mnt" && echo "Img umounted"
+umount "$img_mnt" && echo "Img umounted"
 if [ $? -ne 0 ]; then
     doExit
 fi

@@ -347,6 +347,7 @@ static u32 ext2FindNewInodeId(struct Ext2VolumeData *priv)
             id = ((i + 1) * priv->sb.inodes_in_blockgroup) - bg->num_of_unalloc_inode + 1;
             bg->num_of_unalloc_inode--;
             ext2DeviceWriteBlock(block_buf, priv->first_bgd + i, priv);
+
             /* Now, update the superblock as well */
             ext2DeviceReadBlock(block_buf, priv->sb.superblock_id, priv);
             struct Ext2Superblock *sb = (struct Ext2Superblock *) block_buf;
@@ -411,7 +412,7 @@ static int ext2UpdateParentDir(struct Ext2DirEntry *entry, struct Ext2Inode *par
             if (d->size == 0)
                 break;
 
-            /*u32 truesize = d->namelength + 8;
+            u32 truesize = d->namelength + 8;
             truesize += 4 - truesize % 4;
             // u32 origsize = d->size;
 
@@ -421,8 +422,8 @@ static int ext2UpdateParentDir(struct Ext2DirEntry *entry, struct Ext2Inode *par
                 d = (struct Ext2DirEntry *) ((u32) d + d->size);
                 entry->size = (u16)(priv->blocksize - passed);
                 break;
-            }*/
-            passed += d->size;
+            } else
+                passed += d->size;
             d = (struct Ext2DirEntry *) ((u32) d + d->size);
         }
 
@@ -503,7 +504,7 @@ static struct FsPath *ext2MkFile(struct FsPath *parentDir, const char *name, mod
     inode.size = 0;
     inode.type = (u16) mode;
     inode.disk_sectors = 2;
-    inode.last_modif = inode.last_access = inode.create_time = gettick();
+    inode.last_modif = inode.last_access = inode.create_time = (u32) gettick();
 
     id = ext2FindNewInodeId(priv);
     LOG("[ext2] mkentry: new id = %u\n", id);
