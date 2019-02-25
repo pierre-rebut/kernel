@@ -21,3 +21,6 @@ target_link_libraries(mkdir stdc)
 
 add_executable(chmod chmod.c)
 target_link_libraries(chmod stdc)
+
+add_executable(rm rm.c)
+target_link_libraries(rm stdc)

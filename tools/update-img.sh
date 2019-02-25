@@ -29,6 +29,7 @@ cp "$2/user/utils/wc" "$mntpoint/bin"
 cp "$2/user/ls2/ls" "$mntpoint/bin"
 cp "$2/user/nano/nano" "$mntpoint/bin"
 cp "$2/user/utils/link" "$2/user/utils/mkdir" "$2/user/utils/chmod" "$mntpoint/bin"
+cp "$2/user/utils/rm" "$mntpoint/bin"
 
 echo "Copy roms on $mntpoint/roms"
 cp "$2/user/roms/skate/skate.rom" "$2/user/roms/perrodlauncher/perrodlauncher.rom" "$mntpoint/roms"

@@ -402,6 +402,40 @@ static void ext2AllocBlock(u32 *out, struct Ext2VolumeData *priv)
     }
 }
 
+static int ext2UnallocBlock(u32 blockId, struct Ext2VolumeData *priv)
+{
+    /* Algorithm: Loop through block group descriptors,
+     * find which bg has a free block
+     * and set that.
+
+    void *block_buf = kmalloc(priv->blocksize, 0, "blockBuf");
+    if (block_buf == NULL)
+        return;
+
+    ext2DeviceReadBlock(block_buf, priv->first_bgd, priv);
+    struct Ext2BlockGroupDesc *bg = (struct Ext2BlockGroupDesc *) block_buf;
+    for (u32 i = 0; i < priv->number_of_bgs; i++) {
+        if (bg->num_of_unalloc_block) {
+            *out = priv->sb.blocks - bg->num_of_unalloc_block + 1;
+            bg->num_of_unalloc_block--;
+            ext2DeviceWriteBlock(block_buf, priv->first_bgd + i, priv);
+
+            LOG("Allocated block %d\n", *out);
+
+            ext2DeviceReadBlock(block_buf, priv->sb.superblock_id, priv);
+            struct Ext2Superblock *sb = (struct Ext2Superblock *) block_buf;
+            sb->unallocatedblocks--;
+            ext2DeviceWriteBlock(block_buf, priv->sb.superblock_id, priv);
+            return;
+        }
+        bg++;
+    }
+     */
+    (void) blockId;
+    (void) priv;
+    return 0; // todo
+}
+
 static int ext2UpdateParentDir(struct Ext2DirEntry *entry, struct Ext2Inode *parentInode, struct FsPath *parentDir,
                                void *block_buf, struct Ext2VolumeData *priv)
 {
@@ -518,7 +552,7 @@ static struct FsPath *ext2MkFile(struct FsPath *parentDir, const char *name, mod
 
     inode.hardlinks = 1;
     inode.size = 0;
-    inode.type = (u16)(INODE_TYPE_FILE | mode);
+    inode.type = (u16) (INODE_TYPE_FILE | mode);
     inode.disk_sectors = 2;
     inode.last_modif = inode.last_access = inode.create_time = (u32) gettick();
 
@@ -543,7 +577,7 @@ static struct FsPath *ext2MkDir(struct FsPath *parentDir, const char *name, mode
 
     inode.hardlinks = 1;
     inode.size = priv->blocksize;
-    inode.type = (u16)(INODE_TYPE_DIRECTORY | mode);
+    inode.type = (u16) (INODE_TYPE_DIRECTORY | mode);
     inode.disk_sectors = 2;
     inode.last_modif = inode.last_access = inode.create_time = (u32) gettick();
 
@@ -562,7 +596,7 @@ static struct FsPath *ext2MkDir(struct FsPath *parentDir, const char *name, mode
     entry1->reserved = 2;
     memcpy(&entry1->reserved + 1, ".\0", 2);
 
-    entry1 = (void*)(entry1) + entry1->size;
+    entry1 = (void *) (entry1) + entry1->size;
     entry1->inode = parentDir->inode;
     entry1->size = sizeof(struct Ext2DirEntry) + 3;
     entry1->namelength = 3;
@@ -833,6 +867,62 @@ static int ext2Chmod(struct FsPath *path, mode_t mode)
     return 0;
 }
 
+static int ext2Unlink(struct FsPath *parent, struct FsPath *path)
+{
+    struct Ext2Inode pathInode;
+    struct Ext2VolumeData *priv = path->volume->privateData;
+    void *block_buf = kmalloc(priv->blocksize, 0, "buff");
+    if (block_buf == NULL)
+        return -ENOMEM;
+
+    ext2ReadInode(&pathInode, path->inode, priv);
+
+    if (pathInode.hardlinks <= 1) {
+        for (int i = 0; i < 12; i++) {
+            if (pathInode.dbp[i] == 0 || pathInode.dbp[i] >= priv->sb.blocks)
+                continue;
+            ext2UnallocBlock(pathInode.dbp[i], priv);
+        }
+        memset(&pathInode, 0, sizeof(struct Ext2Inode));
+        ext2WriteInode(&pathInode, path->inode, priv);
+        // todo free inode id
+    } else {
+        pathInode.hardlinks -= 1;
+        ext2WriteInode(&pathInode, path->inode, priv);
+    }
+
+    struct Ext2Inode parentInode;
+    ext2ReadInode(&parentInode, parent->inode, priv);
+
+    for (int i = 0; i < 12; i++) {
+        if (parentInode.dbp[i] == 0 || parentInode.dbp[i] >= priv->sb.blocks)
+            continue;
+
+        ext2DeviceReadBlock(block_buf, parentInode.dbp[i], priv);
+        struct Ext2DirEntry *d = (struct Ext2DirEntry *) block_buf;
+
+        struct Ext2DirEntry *entry = NULL;
+        while ((void*) d < (block_buf + priv->blocksize)) {
+            if (d->inode == path->inode) {
+                entry = d;
+                break;
+            }
+            d = (struct Ext2DirEntry *) ((u32) d + d->size);
+        }
+
+        if (entry == NULL)
+            continue;
+
+        entry->inode = 0;
+        entry->reserved = 0;
+        ext2DeviceWriteBlock(block_buf, parentInode.dbp[i], priv);
+        break;
+    }
+
+    kfree(block_buf);
+    return 0;
+}
+
 static struct Fs fs_ext2 = {
         "ext2fs",
         .mount = &ext2Mount,
@@ -849,6 +939,7 @@ static struct Fs fs_ext2 = {
         .mkfile = &ext2MkFile,
         .mkdir = &ext2MkDir,
         .link = &ext2Link,
+        .unlink = &ext2Unlink,
         .chmod = &ext2Chmod
 };
 

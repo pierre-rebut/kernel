@@ -417,7 +417,7 @@ struct FsPath *fsMkFile(const char *name, mode_t mode)
         return NULL;
     }
 
-    if (strlen(filename) >= MAXPATHLEN) {
+    if (strlen(filename) >= MAXPATHLEN || strcmp(filename, ".") == 0 || strcmp(filename, "..") == 0) {
         kfree(filename);
         fsPathDestroy(parent);
         return NULL;
@@ -448,7 +448,7 @@ struct FsPath *fsMkDir(const char *name, mode_t mode)
         return NULL;
     }
 
-    if (strlen(filename) >= MAXPATHLEN) {
+    if (strlen(filename) >= MAXPATHLEN || strcmp(filename, ".") == 0 || strcmp(filename, "..") == 0) {
         kfree(filename);
         fsPathDestroy(parent);
         return NULL;
@@ -485,7 +485,7 @@ struct FsPath *fsLink(const char *name, const char *linkTo)
     if (pathLinkTo->volume != parent->volume)
         goto failure;
 
-    if (strlen(filename) >= MAXPATHLEN)
+    if (strlen(filename) >= MAXPATHLEN  || strcmp(filename, ".") == 0 || strcmp(filename, "..") == 0)
         goto failure;
 
     struct FsPath *path = parent->volume->fs->link(pathLinkTo, parent, filename);
@@ -514,16 +514,33 @@ struct FsPath *fsLink(const char *name, const char *linkTo)
 int fsUnlink(const char *name)
 {
     struct FsPath *path = fsResolvePath(name);
+    if (path == NULL || path->volume->fs->unlink == NULL) {
+        fsPathDestroy(path);
+        return -ENOENT;
+    }
 
     struct FsPath *parent;
     char *filename = fsSplitPath(name, &parent);
-    kfree(filename);
+    if (parent == NULL || filename == NULL) {
+        fsPathDestroy(path);
+        fsPathDestroy(parent);
+        kfree(filename);
+        return -ENOENT;
+    }
 
-    if (parent == NULL || path == NULL) {
+    if (parent->volume != path->volume || strcmp(filename, ".") == 0 || strcmp(filename, "..") == 0) {
+        kfree(filename);
         fsPathDestroy(parent);
         fsPathDestroy(path);
+        return -EINVAL;
     }
-    return 0;
+    kfree(filename);
+
+    int res = path->volume->fs->unlink(parent, path);
+    fsPathDestroy(parent);
+    fsPathDestroy(path);
+
+    return res;
 }
 
 int fsWriteFile(struct FsPath *file, const char *buffer, u32 length, u32 offset)

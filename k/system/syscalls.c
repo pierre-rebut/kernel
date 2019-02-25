@@ -672,10 +672,8 @@ static int sys_symlink(struct esp_context *ctx)
 
 static int sys_unlink(struct esp_context *ctx)
 {
-    (void) ctx; // todo
     LOG("unlink: %s\n", (char *) ctx->ebx);
-
-    return -EPERM;
+    return fsUnlink((const char*)ctx->ebx);
 }
 
 static int sys_isatty(struct esp_context *ctx)
