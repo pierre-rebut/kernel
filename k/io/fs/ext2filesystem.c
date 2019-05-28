@@ -313,7 +313,12 @@ static int ext2Readdir(struct FsPath *path, void *block, u32 nblock)
 static u32 ext2_read_directory(const char *filename, void *buf, u32 blocksize)
 {
     struct Ext2DirEntry *dir = buf;
-    while ((u32) dir < (u32) buf + blocksize && dir->inode != 0) {
+    while ((u32) dir < (u32) buf + blocksize) {
+        if (dir->inode == 0) {
+            dir = (struct Ext2DirEntry *) ((u32) dir + dir->size);
+            continue;
+        }
+
         char *name = (char *) kmalloc(dir->namelength + 1, 0, "newName");
         memcpy(name, &dir->reserved + 1, dir->namelength);
         name[dir->namelength] = 0;

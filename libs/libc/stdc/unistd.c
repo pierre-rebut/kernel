@@ -164,3 +164,8 @@ int unlink(const char *p1)
 int beep() {
     return syscall0(SYSCALL_BEEP);
 }
+
+pid_t fork()
+{
+    return syscall0(SYSCALL_FORK);
+}

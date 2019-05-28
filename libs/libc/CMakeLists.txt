@@ -34,7 +34,7 @@ set(LIBC_SOURCE
 
 set(LIBCRT_SOURCE
         crt/crt0.S
-        crt/crti.c)
+        crt/crti.c crt/crtn.c)
 
 set_property(SOURCE crt/crt0.S PROPERTY LANGUAGE C)
 

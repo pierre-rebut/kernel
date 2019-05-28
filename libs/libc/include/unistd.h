@@ -92,4 +92,6 @@ int isatty(int fd);
 
 int beep();
 
+pid_t fork();
+
 #endif //_UNISTD_H

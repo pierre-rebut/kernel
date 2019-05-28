@@ -14,7 +14,7 @@ _start:
         push %eax
 
         # Run the global constructors.
-        call _init
+        call _kinit
 
         # Run main
         call main
@@ -22,6 +22,6 @@ _start:
         # Terminate the process with the exit code.
         push %eax
 
-        call _fini
+        call _kfini
         call exit
         .size _start, . - _start

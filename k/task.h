@@ -9,6 +9,7 @@
 
 #include "io/fs/filesystem.h"
 #include "system/kobject.h"
+#include "system/idt.h"
 
 #define TASK_MAX_PID 1024
 
@@ -105,6 +106,8 @@ struct Task *createTask(struct TaskCreator *info);
 pid_t createProcess(const struct ExceveInfo *info);
 
 pid_t createThread(u32 entryPrg);
+
+pid_t forkProcess();
 
 void initTasking();
 

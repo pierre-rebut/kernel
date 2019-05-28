@@ -20,7 +20,7 @@
 //#define LOG(x, ...) klog((x), ##__VA_ARGS__)
 #define LOG(x, ...)
 
-#define NB_SYSCALL 43
+#define NB_SYSCALL 44
 
 static int sys_notimplemented(struct esp_context *ctx);
 
@@ -96,6 +96,10 @@ static int sys_mkfile(struct esp_context *ctx);
 
 static int sys_fchdir(struct esp_context *ctx);
 
+static int sys_chmod(struct esp_context *ctx);
+
+static int sys_fchmod(struct esp_context *ctx);
+
 static int sys_link(struct esp_context *ctx);
 
 static int sys_symlink(struct esp_context *ctx);
@@ -106,9 +110,7 @@ static int sys_isatty(struct esp_context *ctx);
 
 static int sys_time(struct esp_context *ctx);
 
-static int sys_chmod(struct esp_context *ctx);
-
-static int sys_fchmod(struct esp_context *ctx);
+static int sys_fork(struct esp_context *ctx);
 
 typedef int (*syscall_t)(struct esp_context *);
 
@@ -155,14 +157,23 @@ static syscall_t syscall[] = {
         sys_symlink,
         sys_unlink,
         sys_isatty,
-        sys_time
+        sys_time,
+        sys_fork
 };
 
 static void syscall_handler(struct esp_context *ctx);
 
+static void geteip_handler(struct esp_context *ctx)
+{
+    klog("test: %x - %x - %u - %u\n", ctx, ctx->useresp, ctx->cs, ctx->ss);
+    ctx->eax = (u32)ctx + 244;
+    ctx->ebx = ctx->ss;
+}
+
 void initSyscall()
 {
     interruptRegister(128, &syscall_handler);
+    interruptRegister(129, &geteip_handler);
 }
 
 static void syscall_handler(struct esp_context *ctx)
@@ -646,6 +657,26 @@ static int sys_mkfile(struct esp_context *ctx)
     return (tmp ? 0 : -EIO);
 }
 
+static int sys_chmod(struct esp_context *ctx) {
+    LOG("chmod: %s\n", (char *) ctx->ebx);
+    struct FsPath *path = fsResolvePath((char*) ctx->ebx);
+    if (!path)
+        return -ENOENT;
+
+    int tmp = fsChmod(path, ctx->ecx);
+    fsPathDestroy(path);
+    return tmp;
+}
+
+static int sys_fchmod(struct esp_context *ctx) {
+    LOG("fchmod: %d\n", ctx->ebx);
+    struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
+    if (!obj)
+        return -EBADF;
+
+    return fsChmod(obj->data, ctx->ecx);
+}
+
 static int sys_link(struct esp_context *ctx)
 {
     LOG("link: %s -> %s\n", (char *) ctx->ebx, (char *) ctx->ecx);
@@ -707,22 +738,9 @@ static int sys_time(struct esp_context *ctx)
     return res;
 }
 
-static int sys_chmod(struct esp_context *ctx) {
-    LOG("chmod: %s\n", (char *) ctx->ebx);
-    struct FsPath *path = fsResolvePath((char*) ctx->ebx);
-    if (!path)
-        return -ENOENT;
-
-    int tmp = fsChmod(path, ctx->ecx);
-    fsPathDestroy(path);
-    return tmp;
-}
-
-static int sys_fchmod(struct esp_context *ctx) {
-    LOG("fchmod: %d\n", ctx->ebx);
-    struct Kobject *obj = taskGetKObjectByFd(ctx->ebx);
-    if (!obj)
-        return -EBADF;
-
-    return fsChmod(obj->data, ctx->ecx);
+static int sys_fork(struct esp_context *ctx)
+{
+    (void) ctx;
+    klog("%p\n", ctx);
+    return forkProcess();
 }

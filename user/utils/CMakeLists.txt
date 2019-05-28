@@ -24,3 +24,6 @@ target_link_libraries(chmod stdc)
 
 add_executable(rm rm.c)
 target_link_libraries(rm stdc)
+
+add_executable(test_fork test.c)
+target_link_libraries(test_fork stdc)

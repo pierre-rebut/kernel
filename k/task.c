@@ -14,7 +14,6 @@
 #include <system/paging.h>
 #include <system/console.h>
 
-#include "task.h"
 #include "elf.h"
 #include "sheduler.h"
 
@@ -184,14 +183,31 @@ static const char **copyArrayIntoUserland(struct PageDirectory *pd, u32 position
     return (const char **) nnArgv;
 }
 
-/*
-int forkProcess() {
-    LOG("[TASK] fork start\n");
+static inline u32 readEsp()
+{
+    u32 eip;
+    asm volatile ("int $0x81" : "=a"(eip));
+    klog("EIP: %X\n", eip);
+    return eip;
+}
+
+pid_t forkProcess()
+{
+    klog("[TASK] fork start\n");
     struct Task *parrent = currentTask;
+
+    u32 esp;
+    u32 ss;
+    asm volatile ("int $0x81" : "=a"(esp), "=b"(ss));
+
+    if (currentTask != parrent) {
+        klog("child\n");
+        return 0;
+    }
 
     struct Task *task = kmalloc(sizeof(struct Task), 0, "task");
 
-    LOG("[TASK] create new stack\n");
+    klog("[TASK] create new stack\n");
     u32 *stack = kmalloc(KERNEL_STACK_SIZE, 0, "stack");
     if (!task || !stack)
         goto failure;
@@ -199,25 +215,16 @@ int forkProcess() {
     memcpy(stack, currentTask->kernelStack - KERNEL_STACK_SIZE, KERNEL_STACK_SIZE);
     task->kernelStack = (void *) ((u32) stack + KERNEL_STACK_SIZE);
 
-    LOG("stack = %u, kernelStack = %u, SIZE = %u\n", stack, task->kernelStack, KERNEL_STACK_SIZE);
-    LOG("cur esp: %u, cur kerneltask: %u\n", currentTask->esp, currentTask->kernelStack);
+    klog("stack = %u, kernelStack = %u, SIZE = %u\n", stack, task->kernelStack, KERNEL_STACK_SIZE);
+    klog("cur esp: %u, cur kerneltask: %u\n", currentTask->esp, currentTask->kernelStack);
 
-    LOG("[TASK] duplicate page directory\n");
+    klog("[TASK] duplicate page directory\n");
     task->pageDirectory = pagingDuplicatePageDirectory(currentTask->pageDirectory);
     if (task->pageDirectory == NULL)
         goto failure;
 
-    LOG("[TASK] copy info from currentTask\n");
-    if (currentTask->kernelStack > task->kernelStack) {
-        task->esp = currentTask->esp - (currentTask->kernelStack - task->kernelStack);
-        task->ss = currentTask->ss;
-    } else {
-        task->esp = currentTask->esp + (task->kernelStack - currentTask->kernelStack);
-        task->ss = currentTask->ss;
-    }
-
     task->event.type = TaskEventNone;
-    task->pid = nextPid++;
+    task->pid = getNextPid();
     task->cmdline = strdup(currentTask->cmdline);
     task->currentDir = currentTask->currentDir;
     task->currentDir->refcount += 1;
@@ -228,29 +235,29 @@ int forkProcess() {
     task->heap.pos = currentTask->heap.pos;
     task->heap.nbPage = currentTask->heap.nbPage;
 
-    for (int i = 0; i < MAX_NB_FILE; i++) {
+    for (int i = 0; i < MAX_NB_KOBJECT; i++) {
         if (currentTask->objectList[i] != NULL)
             task->objectList[i] = koDupplicate(currentTask->objectList[i]);
         else
             task->objectList[i] = NULL;
     }
 
-    schedulerAddTask(task);
-    LOG("[TASK] fork end\n");
+    klog("[TASK] copy info from currentTask\n");
+    task->ss = ss;
+    klog("bite en bois: %x %x %x\n", task->kernelStack, currentTask->kernelStack, esp);
+    stack = task->kernelStack - ((u32) currentTask->kernelStack - esp);
+    task->esp = (u32) stack;
 
-    if (currentTask == parrent) {
-        LOG("papa\n");
-        return task->pid;
-    }
-    LOG("child\n");
-    return 0;
+    schedulerAddActiveTask(task);
+    klog("papa\n");
+    return task->pid;
 
     failure:
-    LOG("[TASK] fork failed\n");
+    klog("[TASK] fork failed\n");
     kfree(stack);
     kfree(task);
     return -1;
-}*/
+}
 
 pid_t createProcess(const struct ExceveInfo *info)
 {

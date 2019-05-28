@@ -98,7 +98,6 @@ struct PageDirectory *pagingCreatePageDirectory()
     return pageDirectory;
 }
 
-/*
 struct PageDirectory *pagingDuplicatePageDirectory(struct PageDirectory *oldPd) {
     if (oldPd == NULL)
         return NULL;
@@ -126,7 +125,7 @@ struct PageDirectory *pagingDuplicatePageDirectory(struct PageDirectory *oldPd) 
             for (u32 y = 0; y < NB_PAGE; y++) {
                 if (oldPd->tablesInfo[i]->pages[y]) {
                     u32 physAddress = oldPd->tablesInfo[i]->pages[y] & 0xFFFFF000;
-                    newPd->tablesInfo[i]->pages[y] = physAddress | MEM_PRESENT;
+                    newPd->tablesInfo[i]->pages[y] = physAddress | MEM_USER | MEM_PRESENT;
                 }
             }
         }
@@ -142,7 +141,7 @@ struct PageDirectory *pagingDuplicatePageDirectory(struct PageDirectory *oldPd) 
     LOG("[PAGING] duplicate page directory failed\n");
     pagingDestroyPageDirectory(newPd);
     return NULL;
-}*/
+}
 
 void pagingDestroyPageDirectory(struct PageDirectory *pageDirectory)
 {
