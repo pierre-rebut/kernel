@@ -1,5 +1,6 @@
 K
 =
+OS basé sur l'architecture UNIX développé en C
 
 launch k
 --------
